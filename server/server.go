@@ -1,18 +1,13 @@
 package server
 
 import (
+	"bcjh-bot/logger"
+	"bcjh-bot/util"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
-type Server struct{}
-
-func NewServer() *Server {
-	return new(Server)
-}
-
-func (Server) Run(port string) error {
+func Run(port string) error {
 	http.HandleFunc("/", MsgHandler)
 	if "" == port {
 		port = ":5800"
@@ -24,10 +19,16 @@ func MsgHandler(w http.ResponseWriter, r *http.Request) {
 	var msg CQHttpMsg
 	err := json.NewDecoder(r.Body).Decode(&msg)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		fmt.Println("数据有误")
+		logger.Info("数据格式有误", err)
 		return
 	}
 
-	fmt.Printf("Msg:%+v\n", msg)
+	text, hasPrefix := util.PrefixFilter(msg.RawMessage, util.PrefixCharacter)
+	if !hasPrefix {
+		return
+	}
+	logger.Infof("收到一条消息Msg:%+v\n正文内容:%v\n", msg, text)
+
+	w.Header().Set("Content-Type", "application/json")
+	return
 }
