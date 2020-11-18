@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-	// 初始化配置信息
 	err := config.InitConfig()
 	if err != nil {
 		fmt.Println("读取配置文件出错！", err)

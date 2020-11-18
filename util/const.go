@@ -9,5 +9,6 @@ const (
 	CQHTTPTokenEmpty       = 401
 	CQHTTPTokenWrong       = 403
 
-	PrefixCharacter = ">"
+	PrefixCharacter    = ">"
+	ArgsSplitCharacter = "-"
 )
