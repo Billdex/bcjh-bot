@@ -24,7 +24,7 @@ func MsgHandler(w http.ResponseWriter, r *http.Request) {
 	var msg CQHttpMsg
 	err := json.NewDecoder(r.Body).Decode(&msg)
 	if err != nil {
-		logger.Info("数据格式有误", err)
+		logger.Error("数据格式有误", err)
 		return
 	}
 
@@ -33,7 +33,7 @@ func MsgHandler(w http.ResponseWriter, r *http.Request) {
 	if !hasPrefix {
 		return
 	}
-	logger.Infof("收到一条消息Msg:%+v\n正文内容:%v\n", msg, text)
+	logger.Debugf("收到一条消息Msg:%+v\n正文内容:%v\n", msg, text)
 
 	//分发指令
 	instruction, args := service.InstructionFilter(text, service.Ins.GetInstructions())
