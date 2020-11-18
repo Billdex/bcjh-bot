@@ -27,7 +27,7 @@ func main() {
 	port := strconv.Itoa(config.AppConfig.Server.Port)
 	err = server.Run(":" + port)
 	if err != nil {
-		fmt.Println("服务启动出错!", err)
+		logger.Error("服务启动出错!", err)
 		return
 	}
 }
