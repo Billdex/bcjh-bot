@@ -1,8 +1,8 @@
 package service
 
-import "bcjh-bot/models"
+import "bcjh-bot/model"
 
-type InstructionHandlerFunc func(*models.OneBotMsg, []string)
+type InstructionHandlerFunc func(*model.OneBotMsg, []string)
 
 type Instructions struct {
 	instructions map[string]InstructionHandlerFunc

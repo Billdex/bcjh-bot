@@ -12,11 +12,12 @@ type cqhttpConfig struct {
 }
 
 type dbConfig struct {
-	Host     string `ini:"host"`
-	Port     int    `ini:"port"`
-	Database string `ini:"database"`
-	User     string `ini:"user"`
-	Password string `ini:"password"`
+	Host      string `ini:"host"`
+	Port      int    `ini:"port"`
+	Database  string `ini:"database"`
+	User      string `ini:"user"`
+	Password  string `ini:"password"`
+	ExportDir string `ini:"export_dir"`
 }
 
 type logConfig struct {

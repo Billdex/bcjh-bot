@@ -1,4 +1,4 @@
-package models
+package model
 
 //OneBot协议消息对象，注释说明仅供参考，在各事件类型中含义不一样，以官方文档为准
 type OneBotMsg struct {
