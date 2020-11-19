@@ -1,9 +1,12 @@
 package service
 
 import (
+	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/logger"
-	"bcjh-bot/model"
+	"bcjh-bot/model/database"
+	"bcjh-bot/model/gamedata"
+	"bcjh-bot/model/onebot"
 	"bcjh-bot/util"
 	"encoding/json"
 	"io/ioutil"
@@ -13,16 +16,23 @@ import (
 
 //更新数据
 //导出数据库数据->删库->重新同步表结构->插入数据
-func UpdateData(msg *model.OneBotMsg, args []string) {
+func UpdateData(c *onebot.Context, args []string) {
 	logger.Info("更新数据, 参数:", args)
+
 	dumpTime := time.Now().Format("2006010021504")
 	DumpFilePath := config.AppConfig.DBConfig.ExportDir + "/DBDataDump" + dumpTime + ".sql"
-	err := model.DB.DumpAllToFile(DumpFilePath)
+	err := database.DB.DumpAllToFile(DumpFilePath)
 	if err != nil {
-		logger.Error("导出数据库数据失败!", err)
+		logger.Error("导出旧数据失败!", err)
+
+		_ = bot.SendMessage(c, "导出旧数据失败!")
 		return
 	}
 	logger.Info("导出旧数据完毕")
+	err = bot.SendMessage(c, "导出旧数据完毕")
+	if err != nil {
+		logger.Error("发送消息失败!", err)
+	}
 
 	gameData, err := RequestData()
 	if err != nil {
@@ -30,18 +40,23 @@ func UpdateData(msg *model.OneBotMsg, args []string) {
 		return
 	}
 	logger.Infof("获取到图鉴网数据%+v", gameData)
+	err = bot.SendMessage(c, "获取图鉴网数据成功!")
+	if err != nil {
+		logger.Error("发送消息失败!", err)
+	}
 
 	//开启事务，删除原有数据
-	session := model.DB.NewSession()
+	session := database.DB.NewSession()
 	defer session.Close()
 	err = session.Begin()
 	if err != nil {
-		logger.Error("更新数据失败!", err)
+		logger.Error("开启事务失败!", err)
+		_ = bot.SendMessage(c, "开启事务失败!")
 		return
 	}
 
 	//删除原数据
-	tables := model.TablesName
+	tables := database.TablesName
 
 	for _, table := range tables {
 		sql := "DELETE FROM `" + table + "`"
@@ -49,16 +64,21 @@ func UpdateData(msg *model.OneBotMsg, args []string) {
 		if err != nil {
 			logger.Error("删除旧数据出错!", err)
 			session.Rollback()
+			_ = bot.SendMessage(c, "删除旧数据出错!")
 			return
 		}
+	}
+	err = bot.SendMessage(c, "删除旧数据完毕")
+	if err != nil {
+		logger.Error("发送消息失败!", err)
 	}
 
 	//插入新数据
 	//插入厨师数据
 	chefsData := gameData.Chefs
-	chefs := make([]model.Chef, 0)
+	chefs := make([]database.Chef, 0)
 	for _, chefData := range chefsData {
-		chef := model.Chef{
+		chef := database.Chef{
 			ChefId:        chefData.ChefId,
 			Name:          chefData.Name,
 			Rarity:        chefData.Rarity,
@@ -87,9 +107,14 @@ func UpdateData(msg *model.OneBotMsg, args []string) {
 	if err != nil {
 		logger.Error("插入厨师数据出错!", err)
 		session.Rollback()
+		_ = bot.SendMessage(c, "更新厨师数据出错!")
 		return
 	}
 	logger.Info("更新厨师数据完毕!")
+	err = bot.SendMessage(c, "更新厨师数据完毕")
+	if err != nil {
+		logger.Error("发送消息失败!", err)
+	}
 
 	//更新厨具数据
 
@@ -97,16 +122,21 @@ func UpdateData(msg *model.OneBotMsg, args []string) {
 
 	err = session.Commit()
 	if err != nil {
-		logger.Error("更新数据失败!", err)
+		logger.Error("提交事务失败!", err)
+		_ = bot.SendMessage(c, "提交事务失败!")
 		return
 	}
 	//关闭事务，发送成功消息
 	logger.Info("更新数据完毕")
+	err = bot.SendMessage(c, "更新数据完毕")
+	if err != nil {
+		logger.Error("发送消息失败!", err)
+	}
 }
 
 //从图鉴网爬取数据
-func RequestData() (model.GameData, error) {
-	var gameData model.GameData
+func RequestData() (gamedata.GameData, error) {
+	var gameData gamedata.GameData
 	r, err := http.Get(util.FoodGameDataUrl)
 	if err != nil {
 		return gameData, err

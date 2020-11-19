@@ -3,7 +3,7 @@ package util
 const (
 	OneBotStatusOK         = 200
 	OneBotNoQuickReply     = 204
-	OneBotFormatError      = 400
+	OneBotTextFormatError  = 400
 	OneBotContentTypeError = 406
 	OneBotAPINotFound      = 404
 	OneBotTokenEmpty       = 401

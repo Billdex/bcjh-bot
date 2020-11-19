@@ -1,7 +1,7 @@
-package model
+package onebot
 
 //OneBot协议消息对象，注释说明仅供参考，在各事件类型中含义不一样，以官方文档为准
-type OneBotMsg struct {
+type Context struct {
 	Time          int    `json:"time"`            //通用，事件发生时间戳
 	SelfId        int    `json:"self_id"`         //通用，收到事件的机器人QQ号
 	PostType      string `json:"post_type"`       //通用， 上报消息类型

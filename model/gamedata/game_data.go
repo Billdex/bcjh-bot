@@ -1,4 +1,4 @@
-package model
+package gamedata
 
 type chefData struct {
 	ChefId        int    `json:"chefId"`

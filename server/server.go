@@ -2,7 +2,7 @@ package server
 
 import (
 	"bcjh-bot/logger"
-	"bcjh-bot/model"
+	"bcjh-bot/model/onebot"
 	"bcjh-bot/service"
 	"bcjh-bot/util"
 	"encoding/json"
@@ -24,24 +24,24 @@ func Run(port string) error {
 
 func OneBotMsgHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("收到一条OneBot消息：", r.Body)
-	var msg model.OneBotMsg
-	err := json.NewDecoder(r.Body).Decode(&msg)
+	context := new(onebot.Context)
+	err := json.NewDecoder(r.Body).Decode(context)
 	if err != nil {
 		logger.Error("数据格式有误", err)
 		return
 	}
 
-	switch msg.PostType {
+	switch context.PostType {
 	case util.OneBotMessageEvent:
-		MessageEventHandler(&msg)
+		MessageEventHandler(context)
 	case util.OneBotNoticeEvent:
-		NoticeEventHandler(&msg)
+		NoticeEventHandler(context)
 	case util.OneBotRequestEvent:
-		RequestEventHandler(&msg)
+		RequestEventHandler(context)
 	case util.OneBotMetaEvent:
-		MetaEventHandler(&msg)
+		MetaEventHandler(context)
 	default:
-		logger.Info("未知OneBot消息类型:", msg.MessageType)
+		logger.Info("未知OneBot事件类型:", context.MessageType)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

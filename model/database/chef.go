@@ -1,4 +1,4 @@
-package model
+package database
 
 type Chef struct {
 	ChefId        int    `xorm:"chef_id comment('厨师id')"`

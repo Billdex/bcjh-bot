@@ -6,7 +6,7 @@ type serverConfig struct {
 	Port int `ini:"port"`
 }
 
-type cqhttpConfig struct {
+type OneBotConfig struct {
 	Host string `ini:"host"`
 	Port int    `ini:"port"`
 }
@@ -28,7 +28,7 @@ type logConfig struct {
 
 type appConfig struct {
 	Server   serverConfig `ini:"server"`
-	CQHTTP   cqhttpConfig `ini:"cqhttp"`
+	OneBot   OneBotConfig `ini:"onebot"`
 	DBConfig dbConfig     `ini:"database"`
 	Log      logConfig    `ini:"log"`
 }

@@ -2,9 +2,9 @@ package service
 
 import (
 	"bcjh-bot/logger"
-	"bcjh-bot/model"
+	"bcjh-bot/model/onebot"
 )
 
-func EquipmentQuery(msg *model.OneBotMsg, args []string) {
+func EquipmentQuery(c *onebot.Context, args []string) {
 	logger.Info("厨具查询，参数:", args)
 }

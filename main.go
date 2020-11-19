@@ -3,7 +3,7 @@ package main
 import (
 	"bcjh-bot/config"
 	"bcjh-bot/logger"
-	"bcjh-bot/model"
+	"bcjh-bot/model/database"
 	"bcjh-bot/server"
 	"fmt"
 	"strconv"
@@ -35,7 +35,7 @@ func main() {
 		config.AppConfig.DBConfig.Port,
 		config.AppConfig.DBConfig.Database,
 	)
-	err = model.InitDatabase(connStr)
+	err = database.InitDatabase(connStr)
 	if err != nil {
 		logger.Error("数据库连接出错!", err)
 		return

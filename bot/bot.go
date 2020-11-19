@@ -1,13 +1,17 @@
 package bot
 
 import (
+	"bcjh-bot/config"
+	"bcjh-bot/model/onebot"
+	"bcjh-bot/util"
 	"bytes"
-	"io/ioutil"
-	"log"
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 )
 
-func PostMsg(byteMsg []byte, url string) error {
+func OneBotPost(byteMsg []byte, url string) error {
 	request, err := http.NewRequest("POST", url, bytes.NewReader(byteMsg))
 	if err != nil {
 		return err
@@ -15,29 +19,68 @@ func PostMsg(byteMsg []byte, url string) error {
 	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	client := http.Client{}
 	resp, err := client.Do(request)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	log.Println("CoolQ Response Info:", string(body))
-	return nil
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case util.OneBotTokenEmpty:
+		return errors.New("未提供access token")
+	case util.OneBotTokenWrong:
+		return errors.New("access token有误")
+	case util.OneBotContentTypeError:
+		return errors.New("不支持的Content-Type")
+	case util.OneBotTextFormatError:
+		return errors.New("请求的正文格式不正确")
+	case util.OneBotAPINotFound:
+		return errors.New("请求的API不存在")
+	case util.OneBotStatusOK:
+		return nil
+
+	default:
+		return err
+	}
 }
 
-//func SendProvateMsg(msg PrivateMsg) error {
-//
-//}
-//
-//func SendGroupMsg(msg GroupMsg) (err error) {
-//	byteMsg, err := json.Marshal(&msg)
-//	if err != nil {
-//		return err
-//	}
-//	url := "http://"+config.AppConfig.CQHTTP.Host+":"+strconv.Itoa(config.AppConfig.CQHTTP.Port) + "/send_group_msg"
-//	err = SendMsg(byteMsg, url)
-//	if err != nil {
-//		return err
-//	}
-//	log.Println("Send Group Msg Success!", msg)
-//	return nil
-//}
+func SendMessage(c *onebot.Context, msg string) error {
+	switch c.MessageType {
+	case util.OneBotMessagePrivate:
+		privateMsg := onebot.PrivateMsg{
+			UserId:     c.UserId,
+			Message:    msg,
+			AutoEscape: false,
+		}
+		return SendPrivateMsg(privateMsg)
+	case util.OneBotMessageGroup:
+		groupMsg := onebot.GroupMsg{
+			GroupId:    c.GroupId,
+			Message:    msg,
+			AutoEscape: false,
+		}
+		return SendGroupMsg(groupMsg)
+	default:
+		return errors.New("未知类型")
+	}
+}
+
+func SendPrivateMsg(msg onebot.PrivateMsg) error {
+	byteMsg, err := json.Marshal(&msg)
+	if err != nil {
+		return err
+	}
+	baseUrl := "http://" + config.AppConfig.OneBot.Host + ":" + strconv.Itoa(config.AppConfig.OneBot.Port)
+	url := baseUrl + "/send_private_msg"
+	err = OneBotPost(byteMsg, url)
+	return err
+}
+
+func SendGroupMsg(msg onebot.GroupMsg) error {
+	byteMsg, err := json.Marshal(&msg)
+	if err != nil {
+		return err
+	}
+	baseUrl := "http://" + config.AppConfig.OneBot.Host + ":" + strconv.Itoa(config.AppConfig.OneBot.Port)
+	url := baseUrl + "/send_group_msg"
+	err = OneBotPost(byteMsg, url)
+	return err
+}
