@@ -1,7 +1,10 @@
 package service
 
-import "bcjh-bot/logger"
+import (
+	"bcjh-bot/logger"
+	"bcjh-bot/models"
+)
 
-func Update(args []string) {
+func UpdateData(msg *models.OneBotMsg, args []string) {
 	logger.Info("更新数据, 参数:", args)
 }

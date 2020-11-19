@@ -2,12 +2,14 @@ package server
 
 import (
 	"bcjh-bot/logger"
+	"bcjh-bot/models"
 	"bcjh-bot/service"
 	"bcjh-bot/util"
 	"encoding/json"
 	"net/http"
 )
 
+//启动服务
 func Run(port string) error {
 	if "" == port {
 		port = ":5800"
@@ -16,30 +18,30 @@ func Run(port string) error {
 	service.RegisterInstructions()
 	logger.Info("指令处理函数注册完毕")
 
-	http.HandleFunc("/", MsgHandler)
+	http.HandleFunc("/", OneBotMsgHandler)
 	return http.ListenAndServe(port, nil)
 }
 
-func MsgHandler(w http.ResponseWriter, r *http.Request) {
-	var msg CQHttpMsg
+func OneBotMsgHandler(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("收到一条OneBot消息：", r.Body)
+	var msg models.OneBotMsg
 	err := json.NewDecoder(r.Body).Decode(&msg)
 	if err != nil {
 		logger.Error("数据格式有误", err)
 		return
 	}
 
-	//判断前缀
-	text, hasPrefix := service.PrefixFilter(msg.RawMessage, util.PrefixCharacter)
-	if !hasPrefix {
-		return
-	}
-	logger.Debugf("收到一条消息Msg:%+v\n正文内容:%v\n", msg, text)
-
-	//分发指令
-	instruction, args := service.InstructionFilter(text, service.Ins.GetInstructions())
-	logger.Debugf("instruction:%v, args:%v", instruction, args)
-	if instruction != nil {
-		instruction(args)
+	switch msg.MessageType {
+	case util.OneBotMessageEvent:
+		MessageEventHandler(&msg)
+	case util.OneBotNoticeEvent:
+		NoticeEventHandler(&msg)
+	case util.OneBotRequestEvent:
+		RequestEventHandler(&msg)
+	case util.OneBotMetaEvent:
+		MetaEventHandler(&msg)
+	default:
+		logger.Info("未知OneBot消息类型:", msg.MessageType)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

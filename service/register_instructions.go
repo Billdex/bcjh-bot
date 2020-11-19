@@ -1,6 +1,8 @@
 package service
 
-type InstructionHandlerFunc func([]string)
+import "bcjh-bot/models"
+
+type InstructionHandlerFunc func(*models.OneBotMsg, []string)
 
 type Instructions struct {
 	instructions map[string]InstructionHandlerFunc
@@ -23,9 +25,10 @@ func (i *Instructions) GetInstructions() map[string]InstructionHandlerFunc {
 
 var Ins Instructions
 
+//注册指令，绑定文本指令对应的处理方法
 func RegisterInstructions() {
 	Ins = NewInstructions()
-	Ins.Bind("更新数据", Update)
+	Ins.Bind("更新数据", UpdateData)
 	Ins.Bind("厨师", ChefQuery)
 	Ins.Bind("厨具", EquipmentQuery)
 	Ins.Bind("菜谱", RecipeQuery)
