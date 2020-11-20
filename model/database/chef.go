@@ -18,7 +18,7 @@ type Chef struct {
 	Fish          int    `xorm:"fish comment('水产采集')"`
 	Vegetable     int    `xorm:"vegetable comment('蔬菜采集')"`
 	SkillId       int    `xorm:"skill_id comment('技能id')"`
-	UltimateGoal  []int  `xorm:"ultimate_goal comment('修炼任务id数组')"`
+	UltimateGoals []int  `xorm:"ultimate_goals comment('修炼任务id数组')"`
 	UltimateSkill int    `xorm:"ultimate_skill comment('修炼效果id')"`
 }
 
