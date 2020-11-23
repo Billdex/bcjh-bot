@@ -89,7 +89,7 @@ func InitLog(style string, path string, level string) error {
 	}
 	zapLevel := getZapLevel(level)
 	core := zapcore.NewCore(encoder, writeSyncer, zapLevel)
-	logger = zap.New(core, zap.AddCaller()).Sugar()
+	logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
 	return nil
 }
 
