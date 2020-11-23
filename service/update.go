@@ -9,12 +9,12 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
-	"xorm.io/xorm"
 )
 
 //更新数据
@@ -50,98 +50,71 @@ func UpdateData(c *onebot.Context, args []string) {
 	}
 	logger.Infof("获取到图鉴网数据%+v", gameData)
 
-	//开启事务，删除原有数据
-	session := database.DB.NewSession()
-	defer session.Close()
-	err = session.Begin()
-	if err != nil {
-		logger.Error("开启事务失败!", err)
-		_ = bot.SendMessage(c, "开启事务失败!")
-		return
-	}
-
-	//删除原数据
-	tables := database.TablesName
-	for _, table := range tables {
-		sql := "DELETE FROM `" + table + "`"
-		_, err = session.Exec(sql)
-		if err != nil {
-			logger.Error("删除旧数据出错!", err)
-			session.Rollback()
-			_ = bot.SendMessage(c, "删除旧数据出错!")
-			return
-		}
-	}
-	logger.Info("删除旧数据完毕!")
-
 	//插入新数据
 	//插入厨师数据
-	err = updateChefs(session, gameData.Chefs)
+	err = updateChefs(gameData.Chefs)
 	if err != nil {
-		logger.Error("插入厨师数据出错!", err)
-		session.Rollback()
+		logger.Error("更新厨师数据出错!", err)
 		_ = bot.SendMessage(c, "更新厨师数据出错!")
 		return
 	}
 	logger.Info("更新厨师数据完毕!")
 
 	//更新厨具数据
-	err = updateEquips(session, gameData.Equips)
+	err = updateEquips(gameData.Equips)
 	if err != nil {
-		logger.Error("插入厨具数据出错!", err)
-		session.Rollback()
+		logger.Error("更新厨具数据出错!", err)
 		_ = bot.SendMessage(c, "更新厨具数据出错!")
 		return
 	}
 	logger.Info("更新厨具数据完毕!")
 
 	//更新菜谱数据
-	err = updateRecipes(session, gameData.Recipes)
+	err = updateRecipes(gameData.Recipes)
 	if err != nil {
-		logger.Error("插入菜谱数据出错!", err)
-		session.Rollback()
+		logger.Error("更新菜谱数据出错!", err)
 		_ = bot.SendMessage(c, "更新菜谱数据出错!")
 		return
 	}
 	logger.Info("更新菜谱数据完毕!")
 
-	//更新贵客数据
-	err = updateGuests(session, gameData.Guests)
+	//更新合成菜谱数据
+	err = updateCombos(gameData.Combos)
 	if err != nil {
-		logger.Error("插入贵客数据出错!", err)
-		session.Rollback()
+		logger.Error("更新后厨合成菜谱数据出错!", err)
+		_ = bot.SendMessage(c, "更新后厨合成菜谱数据出错!")
+		return
+	}
+	logger.Info("更新后厨合成菜谱数据完毕!")
+
+	//更新贵客数据
+	err = updateGuests(gameData.Guests)
+	if err != nil {
+		logger.Error("更新贵客数据出错!", err)
 		_ = bot.SendMessage(c, "更新贵客数据出错!")
 		return
 	}
 	logger.Info("更新贵客数据完毕!")
 
 	//更新食材数据
-	err = updateMaterials(session, gameData.Materials)
+	err = updateMaterials(gameData.Materials)
 	if err != nil {
-		logger.Error("插入食材数据出错!", err)
-		session.Rollback()
+		logger.Error("更新食材数据出错!", err)
 		_ = bot.SendMessage(c, "更新食材数据出错!")
 		return
 	}
 	logger.Info("更新食材数据完毕!")
 
 	//更新技能数据
-	err = updateSkills(session, gameData.Skills)
+	err = updateSkills(gameData.Skills)
 	if err != nil {
-		logger.Error("插入技能数据出错!", err)
-		session.Rollback()
+		logger.Error("更新技能数据出错!", err)
 		_ = bot.SendMessage(c, "更新技能数据出错!")
 		return
 	}
 	logger.Info("更新技能数据完毕!")
 
-	err = session.Commit()
-	if err != nil {
-		logger.Error("提交事务失败!", err)
-		_ = bot.SendMessage(c, "提交事务失败!")
-		return
-	}
-	//关闭事务，发送成功消息
+	//发送成功消息
 	logger.Info("更新数据完毕")
 	err = bot.SendMessage(c, "更新数据完毕")
 	if err != nil {
@@ -165,7 +138,19 @@ func requestData() (gamedata.GameData, error) {
 	return gameData, err
 }
 
-func updateChefs(session *xorm.Session, chefsData []gamedata.ChefData) error {
+func updateChefs(chefsData []gamedata.ChefData) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Chef).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
 	chefs := make([]database.Chef, 0)
 	for _, chefData := range chefsData {
 		chef := database.Chef{
@@ -193,11 +178,28 @@ func updateChefs(session *xorm.Session, chefsData []gamedata.ChefData) error {
 		}
 		chefs = append(chefs, chef)
 	}
-	_, err := session.Insert(&chefs)
+	_, err = session.Insert(&chefs)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
 	return err
 }
 
-func updateEquips(session *xorm.Session, equipsData []gamedata.EquipData) error {
+func updateEquips(equipsData []gamedata.EquipData) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Equip).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
 	equips := make([]database.Equip, 0)
 	for _, equipData := range equipsData {
 		equips = append(equips, database.Equip{
@@ -209,11 +211,28 @@ func updateEquips(session *xorm.Session, equipsData []gamedata.EquipData) error 
 			Skills:    equipData.Skills,
 		})
 	}
-	_, err := session.Insert(&equips)
+	_, err = session.Insert(&equips)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
 	return err
 }
 
-func updateRecipes(session *xorm.Session, recipesData []gamedata.RecipeData) error {
+func updateRecipes(recipesData []gamedata.RecipeData) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Recipe).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
 	recipes := make([]database.Recipe, 0)
 	for _, recipeData := range recipesData {
 		recipe := database.Recipe{
@@ -234,13 +253,13 @@ func updateRecipes(session *xorm.Session, recipesData []gamedata.RecipeData) err
 			Limit:     recipeData.Limit,
 			Time:      recipeData.Time,
 			Unlock:    recipeData.Unlock,
+			Combo:     "-",
 		}
 		guests := make([]string, 0)
 		for _, guest := range recipeData.Guests {
 			guests = append(guests, guest.Guest)
 		}
 		recipe.Guests = guests
-		recipes = append(recipes, recipe)
 		materials := make([]database.RecipeMaterial, 0)
 		for _, materialData := range recipeData.Materials {
 			materials = append(materials, database.RecipeMaterial{
@@ -249,12 +268,69 @@ func updateRecipes(session *xorm.Session, recipesData []gamedata.RecipeData) err
 			})
 		}
 		recipe.Materials = materials
+		recipes = append(recipes, recipe)
 	}
-	_, err := session.Insert(&recipes)
+	_, err = session.Insert(&recipes)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
 	return err
 }
 
-func updateGuests(session *xorm.Session, guestsData []gamedata.GuestData) error {
+func updateCombos(combosData []gamedata.ComboData) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	recipes := new(database.Recipe)
+	recipes.Combo = "-"
+	_, err = session.Where("combo <> ?", "-").Update(recipes)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	for _, combo := range combosData {
+		comboRecipe := new(database.Recipe)
+		has, err := session.Where("recipe_id = ?", combo.RecipeId).Get(comboRecipe)
+		if err != nil {
+			session.Rollback()
+			return err
+		}
+		if !has {
+			session.Rollback()
+			return errors.New(fmt.Sprintf("未查询到后厨合成菜谱%d信息", combo.RecipeId))
+		}
+		for _, recipeId := range combo.Recipes {
+			recipe := new(database.Recipe)
+			recipe.Combo = comboRecipe.Name
+			_, err = session.Where("recipe_id = ?", recipeId).Update(recipe)
+			if err != nil {
+				session.Rollback()
+				return err
+			}
+		}
+	}
+	err = session.Commit()
+	return err
+}
+
+func updateGuests(guestsData []gamedata.GuestData) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Guest).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
 	guests := make([]database.Guest, 0)
 	for p, guestData := range guestsData {
 		guest := database.Guest{
@@ -272,11 +348,28 @@ func updateGuests(session *xorm.Session, guestsData []gamedata.GuestData) error 
 		guest.Gifts = gifts
 		guests = append(guests, guest)
 	}
-	_, err := session.Insert(&guests)
+	_, err = session.Insert(&guests)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
 	return err
 }
 
-func updateMaterials(session *xorm.Session, materialsData []gamedata.MaterialData) error {
+func updateMaterials(materialsData []gamedata.MaterialData) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Material).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
 	materials := make([]database.Material, 0)
 	for _, materialData := range materialsData {
 		materials = append(materials, database.Material{
@@ -285,11 +378,28 @@ func updateMaterials(session *xorm.Session, materialsData []gamedata.MaterialDat
 			Origin:     materialData.Origin,
 		})
 	}
-	_, err := session.Insert(&materials)
+	_, err = session.Insert(&materials)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
 	return err
 }
 
-func updateSkills(session *xorm.Session, skillsData []gamedata.SkillData) error {
+func updateSkills(skillsData []gamedata.SkillData) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Skill).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
 	skills := make([]database.Skill, 0)
 	for _, skillData := range skillsData {
 		skill := database.Skill{
@@ -309,6 +419,11 @@ func updateSkills(session *xorm.Session, skillsData []gamedata.SkillData) error 
 		skill.Effects = effects
 		skills = append(skills, skill)
 	}
-	_, err := session.Insert(&skills)
+	_, err = session.Insert(&skills)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
 	return err
 }

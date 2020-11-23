@@ -20,13 +20,28 @@ func EquipmentQuery(c *onebot.Context, args []string) {
 		}
 		return
 	}
+	if args[0] == "%" {
+		err := bot.SendMessage(c, "参数有误!")
+		if err != nil {
+			logger.Error("发送信息失败!", err)
+		}
+		return
+	}
 
 	equips := make([]database.Equip, 0)
-	err := database.DB.Where("name like ?", "%"+args[0]+"%").Asc("gallery_id").Find(&equips)
+	err := database.DB.Where("gallery_id = ?", args[0]).Asc("gallery_id").Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_ = bot.SendMessage(c, "查询数据失败!")
 		return
+	}
+	if len(equips) == 0 {
+		err = database.DB.Where("name like ?", "%"+args[0]+"%").Asc("gallery_id").Find(&equips)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			_ = bot.SendMessage(c, "查询数据失败!")
+			return
+		}
 	}
 
 	var msg string
@@ -65,6 +80,10 @@ func EquipmentQuery(c *onebot.Context, args []string) {
 			msg += fmt.Sprintf("%s %s", equip.GalleryId, equip.Name)
 			if p != len(equips)-1 {
 				msg += "\n"
+				if p == util.MaxSearchList-1 {
+					msg += "......"
+					break
+				}
 			}
 		}
 	}

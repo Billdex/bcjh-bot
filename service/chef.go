@@ -21,13 +21,28 @@ func ChefQuery(c *onebot.Context, args []string) {
 		}
 		return
 	}
+	if args[0] == "%" {
+		err := bot.SendMessage(c, "参数有误!")
+		if err != nil {
+			logger.Error("发送信息失败!", err)
+		}
+		return
+	}
 
 	chefs := make([]database.Chef, 0)
-	err := database.DB.Where("name like ?", "%"+args[0]+"%").Asc("gallery_id").Find(&chefs)
+	err := database.DB.Where("gallery_id = ?", args[0]).Asc("gallery_id").Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_ = bot.SendMessage(c, "查询数据失败!")
 		return
+	}
+	if len(chefs) == 0 {
+		err = database.DB.Where("name like ?", "%"+args[0]+"%").Asc("gallery_id").Find(&chefs)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			_ = bot.SendMessage(c, "查询数据失败!")
+			return
+		}
 	}
 
 	var msg string
@@ -37,9 +52,9 @@ func ChefQuery(c *onebot.Context, args []string) {
 		chef := chefs[0]
 		var gender string
 		if chef.Gender == 1 {
-			gender = "♂"
+			gender = "♂️"
 		} else if chef.Gender == 2 {
-			gender = "♀"
+			gender = "♀️"
 		}
 		rarity := ""
 		for i := 0; i < chef.Rarity; i++ {
@@ -73,6 +88,10 @@ func ChefQuery(c *onebot.Context, args []string) {
 			msg += fmt.Sprintf("%s %s", chef.GalleryId, chef.Name)
 			if p != len(chefs)-1 {
 				msg += "\n"
+				if p == util.MaxSearchList-1 {
+					msg += "......"
+					break
+				}
 			}
 		}
 	}

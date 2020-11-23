@@ -1,8 +1,8 @@
 package database
 
 type RecipeMaterial struct {
-	MaterialId int `json:"material_id"`
-	Quantity   int `json:"quantity"`
+	MaterialId int `xorm:"material_id"`
+	Quantity   int `xorm:"quantity"`
 }
 
 type Recipe struct {
@@ -19,11 +19,12 @@ type Recipe struct {
 	Cut       int              `xorm:"knife comment('切技法')"`
 	Price     int              `xorm:"price comment('价格')"`
 	ExPrice   int              `xorm:"exPrice comment('熟练加价')"`
-	Gift      string           `xorm:"gift comment('符文')"`
+	Gift      string           `xorm:"gift comment('第一次做到神级送的符文')"`
 	Guests    []string         `xorm:"guests comment('升阶贵客')"`
 	Limit     int              `xorm:"limit comment('每组数量')"`
 	Time      int              `xorm:"'time' comment('每份时间(秒)')"`
 	Unlock    string           `xorm:"unlock comment('可解锁')"`
+	Combo     string           `xorm:"combo comment('可合成')"`
 	Materials []RecipeMaterial `xorm:"materials comment(材料)"`
 }
 

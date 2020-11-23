@@ -68,6 +68,7 @@ const (
 
 	FoodGameDataUrl = "https://foodgame.gitee.io/data/data.min.json"
 
-	PrefixCharacter    = ">"
+	PrefixCharacter    = "#"
 	ArgsSplitCharacter = "-"
+	MaxSearchList      = 10
 )

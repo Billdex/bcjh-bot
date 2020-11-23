@@ -31,6 +31,8 @@ var Ins Instructions
 func RegisterInstructions() {
 	Ins = NewInstructions()
 	Ins.Bind("更新数据", UpdateData)
+	Ins.Bind("帮助", HelpGuide)
+	Ins.Bind("图鉴网", GalleryWebsite)
 	Ins.Bind("厨师", ChefQuery)
 	Ins.Bind("厨具", EquipmentQuery)
 	Ins.Bind("菜谱", RecipeQuery)
