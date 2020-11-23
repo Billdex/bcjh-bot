@@ -24,6 +24,9 @@ func InstructionFilter(str string, instructions map[string]InstructionHandlerFun
 		if strings.HasPrefix(str, instruction) {
 			strArgs := strings.TrimSpace(str[len(instruction):])
 			args := strings.Split(strArgs, util.ArgsSplitCharacter)
+			if args[0] == "" {
+				args = make([]string, 0)
+			}
 			return handler, args
 		}
 	}

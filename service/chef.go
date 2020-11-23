@@ -15,7 +15,7 @@ func ChefQuery(c *onebot.Context, args []string) {
 	if len(args) == 0 {
 		err := bot.SendMessage(c,
 			fmt.Sprintf("指令示例:\n"+
-				"%s厨师 羽十六\n", util.PrefixCharacter))
+				"%s厨师 羽十六", util.PrefixCharacter))
 		if err != nil {
 			logger.Error("发送信息失败!", err)
 		}
@@ -70,7 +70,7 @@ func ChefQuery(c *onebot.Context, args []string) {
 	} else {
 		msg = "查询到以下厨师:\n"
 		for p, chef := range chefs {
-			msg += fmt.Sprintf("%d.%s", p+1, chef.Name)
+			msg += fmt.Sprintf("%s %s", chef.GalleryId, chef.Name)
 			if p != len(chefs)-1 {
 				msg += "\n"
 			}
