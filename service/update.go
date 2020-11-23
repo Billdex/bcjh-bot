@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 	"xorm.io/xorm"
 )
@@ -171,7 +172,7 @@ func updateChefs(session *xorm.Session, chefsData []gamedata.ChefData) error {
 			ChefId:        chefData.ChefId,
 			Name:          chefData.Name,
 			Rarity:        chefData.Rarity,
-			Origin:        chefData.Origin,
+			Origin:        strings.ReplaceAll(chefData.Origin, "<br>", ","),
 			GalleryId:     chefData.GalleryId,
 			Stirfry:       chefData.Stirfry,
 			Bake:          chefData.Bake,
@@ -203,7 +204,7 @@ func updateEquips(session *xorm.Session, equipsData []gamedata.EquipData) error 
 			EquipId:   equipData.EquipId,
 			Name:      equipData.Name,
 			GalleryId: equipData.GalleryId,
-			Origin:    equipData.Origin,
+			Origin:    strings.ReplaceAll(equipData.Origin, "<br>", ","),
 			Rarity:    equipData.Rarity,
 			Skills:    equipData.Skills,
 		})
@@ -220,7 +221,7 @@ func updateRecipes(session *xorm.Session, recipesData []gamedata.RecipeData) err
 			Name:      recipeData.Name,
 			GalleryId: recipeData.GalleryId,
 			Rarity:    recipeData.Rarity,
-			Origin:    recipeData.Origin,
+			Origin:    strings.ReplaceAll(recipeData.Origin, "<br>", ","),
 			Stirfry:   recipeData.Stirfry,
 			Bake:      recipeData.Bake,
 			Boil:      recipeData.Boil,
@@ -268,6 +269,7 @@ func updateGuests(session *xorm.Session, guestsData []gamedata.GuestData) error 
 				Recipe:  gift.Recipe,
 			})
 		}
+		guest.Gifts = gifts
 		guests = append(guests, guest)
 	}
 	_, err := session.Insert(&guests)
