@@ -3,11 +3,11 @@ package service
 import (
 	"bcjh-bot/bot"
 	"bcjh-bot/config"
-	"bcjh-bot/logger"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/model/onebot"
 	"bcjh-bot/util"
+	"bcjh-bot/util/logger"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -32,7 +32,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	}
 	_ = bot.SendMessage(c, "开始更新数据")
 	dumpTime := time.Now().Format("2006010021504")
-	DumpFilePath := config.AppConfig.DBConfig.ExportDir + "/DBDataDump" + dumpTime + ".sql"
+	DumpFilePath := config.AppConfig.DB.ExportDir + "/DBDataDump" + dumpTime + ".sql"
 	err = database.DB.DumpAllToFile(DumpFilePath)
 	if err != nil {
 		logger.Error("导出旧数据失败!", err)

@@ -2,9 +2,9 @@ package main
 
 import (
 	"bcjh-bot/config"
-	"bcjh-bot/logger"
 	"bcjh-bot/model/database"
 	"bcjh-bot/server"
+	"bcjh-bot/util/logger"
 	"fmt"
 	"strconv"
 )
@@ -29,11 +29,11 @@ func main() {
 
 	//初始化数据库引擎
 	connStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&loc=Local",
-		config.AppConfig.DBConfig.User,
-		config.AppConfig.DBConfig.Password,
-		config.AppConfig.DBConfig.Host,
-		config.AppConfig.DBConfig.Port,
-		config.AppConfig.DBConfig.Database,
+		config.AppConfig.DB.User,
+		config.AppConfig.DB.Password,
+		config.AppConfig.DB.Host,
+		config.AppConfig.DB.Port,
+		config.AppConfig.DB.Database,
 	)
 	err = database.InitDatabase(connStr)
 	if err != nil {

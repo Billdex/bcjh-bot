@@ -1,10 +1,10 @@
 package server
 
 import (
-	"bcjh-bot/logger"
 	"bcjh-bot/model/onebot"
 	"bcjh-bot/service"
 	"bcjh-bot/util"
+	"bcjh-bot/util/logger"
 )
 
 //处理消息事件

@@ -27,10 +27,10 @@ type logConfig struct {
 }
 
 type appConfig struct {
-	Server   serverConfig `ini:"server"`
-	OneBot   OneBotConfig `ini:"onebot"`
-	DBConfig dbConfig     `ini:"database"`
-	Log      logConfig    `ini:"log"`
+	Server serverConfig `ini:"server"`
+	OneBot OneBotConfig `ini:"onebot"`
+	DB     dbConfig     `ini:"database"`
+	Log    logConfig    `ini:"log"`
 }
 
 var AppConfig *appConfig

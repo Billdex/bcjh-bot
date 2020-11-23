@@ -1,8 +1,8 @@
 package service
 
 import (
-	"bcjh-bot/logger"
 	"bcjh-bot/model/onebot"
+	"bcjh-bot/util/logger"
 )
 
 func RecipeQuery(c *onebot.Context, args []string) {
