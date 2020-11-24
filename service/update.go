@@ -32,7 +32,9 @@ func UpdateData(c *onebot.Context, args []string) {
 		return
 	}
 	_ = bot.SendMessage(c, "开始更新数据")
-	dumpTime := time.Now().Format("2006010021504")
+	updateStart := time.Now().UnixNano()
+	start := time.Now().UnixNano()
+	dumpTime := time.Now().Format("200601021504")
 	DumpFilePath := config.AppConfig.DB.ExportDir + "/DBDataDump" + dumpTime + ".sql"
 	err = database.DB.DumpAllToFile(DumpFilePath)
 	if err != nil {
@@ -40,83 +42,113 @@ func UpdateData(c *onebot.Context, args []string) {
 		_ = bot.SendMessage(c, "导出旧数据失败!")
 		return
 	}
-	logger.Info("导出旧数据完毕")
+	dumpConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("导出旧数据完毕, 耗时%s", dumpConsume)
 
+	start = time.Now().UnixNano()
 	gameData, err := requestData()
 	if err != nil {
 		logger.Error("获取图鉴网数据失败!", err)
 		_ = bot.SendMessage(c, "获取图鉴网数据失败!")
 		return
 	}
-	logger.Infof("获取到图鉴网数据%+v", gameData)
+	requestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("获取图鉴网数据完毕, 耗时%s", requestConsume)
+	logger.Debug("数据内容为:%+v", gameData)
 
-	//插入新数据
-	//插入厨师数据
+	//更新数据
+	//更新厨师数据
+	start = time.Now().UnixNano()
 	err = updateChefs(gameData.Chefs)
 	if err != nil {
 		logger.Error("更新厨师数据出错!", err)
 		_ = bot.SendMessage(c, "更新厨师数据出错!")
 		return
 	}
-	logger.Info("更新厨师数据完毕!")
+	chefConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新厨师数据完毕, 耗时%s", chefConsume)
 
 	//更新厨具数据
+	start = time.Now().UnixNano()
 	err = updateEquips(gameData.Equips)
 	if err != nil {
 		logger.Error("更新厨具数据出错!", err)
 		_ = bot.SendMessage(c, "更新厨具数据出错!")
 		return
 	}
-	logger.Info("更新厨具数据完毕!")
+	equipConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新厨具数据完毕, 耗时%s", equipConsume)
 
 	//更新菜谱数据
+	start = time.Now().UnixNano()
 	err = updateRecipes(gameData.Recipes)
 	if err != nil {
 		logger.Error("更新菜谱数据出错!", err)
 		_ = bot.SendMessage(c, "更新菜谱数据出错!")
 		return
 	}
-	logger.Info("更新菜谱数据完毕!")
+	recipeConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新菜谱数据完毕, 耗时%s", recipeConsume)
 
 	//更新合成菜谱数据
+	start = time.Now().UnixNano()
 	err = updateCombos(gameData.Combos)
 	if err != nil {
 		logger.Error("更新后厨合成菜谱数据出错!", err)
 		_ = bot.SendMessage(c, "更新后厨合成菜谱数据出错!")
 		return
 	}
-	logger.Info("更新后厨合成菜谱数据完毕!")
+	comboConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新后厨合成菜谱数据完毕, 耗时%s", comboConsume)
 
 	//更新贵客数据
+	start = time.Now().UnixNano()
 	err = updateGuests(gameData.Guests)
 	if err != nil {
 		logger.Error("更新贵客数据出错!", err)
 		_ = bot.SendMessage(c, "更新贵客数据出错!")
 		return
 	}
-	logger.Info("更新贵客数据完毕!")
+	guestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新贵客数据完毕, 耗时%s", guestConsume)
 
 	//更新食材数据
+	start = time.Now().UnixNano()
 	err = updateMaterials(gameData.Materials)
 	if err != nil {
 		logger.Error("更新食材数据出错!", err)
 		_ = bot.SendMessage(c, "更新食材数据出错!")
 		return
 	}
-	logger.Info("更新食材数据完毕!")
+	materialConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新食材数据完毕, 耗时%s", materialConsume)
 
 	//更新技能数据
+	start = time.Now().UnixNano()
 	err = updateSkills(gameData.Skills)
 	if err != nil {
 		logger.Error("更新技能数据出错!", err)
 		_ = bot.SendMessage(c, "更新技能数据出错!")
 		return
 	}
-	logger.Info("更新技能数据完毕!")
+	skillConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新技能数据完毕, 耗时%s", skillConsume)
 
 	//发送成功消息
 	logger.Info("更新数据完毕")
-	err = bot.SendMessage(c, "更新数据完毕")
+	var msg string
+	updateConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-updateStart)/1e9)
+	msg += fmt.Sprintf("更新数据完毕, 累计耗时%s\n", updateConsume)
+	msg += fmt.Sprintf("导出旧数据耗时%s\n", dumpConsume)
+	msg += fmt.Sprintf("抓取图鉴网数据耗时%s\n", requestConsume)
+	msg += fmt.Sprintf("更新厨师数据耗时%s\n", chefConsume)
+	msg += fmt.Sprintf("更新厨具数据耗时%s\n", equipConsume)
+	msg += fmt.Sprintf("更新菜谱数据耗时%s\n", recipeConsume)
+	msg += fmt.Sprintf("更新后厨合成菜谱数据耗时%s\n", comboConsume)
+	msg += fmt.Sprintf("更新贵客数据耗时%s\n", guestConsume)
+	msg += fmt.Sprintf("更新食材数据耗时%s\n", materialConsume)
+	msg += fmt.Sprintf("更新技能数据耗时%s", skillConsume)
+	err = bot.SendMessage(c, msg)
 	if err != nil {
 		logger.Error("发送消息失败!", err)
 	}
@@ -236,24 +268,25 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 	recipes := make([]database.Recipe, 0)
 	for _, recipeData := range recipesData {
 		recipe := database.Recipe{
-			RecipeId:  recipeData.RecipeId,
-			Name:      recipeData.Name,
-			GalleryId: recipeData.GalleryId,
-			Rarity:    recipeData.Rarity,
-			Origin:    strings.ReplaceAll(recipeData.Origin, "<br>", ","),
-			Stirfry:   recipeData.Stirfry,
-			Bake:      recipeData.Bake,
-			Boil:      recipeData.Boil,
-			Steam:     recipeData.Steam,
-			Fry:       recipeData.Fry,
-			Cut:       recipeData.Cut,
-			Price:     recipeData.Price,
-			ExPrice:   recipeData.ExPrice,
-			Gift:      recipeData.Gift,
-			Limit:     recipeData.Limit,
-			Time:      recipeData.Time,
-			Unlock:    recipeData.Unlock,
-			Combo:     "-",
+			RecipeId:      recipeData.RecipeId,
+			Name:          recipeData.Name,
+			GalleryId:     recipeData.GalleryId,
+			Rarity:        recipeData.Rarity,
+			Origin:        strings.ReplaceAll(recipeData.Origin, "<br>", ","),
+			Stirfry:       recipeData.Stirfry,
+			Bake:          recipeData.Bake,
+			Boil:          recipeData.Boil,
+			Steam:         recipeData.Steam,
+			Fry:           recipeData.Fry,
+			Cut:           recipeData.Cut,
+			Price:         recipeData.Price,
+			ExPrice:       recipeData.ExPrice,
+			Gift:          recipeData.Gift,
+			GuestAntiques: "",
+			Limit:         recipeData.Limit,
+			Time:          recipeData.Time,
+			Unlock:        recipeData.Unlock,
+			Combo:         "-",
 		}
 		guests := make([]string, 0)
 		for _, guest := range recipeData.Guests {
@@ -333,17 +366,39 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	}
 	guests := make([]database.Guest, 0)
 	for p, guestData := range guestsData {
+		// 30后的图鉴编号有误!!!
 		guest := database.Guest{
 			GuestId:   p + 1,
 			Name:      guestData.Name,
 			GalleryId: fmt.Sprintf("%03d", p+1),
 		}
 		gifts := make([]database.GuestGift, 0)
-		for _, gift := range guestData.Gifts {
+		for p, gift := range guestData.Gifts {
+			// 记录贵客表信息
 			gifts = append(gifts, database.GuestGift{
 				Antique: gift.Antique,
 				Recipe:  gift.Recipe,
 			})
+			// 记录贵客-符文信息到菜谱表
+			recipe := new(database.Recipe)
+			has, err := session.Where("name = ?", gift.Recipe).Get(recipe)
+			if err != nil {
+				session.Rollback()
+				return err
+			}
+			if !has {
+				logger.Warnf("未查询到菜谱%s的数据!", gift.Recipe)
+			} else {
+				recipe.GuestAntiques += fmt.Sprintf("%s-%s", guestData.Name, gift.Antique)
+				if p != len(guestData.Gifts)-1 {
+					recipe.GuestAntiques += ","
+				}
+				_, err = session.Where("name = ?", gift.Recipe).Update(recipe)
+				if err != nil {
+					session.Rollback()
+					return err
+				}
+			}
 		}
 		guest.Gifts = gifts
 		guests = append(guests, guest)

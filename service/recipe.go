@@ -95,25 +95,27 @@ func RecipeQuery(c *onebot.Context, args []string) {
 				guests += fmt.Sprintf("神-未知")
 			}
 		} else {
-			logger.Errorf("%s贵客数据有误!", recipe.Name)
+			logger.Errorf("%s升阶贵客数据有误!", recipe.Name)
 			_ = bot.SendMessage(c, "查询数据失败!")
 			return
 		}
 
 		msg += fmt.Sprintf("%s %s %s\n", recipe.GalleryId, recipe.Name, rarity)
-		msg += fmt.Sprintf("售价: %d(%d)  效率: %d/h\n", recipe.Price, recipe.Price+recipe.ExPrice, goldEfficiency)
+		msg += fmt.Sprintf("售价: %d(%d)\n", recipe.Price, recipe.Price+recipe.ExPrice)
+		msg += fmt.Sprintf("赚钱效率: %d/h\n", goldEfficiency)
 		msg += fmt.Sprintf("来源: %s\n", recipe.Origin)
 		msg += fmt.Sprintf("单份耗时: %s\n", time)
 		msg += fmt.Sprintf("每组份数: %d\n", recipe.Limit)
 		msg += fmt.Sprintf("一组耗时: %s\n", allTime)
 		msg += fmt.Sprintf("炒:%d 烤:%d 煮:%d\n", recipe.Stirfry, recipe.Bake, recipe.Boil)
 		msg += fmt.Sprintf("蒸:%d 炸:%d 切:%d\n", recipe.Steam, recipe.Fry, recipe.Cut)
-		msg += fmt.Sprintf("材料: %s\n", materials)
+		msg += fmt.Sprintf("食材: %s\n", materials)
 		msg += fmt.Sprintf("耗材效率: %d/h\n", materialEfficiency)
 		msg += fmt.Sprintf("神级符文: %s\n", recipe.Gift)
 		msg += fmt.Sprintf("可解锁: %s\n", recipe.Unlock)
 		msg += fmt.Sprintf("可合成: %s\n", recipe.Combo)
-		msg += fmt.Sprintf("贵客: %s", guests)
+		msg += fmt.Sprintf("贵客-符文: %s\n", recipe.GuestAntiques)
+		msg += fmt.Sprintf("升阶贵客: %s", guests)
 	} else {
 		msg = "查询到以下菜谱:\n"
 		for p, recipe := range recipes {
