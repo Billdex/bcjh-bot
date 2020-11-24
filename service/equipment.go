@@ -46,7 +46,7 @@ func EquipmentQuery(c *onebot.Context, args []string) {
 
 	var msg string
 	if len(equips) == 0 {
-		msg = "未查询到数据!"
+		msg = "哎呀，好像找不到呢!"
 	} else if len(equips) == 1 {
 		equip := equips[0]
 		rarity := ""

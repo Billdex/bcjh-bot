@@ -47,7 +47,7 @@ func ChefQuery(c *onebot.Context, args []string) {
 
 	var msg string
 	if len(chefs) == 0 {
-		msg = "未查询到数据!"
+		msg = "哎呀，好像找不到呢!"
 	} else if len(chefs) == 1 {
 		chef := chefs[0]
 		var gender string

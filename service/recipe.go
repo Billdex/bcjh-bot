@@ -47,7 +47,7 @@ func RecipeQuery(c *onebot.Context, args []string) {
 
 	var msg string
 	if len(recipes) == 0 {
-		msg = "未查询到数据!"
+		msg = "哎呀，好像找不到呢!"
 	} else if len(recipes) == 1 {
 		recipe := recipes[0]
 		rarity := ""

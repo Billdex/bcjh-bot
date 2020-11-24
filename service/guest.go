@@ -48,7 +48,7 @@ func GuestQuery(c *onebot.Context, args []string) {
 
 	var msg string
 	if len(guests) == 0 {
-		msg = "未查询到数据!"
+		msg = "哎呀，好像找不到呢!"
 	} else if len(guests) == 1 {
 		guest := guests[0]
 		var gifts string
