@@ -6,6 +6,7 @@ import (
 	"bcjh-bot/model/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
+	"errors"
 	"fmt"
 )
 
@@ -29,25 +30,78 @@ func RecipeQuery(c *onebot.Context, args []string) {
 		return
 	}
 
-	recipes := make([]database.Recipe, 0)
-	err := database.DB.Where("gallery_id = ?", args[0]).Asc("gallery_id").Find(&recipes)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "查询数据失败!")
-		return
-	}
-	if len(recipes) == 0 {
-		err = database.DB.Where("name like ?", "%"+args[0]+"%").Asc("gallery_id").Find(&recipes)
+	var err error
+	var msg string
+	if len(args) > 1 {
+		var order string
+		//var orderField, orderType string
+		if len(args) >= 3 {
+			//orderField, orderType = getRecipeOrderType(args[2])
+			order = args[2]
+		} else {
+			//orderField, orderType = getRecipeOrderType("")
+			order = ""
+		}
+		switch args[0] {
+		case "食材":
+			if len(args) < 2 {
+				_ = bot.SendMessage(c, "参数有误")
+				return
+			}
+			msg, err = getRecipeMsgWithMaterial(args[1], order)
+		default:
+			msg = "参数有误!"
+		}
 		if err != nil {
-			logger.Error("查询数据库出错!", err)
+			logger.Error("查询数据出错!", err)
+			_ = bot.SendMessage(c, "查询数据失败!")
+			return
+		}
+	} else {
+		msg, err = getRecipeMsgWithName(args[0])
+		if err != nil {
+			logger.Error("查询数据出错!", err)
 			_ = bot.SendMessage(c, "查询数据失败!")
 			return
 		}
 	}
 
+	err = bot.SendMessage(c, msg)
+	if err != nil {
+		logger.Error("发送信息失败!", err)
+	}
+}
+
+func getRecipeOrderType(order string) (string, string) {
+	switch order {
+	case "单时间":
+		return "time", "ASC"
+	case "总时间":
+		return "time*limit", "ASC"
+	case "售价":
+		return "price", "DESC"
+	case "赚钱效率":
+		return "price*3600/time", "DESC"
+	default:
+		return "gallery_id", "ASC"
+	}
+}
+
+func getRecipeMsgWithName(arg string) (string, error) {
+	recipes := make([]database.Recipe, 0)
+	err := database.DB.Where("gallery_id = ?", arg).Asc("gallery_id").Find(&recipes)
+	if err != nil {
+		return "", err
+	}
+	if len(recipes) == 0 {
+		err = database.DB.Where("name like ?", "%"+arg+"%").Asc("gallery_id").Find(&recipes)
+		if err != nil {
+			return "", err
+		}
+	}
 	var msg string
 	if len(recipes) == 0 {
-		msg = "哎呀，好像找不到呢!"
+		return "哎呀，好像找不到呢!", nil
 	} else if len(recipes) == 1 {
 		recipe := recipes[0]
 		rarity := ""
@@ -65,13 +119,10 @@ func RecipeQuery(c *onebot.Context, args []string) {
 			material := new(database.Material)
 			has, err := database.DB.Where("material_id = ?", m.MaterialId).Get(material)
 			if err != nil {
-				logger.Error("查询数据库出错!", err)
-				_ = bot.SendMessage(c, "查询数据失败!")
-				return
+				return "", err
 			}
 			if !has {
-				_ = bot.SendMessage(c, "查询数据失败!")
-				return
+				return "", err
 			}
 			materials += fmt.Sprintf("%s*%d ", material.Name, m.Quantity)
 		}
@@ -95,9 +146,7 @@ func RecipeQuery(c *onebot.Context, args []string) {
 				guests += fmt.Sprintf("神-未知")
 			}
 		} else {
-			logger.Errorf("%s升阶贵客数据有误!", recipe.Name)
-			_ = bot.SendMessage(c, "查询数据失败!")
-			return
+			return "", errors.New(fmt.Sprintf("%s升阶贵客数据有误!", recipe.Name))
 		}
 
 		msg += fmt.Sprintf("%s %s %s\n", recipe.GalleryId, recipe.Name, rarity)
@@ -130,8 +179,69 @@ func RecipeQuery(c *onebot.Context, args []string) {
 		}
 	}
 
-	err = bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
+	return msg, nil
 }
+
+func getRecipeMsgWithMaterial(arg string, order string) (string, error) {
+	recipes := make([]database.Recipe, 0)
+	material := new(database.Material)
+	has, err := database.DB.Where("name = ?", arg).Get(material)
+	if err != nil {
+		return "", err
+	}
+	if !has {
+		return "食材参数有误!", nil
+	}
+
+	queryArg := fmt.Sprintf("%%\"MaterialId\":%d%%", material.MaterialId)
+	orderField, orderType := getRecipeOrderType(order)
+	switch orderType {
+	case "ASC":
+		err = database.DB.Where("materials like ?", queryArg).Asc(orderField).Find(&recipes)
+	case "DESC":
+		err = database.DB.Where("materials like ?", queryArg).Desc(orderField).Find(&recipes)
+	default:
+		err = database.DB.Where("materials like ?", queryArg).Asc(orderField).Find(&recipes)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	var msg string
+	if len(recipes) == 0 {
+		return "哎呀，好像找不到呢!", nil
+	} else {
+		msg = "查询到以下菜谱:\n"
+		for p, recipe := range recipes {
+			var thirdInfo string
+			switch order {
+			case "单时间":
+				thirdInfo = util.FormatSecondToString(recipe.Time)
+			case "总时间":
+				thirdInfo = util.FormatSecondToString(recipe.Time * recipe.Limit)
+			case "售价":
+				thirdInfo = fmt.Sprintf("$%d", recipe.Price)
+			case "赚钱效率":
+				thirdInfo = fmt.Sprintf("$%d/h", recipe.Price*3600/recipe.Time)
+			default:
+				thirdInfo = ""
+			}
+			msg += fmt.Sprintf("%s %s %s", recipe.GalleryId, recipe.Name, thirdInfo)
+			if p != len(recipes)-1 {
+				msg += "\n"
+				if p == util.MaxSearchList {
+					msg += "......"
+					break
+				}
+			}
+		}
+	}
+
+	return msg, nil
+}
+
+//func conditionQueryRecipe(condition string, arg string, order string) []database.Recipe{
+//	query := "condition = ?"
+//
+//
+//}
