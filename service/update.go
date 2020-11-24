@@ -391,7 +391,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 			} else {
 				recipe.GuestAntiques += fmt.Sprintf("%s-%s", guestData.Name, gift.Antique)
 				if p != len(guestData.Gifts)-1 {
-					recipe.GuestAntiques += ","
+					recipe.GuestAntiques += ", "
 				}
 				_, err = session.Where("name = ?", gift.Recipe).Update(recipe)
 				if err != nil {

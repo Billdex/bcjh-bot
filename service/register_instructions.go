@@ -36,4 +36,5 @@ func RegisterInstructions() {
 	Ins.Bind("厨师", ChefQuery)
 	Ins.Bind("厨具", EquipmentQuery)
 	Ins.Bind("菜谱", RecipeQuery)
+	Ins.Bind("贵客", GuestQuery)
 }

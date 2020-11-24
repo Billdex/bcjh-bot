@@ -18,9 +18,10 @@ func HelpGuide(c *onebot.Context, args []string) {
 
 	msg += fmt.Sprintf("目前提供以下查询指令:\n")
 	msg += fmt.Sprintf("帮助  图鉴网\n")
-	msg += fmt.Sprintf("厨师  厨具  菜谱\n")
+	msg += fmt.Sprintf("厨师  厨具  菜谱  贵客\n")
 
-	msg += fmt.Sprintf("数据来源: L图鉴网(https://foodgame.gitee.io)")
+	msg += fmt.Sprintf("数据来源: L图鉴网(https://foodgame.gitee.io)\n")
+	msg += fmt.Sprintf("项目地址: https://github.com/Billdex/bcjh-bot")
 
 	err := bot.SendMessage(c, msg)
 	if err != nil {
