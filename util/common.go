@@ -17,7 +17,7 @@ func FormatSecondToString(t int) string {
 		time += fmt.Sprintf("%d小时", hour)
 	}
 	if minute > 0 {
-		time += fmt.Sprintf("%d分钟", minute)
+		time += fmt.Sprintf("%d分", minute)
 	}
 	if second > 0 {
 		time += fmt.Sprintf("%d秒", second)
