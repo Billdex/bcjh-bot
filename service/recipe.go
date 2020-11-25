@@ -124,8 +124,10 @@ func getRecipeMsgWithName(arg string) (string, error) {
 	}
 	var msg string
 	if len(recipes) == 0 {
+		logger.Info("未查询到菜谱")
 		return "哎呀，好像找不到呢!", nil
 	} else if len(recipes) == 1 {
+		logger.Info("查询到一个菜谱")
 		recipe := recipes[0]
 		rarity := ""
 		for i := 0; i < recipe.Rarity; i++ {
@@ -136,7 +138,10 @@ func getRecipeMsgWithName(arg string) (string, error) {
 
 		materials := ""
 		recipeMaterials := make([]database.RecipeMaterial, 0)
-		err = database.DB.Where("recipe_id = ?", recipe.GalleryId).Find(recipeMaterials)
+		err = database.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
+		if err != nil {
+			return "", err
+		}
 		for _, recipeMaterial := range recipeMaterials {
 			material := new(database.Material)
 			has, err := database.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
@@ -144,7 +149,7 @@ func getRecipeMsgWithName(arg string) (string, error) {
 				return "", err
 			}
 			if !has {
-				return "", err
+				return "", nil
 			}
 			materials += fmt.Sprintf("%s*%d ", material.Name, recipeMaterial.Quantity)
 		}
@@ -185,6 +190,7 @@ func getRecipeMsgWithName(arg string) (string, error) {
 		msg += fmt.Sprintf("贵客-符文: %s\n", recipe.GuestAntiques)
 		msg += fmt.Sprintf("升阶贵客: %s", guests)
 	} else {
+		logger.Info("查询到多个菜谱")
 		msg = "查询到以下菜谱:\n"
 		for p, recipe := range recipes {
 			msg += fmt.Sprintf("%s %s", recipe.GalleryId, recipe.Name)
