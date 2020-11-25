@@ -16,6 +16,10 @@ func HelpGuide(c *onebot.Context, args []string) {
 		switch args[0] {
 		case "帮助":
 			msg = introHelp()
+		case "反馈":
+			msg = feedbackHelp()
+		case "图鉴网":
+			msg = galleryWebsiteHelp()
 		case "菜谱":
 			msg = recipeHelp()
 		default:
@@ -34,7 +38,7 @@ func HelpGuide(c *onebot.Context, args []string) {
 // 功能指引
 func introHelp() string {
 	var msg string
-	msg += fmt.Sprintf("爆炒江湖信息查询机器人\n")
+	msg += fmt.Sprintf("[爆炒江湖信息查询机器人]\n")
 	msg += fmt.Sprintf("使用 %s功能名 参数 查询信息\n", util.PrefixCharacter)
 	msg += fmt.Sprintf("示例 %s厨师 羽十六\n", util.PrefixCharacter)
 
@@ -56,11 +60,11 @@ func introHelp() string {
 // 反馈功能指引
 func feedbackHelp() string {
 	var msg string
-	msg += fmt.Sprintf("问题反馈与建议功能\n")
+	msg += fmt.Sprintf("[问题反馈与建议]\n")
 	msg += fmt.Sprintf("在使用过程中如果遇到了什么bug或者有什么好的建议，可以通过该功能反馈给我\n")
 	msg += fmt.Sprintf("反馈方式:\n")
-	msg += fmt.Sprintf("%s反馈 你想描述的问题或建议\n", util.PrefixCharacter)
-	msg += fmt.Sprintf("如果比较紧急也可以私聊联系我:\n")
+	msg += fmt.Sprintf("%s反馈 问题描述或建议\n", util.PrefixCharacter)
+	msg += fmt.Sprintf("如果比较紧急可以私聊我:\n")
 	msg += fmt.Sprintf("QQ:591404144")
 	return msg
 }
@@ -68,7 +72,7 @@ func feedbackHelp() string {
 // 图鉴网功能指引
 func galleryWebsiteHelp() string {
 	var msg string
-	msg += fmt.Sprintf("图鉴网查询功能\n")
+	msg += fmt.Sprintf("[图鉴网 网址查询]\n")
 	msg += fmt.Sprintf("给出L图鉴网与手机版图鉴网地址，方便记不住网址的小可爱快速访问。")
 	return msg
 }
@@ -76,7 +80,7 @@ func galleryWebsiteHelp() string {
 // 菜谱功能指引
 func recipeHelp() string {
 	var msg string
-	msg += fmt.Sprintf("菜谱信息查询功能\n")
+	msg += fmt.Sprintf("[菜谱信息查询]\n")
 	msg += fmt.Sprintf("基础信息查询: %s菜谱 菜谱名\n", util.PrefixCharacter)
 	msg += fmt.Sprintf("示例: %s菜谱 荷包蛋\n", util.PrefixCharacter)
 	msg += fmt.Sprintf("复合信息查询:\n")

@@ -6,6 +6,7 @@ import (
 )
 
 var tables = []interface{}{
+	&Feedback{},
 	&Admin{},
 	&Chef{},
 	&Equip{},
@@ -18,7 +19,7 @@ var tables = []interface{}{
 
 var migrations = []*migrate.Migration{
 	{
-		ID: "202011251100",
+		ID: "202011260340",
 		Migrate: func(engine *xorm.Engine) error {
 			return engine.Sync2(tables...)
 		},
