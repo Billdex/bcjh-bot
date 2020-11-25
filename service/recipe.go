@@ -8,6 +8,7 @@ import (
 	"bcjh-bot/util/logger"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 func RecipeQuery(c *onebot.Context, args []string) {
@@ -34,20 +35,46 @@ func RecipeQuery(c *onebot.Context, args []string) {
 	var msg string
 	if len(args) > 1 {
 		var order string
-		if len(args) >= 3 {
+		var limitStr string
+		var limitValue int
+		if args[0] == "任意" {
+			order = args[1]
+			if len(args) >= 3 {
+				var ok bool
+				limitStr, limitValue, ok = getRecipeLimitString(args[2])
+				if !ok {
+					_ = bot.SendMessage(c, "查询参数有误")
+					return
+				}
+			} else {
+				limitStr = ""
+				limitValue = 0
+			}
+		} else if len(args) >= 3 {
 			order = args[2]
+			if len(args) >= 4 {
+				var ok bool
+				limitStr, limitValue, ok = getRecipeLimitString(args[3])
+				if !ok {
+					_ = bot.SendMessage(c, "查询参数有误")
+					return
+				}
+			} else {
+				limitStr = ""
+				limitValue = 0
+			}
 		} else {
 			order = ""
 		}
 		switch args[0] {
 		case "食材":
-			if len(args) < 2 {
-				_ = bot.SendMessage(c, "参数有误")
-				return
+			msg, err = getRecipeMsgWithMaterial(args[1], order, limitStr, limitValue)
+		case "任意":
+			{
+				msg, err = getRecipeMsgWithoutArg(order, limitStr, limitValue)
 			}
-			msg, err = getRecipeMsgWithMaterial(args[1], order)
 		default:
-			msg = "参数有误!"
+			msg = "过滤参数有误!"
 		}
 		if err != nil {
 			logger.Error("查询数据出错!", err)
@@ -67,6 +94,33 @@ func RecipeQuery(c *onebot.Context, args []string) {
 	err = bot.SendMessage(c, msg)
 	if err != nil {
 		logger.Error("发送信息失败!", err)
+	}
+}
+
+func getRecipeLimitString(limit string) (string, int, bool) {
+	switch limit {
+	case "1火", "1星", "一火", "一星":
+		return "rarity >= ?", 1, true
+	case "2火", "2星", "二火", "二星":
+		return "rarity >= ?", 2, true
+	case "3火", "3星", "三火", "三星":
+		return "rarity >= ?", 3, true
+	case "4火", "4星", "四火", "四星":
+		return "rarity >= ?", 4, true
+	case "5火", "5星", "五火", "五星":
+		return "rarity >= ?", 5, true
+	default:
+		strPrice, isPrice := PrefixFilter(limit, "$")
+		if isPrice {
+			price, err := strconv.Atoi(strPrice)
+			if err != nil {
+				return "", 0, false
+			} else {
+				return "price >= ?", price, true
+			}
+		} else {
+			return "", 0, false
+		}
 	}
 }
 
@@ -207,7 +261,7 @@ func getRecipeMsgWithName(arg string) (string, error) {
 	return msg, nil
 }
 
-func getRecipeMsgWithMaterial(arg string, order string) (string, error) {
+func getRecipeMsgWithMaterial(arg string, order string, limitStr string, limitValue int) (string, error) {
 	recipes := make([]database.Recipe, 0)
 	recipeMaterials := make([]database.RecipeMaterial, 0)
 	material := new(database.Material)
@@ -216,7 +270,7 @@ func getRecipeMsgWithMaterial(arg string, order string) (string, error) {
 		return "", err
 	}
 	if !has {
-		return "食材参数有误!", nil
+		return "未找到该食材!", nil
 	}
 
 	if order == "食材效率" {
@@ -226,12 +280,16 @@ func getRecipeMsgWithMaterial(arg string, order string) (string, error) {
 		}
 		for _, recipeMaterial := range recipeMaterials {
 			var recipe database.Recipe
-			has, err := database.DB.Where("gallery_id = ?", recipeMaterial.RecipeGalleryId).Get(&recipe)
+			if limitStr != "" {
+				has, err = database.DB.Where("gallery_id = ?", recipeMaterial.RecipeGalleryId).And(limitStr, limitValue).Get(&recipe)
+			} else {
+				has, err = database.DB.Where("gallery_id = ?", recipeMaterial.RecipeGalleryId).Get(&recipe)
+			}
 			if err != nil {
 				return "", err
 			}
 			if !has {
-				return "", errors.New(fmt.Sprintf("未查到图鉴Id %s 的菜谱", recipeMaterial.RecipeGalleryId))
+				continue
 			}
 			recipe.MaterialEfficiency = recipeMaterial.Efficiency
 			recipes = append(recipes, recipe)
@@ -247,12 +305,49 @@ func getRecipeMsgWithMaterial(arg string, order string) (string, error) {
 		}
 		orderStr, success := getRecipeOrderString(order)
 		if !(success) {
-			return "参数有误!", nil
+			return "查询参数有误!", nil
 		}
-		err = database.DB.In("gallery_id", recipeIds).OrderBy(orderStr).Find(&recipes)
+		if limitStr != "" {
+			err = database.DB.In("gallery_id", recipeIds).And(limitStr, limitValue).OrderBy(orderStr).Find(&recipes)
+		} else {
+			err = database.DB.In("gallery_id", recipeIds).OrderBy(orderStr).Find(&recipes)
+		}
 		if err != nil {
 			return "", err
 		}
+	}
+
+	msg := "查询到以下菜谱:\n"
+	for p, recipe := range recipes {
+		thirdInfo := getRecipeOrderInfo(recipe, order)
+		msg += fmt.Sprintf("[%s]%s %s", recipe.GalleryId, recipe.Name, thirdInfo)
+		if p != len(recipes)-1 {
+			msg += "\n"
+			if p == util.MaxSearchList-1 {
+				msg += "......"
+				break
+			}
+		}
+	}
+
+	return msg, nil
+}
+
+func getRecipeMsgWithoutArg(order string, limitStr string, limitValue int) (string, error) {
+	recipes := make([]database.Recipe, 0)
+	orderStr, success := getRecipeOrderString(order)
+	if !(success) {
+		return "查询参数有误!", nil
+	}
+
+	var err error
+	if limitStr != "" {
+		err = database.DB.Where(limitStr, limitValue).OrderBy(orderStr).Find(&recipes)
+	} else {
+		err = database.DB.OrderBy(orderStr).Find(&recipes)
+	}
+	if err != nil {
+		return "", err
 	}
 
 	msg := "查询到以下菜谱:\n"
