@@ -33,13 +33,13 @@ func OneBotMsgHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch context.PostType {
 	case util.OneBotMessageEvent:
-		MessageEventHandler(context)
+		go MessageEventHandler(context)
 	case util.OneBotNoticeEvent:
-		NoticeEventHandler(context)
+		go NoticeEventHandler(context)
 	case util.OneBotRequestEvent:
-		RequestEventHandler(context)
+		go RequestEventHandler(context)
 	case util.OneBotMetaEvent:
-		MetaEventHandler(context)
+		go MetaEventHandler(context)
 	default:
 		logger.Info("未知OneBot事件类型:", context.MessageType)
 	}
