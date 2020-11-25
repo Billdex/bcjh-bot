@@ -11,7 +11,7 @@ type Recipe struct {
 	Boil               int      `xorm:"boil comment('煮技法')"`
 	Steam              int      `xorm:"steam comment('蒸技法')"`
 	Fry                int      `xorm:"fry comment('炸技法')"`
-	Cut                int      `xorm:"knife comment('切技法')"`
+	Cut                int      `xorm:"cut comment('切技法knife')"`
 	Price              int      `xorm:"price comment('价格')"`
 	ExPrice            int      `xorm:"exPrice comment('熟练加价')"`
 	GoldEfficiency     int      `xorm:"gold_efficiency comment('金币效率')"`

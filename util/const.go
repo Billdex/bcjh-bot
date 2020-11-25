@@ -70,5 +70,5 @@ const (
 
 	PrefixCharacter    = "#"
 	ArgsSplitCharacter = "-"
-	MaxSearchList      = 6
+	MaxSearchList      = 7
 )

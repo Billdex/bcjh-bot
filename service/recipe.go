@@ -69,6 +69,8 @@ func RecipeQuery(c *onebot.Context, args []string) {
 		switch args[0] {
 		case "食材":
 			msg, err = getRecipeMsgWithMaterial(args[1], order, limitStr, limitValue)
+		case "技法":
+			msg, err = getRecipeMsgWithSkill(args[1], order, limitStr, limitValue)
 		case "任意":
 			{
 				msg, err = getRecipeMsgWithoutArg(order, limitStr, limitValue)
@@ -101,7 +103,7 @@ func getRecipeLimitString(limit string) (string, int, bool) {
 	switch limit {
 	case "1火", "1星", "一火", "一星":
 		return "rarity >= ?", 1, true
-	case "2火", "2星", "二火", "二星":
+	case "2火", "2星", "二火", "二星", "两火", "两星":
 		return "rarity >= ?", 2, true
 	case "3火", "3星", "三火", "三星":
 		return "rarity >= ?", 3, true
@@ -261,6 +263,39 @@ func getRecipeMsgWithName(arg string) (string, error) {
 	return msg, nil
 }
 
+func getRecipeMsgWithoutArg(order string, limitStr string, limitValue int) (string, error) {
+	recipes := make([]database.Recipe, 0)
+	orderStr, success := getRecipeOrderString(order)
+	if !(success) {
+		return "查询参数有误!", nil
+	}
+
+	var err error
+	if limitStr != "" {
+		err = database.DB.Where(limitStr, limitValue).OrderBy(orderStr).Find(&recipes)
+	} else {
+		err = database.DB.OrderBy(orderStr).Find(&recipes)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	msg := "查询到以下菜谱:\n"
+	for p, recipe := range recipes {
+		thirdInfo := getRecipeOrderInfo(recipe, order)
+		msg += fmt.Sprintf("[%s]%s %s", recipe.GalleryId, recipe.Name, thirdInfo)
+		if p != len(recipes)-1 {
+			msg += "\n"
+			if p == util.MaxSearchList-1 {
+				msg += "......"
+				break
+			}
+		}
+	}
+
+	return msg, nil
+}
+
 func getRecipeMsgWithMaterial(arg string, order string, limitStr string, limitValue int) (string, error) {
 	recipes := make([]database.Recipe, 0)
 	recipeMaterials := make([]database.RecipeMaterial, 0)
@@ -333,18 +368,36 @@ func getRecipeMsgWithMaterial(arg string, order string, limitStr string, limitVa
 	return msg, nil
 }
 
-func getRecipeMsgWithoutArg(order string, limitStr string, limitValue int) (string, error) {
-	recipes := make([]database.Recipe, 0)
+func getRecipeMsgWithSkill(arg string, order string, limitStr string, limitValue int) (string, error) {
+	var skill string
+	switch arg {
+	case "炒":
+		skill = "`stirfry` > 0"
+	case "烤":
+		skill = "`bake` > 0"
+	case "煮":
+		skill = "`boil` > 0"
+	case "蒸":
+		skill = "`steam` > 0"
+	case "炸":
+		skill = "`fry` > 0"
+	case "切":
+		skill = "`cut` > 0"
+	default:
+		return "查询参数有误!", nil
+	}
+
 	orderStr, success := getRecipeOrderString(order)
 	if !(success) {
 		return "查询参数有误!", nil
 	}
 
+	recipes := make([]database.Recipe, 0)
 	var err error
 	if limitStr != "" {
-		err = database.DB.Where(limitStr, limitValue).OrderBy(orderStr).Find(&recipes)
+		err = database.DB.Where(skill).And(limitStr, limitValue).OrderBy(orderStr).Find(&recipes)
 	} else {
-		err = database.DB.OrderBy(orderStr).Find(&recipes)
+		err = database.DB.Where(skill).OrderBy(orderStr).Find(&recipes)
 	}
 	if err != nil {
 		return "", err
