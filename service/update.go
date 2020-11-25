@@ -17,8 +17,8 @@ import (
 	"time"
 )
 
-//更新数据
-//导出数据库数据->删库->重新同步表结构->插入数据
+// 更新数据
+// 导出数据库数据->删库->插入新数据
 func UpdateData(c *onebot.Context, args []string) {
 	logger.Info("更新数据, 参数:", args)
 
@@ -56,8 +56,8 @@ func UpdateData(c *onebot.Context, args []string) {
 	logger.Infof("获取图鉴网数据完毕, 耗时%s", requestConsume)
 	logger.Debug("数据内容为:%+v", gameData)
 
-	//更新数据
-	//更新厨师数据
+	// 更新数据
+	// 更新厨师数据
 	start = time.Now().UnixNano()
 	err = updateChefs(gameData.Chefs)
 	if err != nil {
@@ -68,7 +68,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	chefConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新厨师数据完毕, 耗时%s", chefConsume)
 
-	//更新厨具数据
+	// 更新厨具数据
 	start = time.Now().UnixNano()
 	err = updateEquips(gameData.Equips)
 	if err != nil {
@@ -79,7 +79,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	equipConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新厨具数据完毕, 耗时%s", equipConsume)
 
-	//更新菜谱数据
+	// 更新菜谱数据
 	start = time.Now().UnixNano()
 	err = updateRecipes(gameData.Recipes)
 	if err != nil {
@@ -90,7 +90,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	recipeConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新菜谱数据完毕, 耗时%s", recipeConsume)
 
-	//更新合成菜谱数据
+	// 更新合成菜谱数据
 	start = time.Now().UnixNano()
 	err = updateCombos(gameData.Combos)
 	if err != nil {
@@ -101,7 +101,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	comboConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新后厨合成菜谱数据完毕, 耗时%s", comboConsume)
 
-	//更新贵客数据
+	// 更新贵客数据
 	start = time.Now().UnixNano()
 	err = updateGuests(gameData.Guests)
 	if err != nil {
@@ -112,7 +112,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	guestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新贵客数据完毕, 耗时%s", guestConsume)
 
-	//更新食材数据
+	// 更新食材数据
 	start = time.Now().UnixNano()
 	err = updateMaterials(gameData.Materials)
 	if err != nil {
@@ -123,7 +123,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	materialConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新食材数据完毕, 耗时%s", materialConsume)
 
-	//更新技能数据
+	// 更新技能数据
 	start = time.Now().UnixNano()
 	err = updateSkills(gameData.Skills)
 	if err != nil {
@@ -134,7 +134,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	skillConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新技能数据完毕, 耗时%s", skillConsume)
 
-	//发送成功消息
+	// 发送成功消息
 	logger.Info("更新数据完毕")
 	var msg string
 	updateConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-updateStart)/1e9)
@@ -154,7 +154,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	}
 }
 
-//从图鉴网爬取数据
+// 从图鉴网爬取数据
 func requestData() (gamedata.GameData, error) {
 	var gameData gamedata.GameData
 	r, err := http.Get(util.FoodGameDataUrl)
@@ -170,6 +170,7 @@ func requestData() (gamedata.GameData, error) {
 	return gameData, err
 }
 
+// 更新厨师信息
 func updateChefs(chefsData []gamedata.ChefData) error {
 	session := database.DB.NewSession()
 	defer session.Close()
@@ -219,6 +220,7 @@ func updateChefs(chefsData []gamedata.ChefData) error {
 	return err
 }
 
+// 更新厨具信息
 func updateEquips(equipsData []gamedata.EquipData) error {
 	session := database.DB.NewSession()
 	defer session.Close()
@@ -252,6 +254,7 @@ func updateEquips(equipsData []gamedata.EquipData) error {
 	return err
 }
 
+// 更新菜谱信息
 func updateRecipes(recipesData []gamedata.RecipeData) error {
 	session := database.DB.NewSession()
 	defer session.Close()
@@ -259,49 +262,70 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 	if err != nil {
 		return err
 	}
+	// 删除菜谱数据
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Recipe).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		session.Rollback()
 		return err
 	}
+	// 删除菜谱-食材关系
+	sql = fmt.Sprintf("DELETE FROM `%s`", new(database.RecipeMaterial).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
 	recipes := make([]database.Recipe, 0)
+	materials := make([]database.RecipeMaterial, 0)
 	for _, recipeData := range recipesData {
 		recipe := database.Recipe{
-			RecipeId:      recipeData.RecipeId,
-			Name:          recipeData.Name,
-			GalleryId:     recipeData.GalleryId,
-			Rarity:        recipeData.Rarity,
-			Origin:        strings.ReplaceAll(recipeData.Origin, "<br>", ","),
-			Stirfry:       recipeData.Stirfry,
-			Bake:          recipeData.Bake,
-			Boil:          recipeData.Boil,
-			Steam:         recipeData.Steam,
-			Fry:           recipeData.Fry,
-			Cut:           recipeData.Cut,
-			Price:         recipeData.Price,
-			ExPrice:       recipeData.ExPrice,
-			Gift:          recipeData.Gift,
-			GuestAntiques: "",
-			Limit:         recipeData.Limit,
-			Time:          recipeData.Time,
-			Unlock:        recipeData.Unlock,
-			Combo:         "-",
+			RecipeId:       recipeData.RecipeId,
+			Name:           recipeData.Name,
+			GalleryId:      recipeData.GalleryId,
+			Rarity:         recipeData.Rarity,
+			Origin:         strings.ReplaceAll(recipeData.Origin, "<br>", ","),
+			Stirfry:        recipeData.Stirfry,
+			Bake:           recipeData.Bake,
+			Boil:           recipeData.Boil,
+			Steam:          recipeData.Steam,
+			Fry:            recipeData.Fry,
+			Cut:            recipeData.Cut,
+			Price:          recipeData.Price,
+			ExPrice:        recipeData.ExPrice,
+			GoldEfficiency: recipeData.Price * 3600 / recipeData.Time,
+			Gift:           recipeData.Gift,
+			GuestAntiques:  "",
+			Time:           recipeData.Time,
+			Limit:          recipeData.Limit,
+			TotalTime:      recipeData.Time * recipeData.Limit,
+			Unlock:         recipeData.Unlock,
+			Combo:          "-",
 		}
+		// 插入升阶贵客信息
 		guests := make([]string, 0)
 		for _, guest := range recipeData.Guests {
 			guests = append(guests, guest.Guest)
 		}
 		recipe.Guests = guests
-		materials := make([]database.RecipeMaterial, 0)
+		// 插入耗材信息
+		materialSum := 0
 		for _, materialData := range recipeData.Materials {
 			materials = append(materials, database.RecipeMaterial{
-				MaterialId: materialData.MaterialId,
-				Quantity:   materialData.Quantity,
+				RecipeGalleryId: recipeData.GalleryId,
+				MaterialId:      materialData.MaterialId,
+				Quantity:        materialData.Quantity,
+				Efficiency:      materialData.Quantity * 3600 / recipe.Time,
 			})
+			materialSum += materialData.Quantity
 		}
-		recipe.Materials = materials
+		recipe.MaterialEfficiency = materialSum * 3600 / recipeData.Time
 		recipes = append(recipes, recipe)
+	}
+	_, err = session.Insert(&materials)
+	if err != nil {
+		session.Rollback()
+		return err
 	}
 	_, err = session.Insert(&recipes)
 	if err != nil {
@@ -312,6 +336,7 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 	return err
 }
 
+// 更新后厨合成菜信息
 func updateCombos(combosData []gamedata.ComboData) error {
 	session := database.DB.NewSession()
 	defer session.Close()
@@ -351,6 +376,7 @@ func updateCombos(combosData []gamedata.ComboData) error {
 	return err
 }
 
+// 更新贵客信息
 func updateGuests(guestsData []gamedata.GuestData) error {
 	session := database.DB.NewSession()
 	defer session.Close()

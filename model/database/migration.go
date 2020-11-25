@@ -13,11 +13,12 @@ var tables = []interface{}{
 	&Guest{},
 	&Material{},
 	&Skill{},
+	&RecipeMaterial{},
 }
 
 var migrations = []*migrate.Migration{
 	{
-		ID: "202011201600",
+		ID: "202011251100",
 		Migrate: func(engine *xorm.Engine) error {
 			return engine.Sync2(tables...)
 		},

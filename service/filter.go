@@ -22,7 +22,7 @@ func PrefixFilter(str string, prefix string) (string, bool) {
 func InstructionFilter(str string, instructions map[string]InstructionHandlerFunc) (InstructionHandlerFunc, []string) {
 	for instruction, handler := range instructions {
 		if strings.HasPrefix(str, instruction) {
-			strArgs := strings.TrimSpace(str[len(instruction):])
+			strArgs := strings.ReplaceAll(str[len(instruction):], " ", "")
 			args := strings.Split(strArgs, util.ArgsSplitCharacter)
 			if args[0] == "" {
 				args = make([]string, 0)
