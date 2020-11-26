@@ -134,21 +134,33 @@ func UpdateData(c *onebot.Context, args []string) {
 	skillConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新技能数据完毕, 耗时%s", skillConsume)
 
+	// 更新装修家具数据
+	start = time.Now().UnixNano()
+	err = updateDecorations(gameData.Decorations)
+	if err != nil {
+		logger.Error("更新装修家具数据出错!", err)
+		_ = bot.SendMessage(c, "更新装修家具数据出错!")
+		return
+	}
+	DecorationConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新装修家具数据完毕, 耗时%s", DecorationConsume)
+
 	// 发送成功消息
 	logger.Info("更新数据完毕")
-	var msg string
+	var strBdr = strings.Builder{}
 	updateConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-updateStart)/1e9)
-	msg += fmt.Sprintf("更新数据完毕, 累计耗时%s\n", updateConsume)
-	msg += fmt.Sprintf("导出旧数据耗时%s\n", dumpConsume)
-	msg += fmt.Sprintf("抓取图鉴网数据耗时%s\n", requestConsume)
-	msg += fmt.Sprintf("更新厨师数据耗时%s\n", chefConsume)
-	msg += fmt.Sprintf("更新厨具数据耗时%s\n", equipConsume)
-	msg += fmt.Sprintf("更新菜谱数据耗时%s\n", recipeConsume)
-	msg += fmt.Sprintf("更新后厨合成菜谱数据耗时%s\n", comboConsume)
-	msg += fmt.Sprintf("更新贵客数据耗时%s\n", guestConsume)
-	msg += fmt.Sprintf("更新食材数据耗时%s\n", materialConsume)
-	msg += fmt.Sprintf("更新技能数据耗时%s", skillConsume)
-	err = bot.SendMessage(c, msg)
+	strBdr.WriteString(fmt.Sprintf("更新数据完毕, 累计耗时%s\n", updateConsume))
+	strBdr.WriteString(fmt.Sprintf("导出旧数据耗时%s\n", dumpConsume))
+	strBdr.WriteString(fmt.Sprintf("抓取图鉴网数据耗时%s\n", requestConsume))
+	strBdr.WriteString(fmt.Sprintf("更新厨师数据耗时%s\n", chefConsume))
+	strBdr.WriteString(fmt.Sprintf("更新厨具数据耗时%s\n", equipConsume))
+	strBdr.WriteString(fmt.Sprintf("更新菜谱数据耗时%s\n", recipeConsume))
+	strBdr.WriteString(fmt.Sprintf("更新后厨合成菜谱数据耗时%s\n", comboConsume))
+	strBdr.WriteString(fmt.Sprintf("更新贵客数据耗时%s\n", guestConsume))
+	strBdr.WriteString(fmt.Sprintf("更新食材数据耗时%s\n", materialConsume))
+	strBdr.WriteString(fmt.Sprintf("更新技能数据耗时%s\n", skillConsume))
+	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s", DecorationConsume))
+	err = bot.SendMessage(c, strBdr.String())
 	if err != nil {
 		logger.Error("发送消息失败!", err)
 	}
@@ -501,6 +513,46 @@ func updateSkills(skillsData []gamedata.SkillData) error {
 		skills = append(skills, skill)
 	}
 	_, err = session.Insert(&skills)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
+	return err
+}
+
+// 更新家具信息
+func updateDecorations(decorationsData []gamedata.Decoration) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Decoration).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	decorations := make([]database.Decoration, 0)
+	for _, decorationData := range decorationsData {
+		skill := database.Decoration{
+			Id: decorationData.Id,
+			//Icon: decorationDat.//,
+			Name:     decorationData.Name,
+			TipMin:   decorationData.TipMin,
+			TipMax:   decorationData.TipMax,
+			TipTime:  decorationData.TipTime,
+			Gold:     decorationData.Gold,
+			Position: decorationData.Position,
+			Suit:     decorationData.Suit,
+			SuitGold: decorationData.SuitGold,
+			Origin:   decorationData.Origin,
+		}
+		decorations = append(decorations, skill)
+	}
+	_, err = session.Insert(&decorations)
 	if err != nil {
 		session.Rollback()
 		return err
