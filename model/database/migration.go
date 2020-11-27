@@ -1,6 +1,7 @@
 package database
 
 import (
+	"time"
 	"xorm.io/xorm"
 	"xorm.io/xorm/migrate"
 )
@@ -20,7 +21,7 @@ var tables = []interface{}{
 
 var migrations = []*migrate.Migration{
 	{
-		ID: "202011260341",
+		ID: time.Now().Format("20060102150405"), // 以时间作为迁移 ID，在程序启动时会进行一次数据库结构的更新
 		Migrate: func(engine *xorm.Engine) error {
 			return engine.Sync2(tables...)
 		},

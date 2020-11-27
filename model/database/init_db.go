@@ -7,16 +7,16 @@ import (
 
 var DB *xorm.Engine
 
-func InitDatabase(connString string) error {
-	db, err := xorm.NewEngine("mysql", connString)
+// DNS Data Source Name
+// [username[:password]@][protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]
+func InitDatabase(dsn string) error {
+	var err error
+	DB, err = xorm.NewEngine("mysql", dsn)
 	if err != nil {
 		return err
 	}
 
-	db.SetMaxIdleConns(5)
-	db.SetMaxOpenConns(10)
-
-	DB = db
-	Migration()
-	return nil
+	DB.SetMaxIdleConns(5)
+	DB.SetMaxOpenConns(10)
+	return Migration()
 }

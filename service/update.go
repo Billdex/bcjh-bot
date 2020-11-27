@@ -169,7 +169,7 @@ func UpdateData(c *onebot.Context, args []string) {
 // 从图鉴网爬取数据
 func requestData() (gamedata.GameData, error) {
 	var gameData gamedata.GameData
-	r, err := http.Get(util.FoodGameDataUrl)
+	r, err := http.Get(util.FoodGameDataURL)
 	if err != nil {
 		return gameData, err
 	}

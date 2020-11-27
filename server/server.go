@@ -9,9 +9,9 @@ import (
 	"net/http"
 )
 
-//启动服务
+// 启动服务
 func Run(port string) error {
-	if "" == port {
+	if port == "" {
 		port = ":5800"
 	}
 
@@ -45,5 +45,4 @@ func OneBotMsgHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	return
 }

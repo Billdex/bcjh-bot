@@ -27,7 +27,7 @@ func (i *Instructions) GetInstructions() map[string]InstructionHandlerFunc {
 
 var Ins Instructions
 
-//注册指令，绑定文本指令对应的处理方法
+// 注册指令，绑定文本指令对应的处理方法
 func RegisterInstructions() {
 	Ins = NewInstructions()
 	Ins.Bind("更新数据", UpdateData)

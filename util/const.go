@@ -66,7 +66,7 @@ const (
 	OneBotSubMetaConnect     = "connect"
 	OneBotSubMetaHeartbeat   = "heartbeat"
 
-	FoodGameDataUrl = "https://foodgame.gitee.io/data/data.min.json"
+	FoodGameDataURL = "https://foodgame.gitee.io/data/data.min.json"
 
 	PrefixCharacter    = "."
 	ArgsSplitCharacter = "-"
