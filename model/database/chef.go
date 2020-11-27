@@ -1,12 +1,12 @@
 package database
 
 type Chef struct {
-	ChefId        int    `xorm:"chef_id comment('厨师id')"`
+	ChefId        int    `xorm:"pk chef_id comment('厨师id')"`
 	Name          string `xorm:"name comment('厨师名字')"`
 	Gender        int    `xorm:"gender comment('性别')"`
-	Rarity        int    `xorm:"rarity comment('稀有度')"`
-	Origin        string `xorm:"origin comment('来源')"`
-	GalleryId     string `xorm:"gallery_id comment('图鉴id')"`
+	Rarity        int    `xorm:"index rarity comment('稀有度')"`
+	Origin        string `xorm:"comment('来源')"`
+	GalleryId     string `xorm:"index gallery_id comment('图鉴id')"`
 	Stirfry       int    `xorm:"stirfry comment('炒技法'')"`
 	Bake          int    `xorm:"bake comment('烤技法')"`
 	Boil          int    `xorm:"boil comment('煮技法')"`

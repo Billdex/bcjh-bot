@@ -171,7 +171,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	strBdr.WriteString(fmt.Sprintf("更新食材数据耗时%s\n", materialConsume))
 	strBdr.WriteString(fmt.Sprintf("更新技能数据耗时%s\n", skillConsume))
 	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s\n", DecorationConsume))
-	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s", CondimentConsume))
+	strBdr.WriteString(fmt.Sprintf("更新调料数据耗时%s", CondimentConsume))
 	err = bot.SendMessage(c, strBdr.String())
 	if err != nil {
 		logger.Error("发送消息失败!", err)
