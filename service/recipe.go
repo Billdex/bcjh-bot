@@ -6,126 +6,106 @@ import (
 	"bcjh-bot/model/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
-	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
+// 处理菜谱查询请求
 func RecipeQuery(c *onebot.Context, args []string) {
 	logger.Info("菜谱查询, 参数:", args)
-
 	if len(args) == 0 {
-		err := bot.SendMessage(c,
-			fmt.Sprintf("指令示例:\n"+
-				"%s菜谱 荷包蛋", util.PrefixCharacter))
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
-		return
-	}
-	if args[0] == "%" {
-		err := bot.SendMessage(c, "参数有误!")
+		err := bot.SendMessage(c, recipeHelp())
 		if err != nil {
 			logger.Error("发送信息失败!", err)
 		}
 		return
 	}
 
-	var err error
-	var msg string
-	if len(args) > 1 {
-		var order string
-		var limitStr string
-		var limitValue int
-		if args[0] == "任意" {
-			order = args[1]
-			if len(args) >= 3 {
-				var ok bool
-				limitStr, limitValue, ok = getRecipeLimitString(args[2])
-				if !ok {
-					_ = bot.SendMessage(c, "查询参数有误")
-					return
-				}
-			} else {
-				limitStr = ""
-				limitValue = 0
-			}
-		} else if len(args) >= 3 {
-			order = args[2]
-			if len(args) >= 4 {
-				var ok bool
-				limitStr, limitValue, ok = getRecipeLimitString(args[3])
-				if !ok {
-					_ = bot.SendMessage(c, "查询参数有误")
-					return
-				}
-			} else {
-				limitStr = ""
-				limitValue = 0
-			}
-		} else {
-			order = ""
+	recipes := make([]database.Recipe, 0)
+	note := ""
+	order := ""
+	rarity := 1
+	price := 1
+	page := 1
+	if len(args) == 1 {
+		// 处理简单查询
+		recipes, note = getRecipesWithName(args[0])
+	} else {
+		// 处理组合查询
+		for i := 1; i < len(args); i++ {
+			updateQueryArgs(args[i], &order, &rarity, &price, &page)
 		}
 		switch args[0] {
-		case "食材":
-			msg, err = getRecipeMsgWithMaterial(args[1], order, limitStr, limitValue)
-		case "技法":
-			msg, err = getRecipeMsgWithSkill(args[1], order, limitStr, limitValue)
 		case "任意":
-			{
-				msg, err = getRecipeMsgWithoutArg(order, limitStr, limitValue)
-			}
+			recipes, note = getAllRecipes(order)
+		case "食材":
+			recipes, note = getRecipesWithMaterial(args[1], order)
+		case "技法":
+			recipes, note = getRecipesWithSkill(args[1], order)
 		default:
-			msg = "过滤参数有误!"
-		}
-		if err != nil {
-			logger.Error("查询数据出错!", err)
-			_ = bot.SendMessage(c, "查询数据失败!")
-			return
-		}
-	} else {
-		msg, err = getRecipeMsgWithName(args[0])
-		if err != nil {
-			logger.Error("查询数据出错!", err)
-			_ = bot.SendMessage(c, "查询数据失败!")
-			return
+			note = util.QueryParamWrongNote
 		}
 	}
+	if note != "" {
+		logger.Info("菜谱查询失败结果:", note)
+		_ = bot.SendMessage(c, note)
+		return
+	}
 
-	logger.Debug("发送一条消息:", msg)
-	err = bot.SendMessage(c, msg)
+	msg := getRecipesMessage(recipes, order, rarity, price, page)
+	logger.Info("发送菜谱查询结果:", msg)
+	err := bot.SendMessage(c, msg)
 	if err != nil {
 		logger.Error("发送信息失败!", err)
 	}
 }
 
-func getRecipeLimitString(limit string) (string, int, bool) {
-	switch limit {
+// 更新查询参数信息
+func updateQueryArgs(arg string, order *string, rarity *int, price *int, page *int) {
+	switch arg {
+	// 判断是否是排序参数
+	case "图鉴序", "单时间", "总时间", "单价", "金币效率", "耗材效率", "食材效率":
+		*order = arg
+	// 判断是否是稀有度筛选参数
 	case "1火", "1星", "一火", "一星":
-		return "rarity >= ?", 1, true
+		*rarity = 1
 	case "2火", "2星", "二火", "二星", "两火", "两星":
-		return "rarity >= ?", 2, true
+		*rarity = 2
 	case "3火", "3星", "三火", "三星":
-		return "rarity >= ?", 3, true
+		*rarity = 3
 	case "4火", "4星", "四火", "四星":
-		return "rarity >= ?", 4, true
+		*rarity = 4
 	case "5火", "5星", "五火", "五星":
-		return "rarity >= ?", 5, true
+		*rarity = 5
 	default:
-		strPrice, isPrice := PrefixFilter(limit, "$")
-		if isPrice {
-			price, err := strconv.Atoi(strPrice)
+		// 判断是否是单价筛选参数
+		if strings.HasPrefix(arg, "$") {
+			num, err := strconv.Atoi(arg[1:])
 			if err != nil {
-				return "", 0, false
+				return
 			} else {
-				return "price >= ?", price, true
+				*price = num
+				return
 			}
-		} else {
-			return "", 0, false
+		}
+		// 判断是否是分页参数
+		if strings.HasPrefix(arg, "p") || strings.HasPrefix(arg, "P") {
+			num, err := strconv.Atoi(arg[1:])
+			if err != nil {
+				return
+			} else {
+				if num < 1 {
+					num = 1
+				}
+				*page = num
+				return
+			}
 		}
 	}
 }
 
+// 根据排序参数获取order by的sql语句
 func getRecipeOrderString(order string) (string, bool) {
 	switch order {
 	case "单时间":
@@ -145,7 +125,8 @@ func getRecipeOrderString(order string) (string, bool) {
 	}
 }
 
-func getRecipeOrderInfo(recipe database.Recipe, order string) string {
+// 根据排序参数获取菜谱需要输出的信息
+func getRecipeInfoWithOrder(recipe database.Recipe, order string) string {
 	switch order {
 	case "单时间":
 		return util.FormatSecondToString(recipe.Time)
@@ -166,209 +147,208 @@ func getRecipeOrderInfo(recipe database.Recipe, order string) string {
 	}
 }
 
-func getRecipeMsgWithName(arg string) (string, error) {
+// 输出单菜谱消息数据
+func getRecipeMessage(recipe database.Recipe) string {
+	// 稀有度数据
+	rarity := ""
+	for i := 0; i < recipe.Rarity; i++ {
+		rarity += "🔥"
+	}
+	// 食材数据
+	materials := ""
+	recipeMaterials := make([]database.RecipeMaterial, 0)
+	err := database.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		return util.SystemErrorNote
+	}
+	for _, recipeMaterial := range recipeMaterials {
+		material := new(database.Material)
+		has, err := database.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			return util.SystemErrorNote
+		}
+		if !has {
+			logger.Warnf("菜谱%d数据缺失", recipeMaterial.MaterialId)
+		} else {
+			materials += fmt.Sprintf("%s*%d ", material.Name, recipeMaterial.Quantity)
+		}
+	}
+	// 升阶贵客数据
+	guests := ""
+	if len(recipe.Guests) > 0 && recipe.Guests[0] != "" {
+		guests += fmt.Sprintf("优-%s, ", recipe.Guests[0])
+	} else {
+		guests += fmt.Sprintf("优-未知, ")
+	}
+	if len(recipe.Guests) > 1 && recipe.Guests[1] != "" {
+		guests += fmt.Sprintf("特-%s, ", recipe.Guests[1])
+	} else {
+		guests += fmt.Sprintf("特-未知, ")
+	}
+	if len(recipe.Guests) > 2 && recipe.Guests[2] != "" {
+		guests += fmt.Sprintf("神-%s", recipe.Guests[2])
+	} else {
+		guests += fmt.Sprintf("神-未知")
+	}
+	// 组合消息信息
+	var msg string
+	msg += fmt.Sprintf("[%s]%s %s\n", recipe.GalleryId, recipe.Name, rarity)
+	msg += fmt.Sprintf("💰: %d(%d) --- %d/h\n", recipe.Price, recipe.Price+recipe.ExPrice, recipe.GoldEfficiency)
+	msg += fmt.Sprintf("来源: %s\n", recipe.Origin)
+	msg += fmt.Sprintf("单时间: %s\n", util.FormatSecondToString(recipe.Time))
+	msg += fmt.Sprintf("总时间: %s (%d份)\n", util.FormatSecondToString(recipe.Time*recipe.Limit), recipe.Limit)
+	msg += fmt.Sprintf("炒:%d 烤:%d 煮:%d\n", recipe.Stirfry, recipe.Bake, recipe.Boil)
+	msg += fmt.Sprintf("蒸:%d 炸:%d 切:%d\n", recipe.Steam, recipe.Fry, recipe.Cut)
+	msg += fmt.Sprintf("食材: %s\n", materials)
+	msg += fmt.Sprintf("耗材效率: %d/h\n", recipe.MaterialEfficiency)
+	msg += fmt.Sprintf("可解锁: %s\n", recipe.Unlock)
+	msg += fmt.Sprintf("可合成: %s\n", recipe.Combo)
+	msg += fmt.Sprintf("神级符文: %s\n", recipe.Gift)
+	msg += fmt.Sprintf("贵客-符文: %s\n", recipe.GuestAntiques)
+	msg += fmt.Sprintf("升阶贵客: %s", guests)
+	return msg
+}
+
+// 根据排序规则、稀有度、售价与分页参数，返回消息数据
+func getRecipesMessage(recipes []database.Recipe, order string, rarity int, price int, page int) string {
+	if len(recipes) == 0 {
+		logger.Debug("未查询到菜谱")
+		return "本店没有这道菜呢!"
+	} else if len(recipes) == 1 {
+		logger.Debug("查询到一个菜谱")
+		return getRecipeMessage(recipes[0])
+	} else {
+		logger.Debug("查询到多个菜谱")
+		results := make([]database.Recipe, 0)
+		for _, recipe := range recipes {
+			if recipe.Rarity >= rarity && recipe.Price >= price {
+				results = append(results, recipe)
+			}
+		}
+		var msg string
+		listLength := util.MaxQueryListLength
+		maxPage := (len(results)-1)/listLength + 1
+		if len(results) > listLength {
+			if page > maxPage {
+				page = maxPage
+			}
+			msg += fmt.Sprintf("这里有你想点的菜吗: (%d/%d)\n", page, maxPage)
+		} else {
+			msg += "这里有你想点的菜吗:\n"
+		}
+		for i := (page - 1) * listLength; i < page*listLength && i < len(results); i++ {
+			orderInfo := getRecipeInfoWithOrder(results[i], order)
+			msg += fmt.Sprintf("[%s]%s %s", recipes[i].GalleryId, recipes[i].Name, orderInfo)
+			if i < page*listLength-1 && i < len(results)-1 {
+				msg += "\n"
+			}
+		}
+		if page < maxPage {
+			msg += "\n......"
+		}
+
+		return msg
+	}
+}
+
+// 根据菜谱名字或ID查询菜谱
+func getRecipesWithName(arg string) ([]database.Recipe, string) {
 	recipes := make([]database.Recipe, 0)
 	err := database.DB.Where("gallery_id = ?", arg).Asc("gallery_id").Find(&recipes)
 	if err != nil {
-		return "", err
+		logger.Error("查询数据库出错!", err)
+		return nil, util.SystemErrorNote
 	}
 	if len(recipes) == 0 {
 		err = database.DB.Where("name like ?", "%"+arg+"%").Asc("gallery_id").Find(&recipes)
 		if err != nil {
-			return "", err
+			logger.Error("查询数据库出错!", err)
+			return nil, util.SystemErrorNote
 		}
 	}
-	var msg string
-	if len(recipes) == 0 {
-		logger.Info("未查询到菜谱")
-		return "哎呀，好像找不到呢!", nil
-	} else if len(recipes) == 1 {
-		logger.Info("查询到一个菜谱")
-		recipe := recipes[0]
-		rarity := ""
-		for i := 0; i < recipe.Rarity; i++ {
-			rarity += "🔥"
-		}
-		time := util.FormatSecondToString(recipe.Time)
-		allTime := util.FormatSecondToString(recipe.Time * recipe.Limit)
-
-		materials := ""
-		recipeMaterials := make([]database.RecipeMaterial, 0)
-		err = database.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
-		if err != nil {
-			return "", err
-		}
-		for _, recipeMaterial := range recipeMaterials {
-			material := new(database.Material)
-			has, err := database.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
-			if err != nil {
-				return "", err
-			}
-			if !has {
-				return "", nil
-			}
-			materials += fmt.Sprintf("%s*%d ", material.Name, recipeMaterial.Quantity)
-		}
-
-		guests := ""
-		if len(recipe.Guests) == 3 {
-			if recipe.Guests[0] != "" {
-				guests += fmt.Sprintf("优-%s, ", recipe.Guests[0])
-			} else {
-				guests += fmt.Sprintf("优-未知,")
-			}
-			if recipe.Guests[1] != "" {
-				guests += fmt.Sprintf("特-%s, ", recipe.Guests[1])
-			} else {
-				guests += fmt.Sprintf("特-未知,")
-			}
-			if recipe.Guests[2] != "" {
-				guests += fmt.Sprintf("神-%s", recipe.Guests[2])
-			} else {
-				guests += fmt.Sprintf("神-未知")
-			}
-		} else {
-			return "", errors.New(fmt.Sprintf("%s升阶贵客数据有误!", recipe.Name))
-		}
-
-		msg += fmt.Sprintf("[%s]%s %s\n", recipe.GalleryId, recipe.Name, rarity)
-		msg += fmt.Sprintf("💰: %d(%d) --- %d/h\n", recipe.Price, recipe.Price+recipe.ExPrice, recipe.GoldEfficiency)
-		msg += fmt.Sprintf("来源: %s\n", recipe.Origin)
-		msg += fmt.Sprintf("单时间: %s\n", time)
-		msg += fmt.Sprintf("总时间: %s (%d份)\n", allTime, recipe.Limit)
-		msg += fmt.Sprintf("炒:%d 烤:%d 煮:%d\n", recipe.Stirfry, recipe.Bake, recipe.Boil)
-		msg += fmt.Sprintf("蒸:%d 炸:%d 切:%d\n", recipe.Steam, recipe.Fry, recipe.Cut)
-		msg += fmt.Sprintf("食材: %s\n", materials)
-		msg += fmt.Sprintf("耗材效率: %d/h\n", recipe.MaterialEfficiency)
-		msg += fmt.Sprintf("可解锁: %s\n", recipe.Unlock)
-		msg += fmt.Sprintf("可合成: %s\n", recipe.Combo)
-		msg += fmt.Sprintf("神级符文: %s\n", recipe.Gift)
-		msg += fmt.Sprintf("贵客-符文: %s\n", recipe.GuestAntiques)
-		msg += fmt.Sprintf("升阶贵客: %s", guests)
-	} else {
-		logger.Info("查询到多个菜谱")
-		msg = "查询到以下菜谱:\n"
-		for p, recipe := range recipes {
-			msg += fmt.Sprintf("%s %s", recipe.GalleryId, recipe.Name)
-			if p != len(recipes)-1 {
-				msg += "\n"
-				if p == util.MaxSearchList {
-					msg += "......"
-					break
-				}
-			}
-		}
-	}
-
-	return msg, nil
+	return recipes, ""
 }
 
-func getRecipeMsgWithoutArg(order string, limitStr string, limitValue int) (string, error) {
+// 参数"任意", 查询出所有菜谱
+func getAllRecipes(order string) ([]database.Recipe, string) {
 	recipes := make([]database.Recipe, 0)
 	orderStr, success := getRecipeOrderString(order)
 	if !(success) {
-		return "查询参数有误!", nil
+		return nil, util.QueryParamWrongNote
 	}
-
-	var err error
-	if limitStr != "" {
-		err = database.DB.Where(limitStr, limitValue).OrderBy(orderStr).Find(&recipes)
-	} else {
-		err = database.DB.OrderBy(orderStr).Find(&recipes)
-	}
+	err := database.DB.OrderBy(orderStr).Find(&recipes)
 	if err != nil {
-		return "", err
+		logger.Error("查询数据库出错!", err)
+		return nil, util.SystemErrorNote
 	}
-
-	msg := "查询到以下菜谱:\n"
-	for p, recipe := range recipes {
-		thirdInfo := getRecipeOrderInfo(recipe, order)
-		msg += fmt.Sprintf("[%s]%s %s", recipe.GalleryId, recipe.Name, thirdInfo)
-		if p != len(recipes)-1 {
-			msg += "\n"
-			if p == util.MaxSearchList-1 {
-				msg += "......"
-				break
-			}
-		}
-	}
-
-	return msg, nil
+	return recipes, ""
 }
 
-func getRecipeMsgWithMaterial(arg string, order string, limitStr string, limitValue int) (string, error) {
-	recipes := make([]database.Recipe, 0)
-	recipeMaterials := make([]database.RecipeMaterial, 0)
+// 根据食材名字查询菜谱
+func getRecipesWithMaterial(arg string, order string) ([]database.Recipe, string) {
+	// 根据食材名查询食材信息
 	material := new(database.Material)
 	has, err := database.DB.Where("name = ?", arg).Get(material)
 	if err != nil {
-		return "", err
+		logger.Error("查询数据库出错!", err)
+		return nil, util.SystemErrorNote
 	}
 	if !has {
-		return "未找到该食材!", nil
+		return nil, fmt.Sprintf("厨师长说他们没有用%s做过菜", arg)
 	}
-
+	recipes := make([]database.Recipe, 0)
+	recipeMaterials := make([]database.RecipeMaterial, 0)
 	if order == "食材效率" {
+		// 根据食材id查菜谱-食材表并根据食材效率排序
 		err = database.DB.Where("material_id = ?", material.MaterialId).Desc("efficiency").Find(&recipeMaterials)
 		if err != nil {
-			return "", err
+			logger.Error("查询数据库出错!", err)
+			return nil, util.SystemErrorNote
 		}
+		// 根据查出的信息查询菜谱信息
 		for _, recipeMaterial := range recipeMaterials {
 			var recipe database.Recipe
-			if limitStr != "" {
-				has, err = database.DB.Where("gallery_id = ?", recipeMaterial.RecipeGalleryId).And(limitStr, limitValue).Get(&recipe)
-			} else {
-				has, err = database.DB.Where("gallery_id = ?", recipeMaterial.RecipeGalleryId).Get(&recipe)
-			}
+			has, err = database.DB.Where("gallery_id = ?", recipeMaterial.RecipeGalleryId).Get(&recipe)
 			if err != nil {
-				return "", err
+				logger.Error("查询数据库出错!", err)
+				return nil, util.SystemErrorNote
 			}
 			if !has {
+				logger.Warnf("菜谱%s的食材信息可能有误!", recipeMaterial.RecipeGalleryId)
 				continue
 			}
 			recipe.MaterialEfficiency = recipeMaterial.Efficiency
 			recipes = append(recipes, recipe)
 		}
 	} else {
+		// 根据食材id查菜谱-食材表
 		err = database.DB.Where("material_id = ?", material.MaterialId).Find(&recipeMaterials)
 		if err != nil {
-			return "", err
+			logger.Error("查询数据库出错!", err)
+			return nil, util.SystemErrorNote
 		}
+		// 根据菜谱id查询菜谱信息并根据order参数排序
 		recipeIds := make([]string, 0)
 		for _, recipeMaterial := range recipeMaterials {
 			recipeIds = append(recipeIds, recipeMaterial.RecipeGalleryId)
 		}
 		orderStr, success := getRecipeOrderString(order)
 		if !(success) {
-			return "查询参数有误!", nil
+			return nil, util.QueryParamWrongNote
 		}
-		if limitStr != "" {
-			err = database.DB.In("gallery_id", recipeIds).And(limitStr, limitValue).OrderBy(orderStr).Find(&recipes)
-		} else {
-			err = database.DB.In("gallery_id", recipeIds).OrderBy(orderStr).Find(&recipes)
-		}
+		err = database.DB.In("gallery_id", recipeIds).OrderBy(orderStr).Find(&recipes)
+
 		if err != nil {
-			return "", err
+			logger.Error("查询数据库出错!", err)
+			return nil, util.SystemErrorNote
 		}
 	}
-
-	msg := "查询到以下菜谱:\n"
-	for p, recipe := range recipes {
-		thirdInfo := getRecipeOrderInfo(recipe, order)
-		msg += fmt.Sprintf("[%s]%s %s", recipe.GalleryId, recipe.Name, thirdInfo)
-		if p != len(recipes)-1 {
-			msg += "\n"
-			if p == util.MaxSearchList-1 {
-				msg += "......"
-				break
-			}
-		}
-	}
-
-	return msg, nil
+	return recipes, ""
 }
 
-func getRecipeMsgWithSkill(arg string, order string, limitStr string, limitValue int) (string, error) {
+func getRecipesWithSkill(arg string, order string) ([]database.Recipe, string) {
 	var skill string
 	switch arg {
 	case "炒":
@@ -384,43 +364,19 @@ func getRecipeMsgWithSkill(arg string, order string, limitStr string, limitValue
 	case "切":
 		skill = "`cut` > 0"
 	default:
-		return "查询参数有误!", nil
+		return nil, util.QueryParamWrongNote
 	}
 
 	orderStr, success := getRecipeOrderString(order)
 	if !(success) {
-		return "查询参数有误!", nil
+		return nil, util.QueryParamWrongNote
 	}
 
 	recipes := make([]database.Recipe, 0)
-	var err error
-	if limitStr != "" {
-		err = database.DB.Where(skill).And(limitStr, limitValue).OrderBy(orderStr).Find(&recipes)
-	} else {
-		err = database.DB.Where(skill).OrderBy(orderStr).Find(&recipes)
-	}
+	err := database.DB.Where(skill).OrderBy(orderStr).Find(&recipes)
 	if err != nil {
-		return "", err
+		logger.Error("数据库查询出错!", err)
+		return nil, util.SystemErrorNote
 	}
-
-	msg := "查询到以下菜谱:\n"
-	for p, recipe := range recipes {
-		thirdInfo := getRecipeOrderInfo(recipe, order)
-		msg += fmt.Sprintf("[%s]%s %s", recipe.GalleryId, recipe.Name, thirdInfo)
-		if p != len(recipes)-1 {
-			msg += "\n"
-			if p == util.MaxSearchList-1 {
-				msg += "......"
-				break
-			}
-		}
-	}
-
-	return msg, nil
+	return recipes, ""
 }
-
-//func conditionQueryRecipe(condition string, arg string, order string) []database.Recipe{
-//	query := "condition = ?"
-//
-//
-//}

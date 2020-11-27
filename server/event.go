@@ -10,14 +10,14 @@ import (
 // 处理消息事件
 func MessageEventHandler(c *onebot.Context) {
 	// 判断前缀
-	text, hasPrefix := service.PrefixFilter(c.RawMessage, util.PrefixCharacter)
+	text, hasPrefix := PrefixFilter(c.RawMessage, util.PrefixCharacter)
 	if !hasPrefix {
 		return
 	}
 	logger.Debugf("收到一条消息事件信息Msg:%+v\n正文内容:%v\n", c, text)
 
 	// 分发指令
-	instruction, args := service.InstructionFilter(text, service.Ins.GetInstructions())
+	instruction, args := InstructionFilter(text, service.Ins.GetInstructions())
 	logger.Debugf("instruction:%v, args:%v\n", instruction, args)
 	if instruction != nil {
 		instruction(c, args)

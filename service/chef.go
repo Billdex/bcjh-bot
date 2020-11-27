@@ -88,7 +88,7 @@ func ChefQuery(c *onebot.Context, args []string) {
 			msg += fmt.Sprintf("%s %s", chef.GalleryId, chef.Name)
 			if p != len(chefs)-1 {
 				msg += "\n"
-				if p == util.MaxSearchList-1 {
+				if p == util.MaxQueryListLength-1 {
 					msg += "......"
 					break
 				}
