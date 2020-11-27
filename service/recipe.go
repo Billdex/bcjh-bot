@@ -154,6 +154,26 @@ func getRecipeMessage(recipe database.Recipe) string {
 	for i := 0; i < recipe.Rarity; i++ {
 		rarity += "🔥"
 	}
+	// 菜谱所需技法数据
+	recipeSkill := ""
+	if recipe.Stirfry > 0 {
+		recipeSkill += fmt.Sprintf("炒: %d  ", recipe.Stirfry)
+	}
+	if recipe.Bake > 0 {
+		recipeSkill += fmt.Sprintf("烤: %d  ", recipe.Bake)
+	}
+	if recipe.Boil > 0 {
+		recipeSkill += fmt.Sprintf("煮: %d  ", recipe.Boil)
+	}
+	if recipe.Steam > 0 {
+		recipeSkill += fmt.Sprintf("蒸: %d  ", recipe.Steam)
+	}
+	if recipe.Fry > 0 {
+		recipeSkill += fmt.Sprintf("炸: %d  ", recipe.Fry)
+	}
+	if recipe.Cut > 0 {
+		recipeSkill += fmt.Sprintf("切: %d  ", recipe.Cut)
+	}
 	// 食材数据
 	materials := ""
 	recipeMaterials := make([]database.RecipeMaterial, 0)
@@ -175,6 +195,20 @@ func getRecipeMessage(recipe database.Recipe) string {
 			materials += fmt.Sprintf("%s*%d ", material.Name, recipeMaterial.Quantity)
 		}
 	}
+	// 贵客礼物数据
+	giftInfo := ""
+	guestGifts := make([]database.GuestGift, 0)
+	err = database.DB.Where("recipe = ?", recipe.Name).Find(&guestGifts)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		return util.SystemErrorNote
+	}
+	for _, gift := range guestGifts {
+		if giftInfo != "" {
+			giftInfo += ", "
+		}
+		giftInfo += fmt.Sprintf("%s-%s", gift.GuestName, gift.Antique)
+	}
 	// 升阶贵客数据
 	guests := ""
 	if len(recipe.Guests) > 0 && recipe.Guests[0] != "" {
@@ -194,19 +228,18 @@ func getRecipeMessage(recipe database.Recipe) string {
 	}
 	// 组合消息信息
 	var msg string
-	msg += fmt.Sprintf("[%s]%s %s\n", recipe.GalleryId, recipe.Name, rarity)
+	msg += fmt.Sprintf("%s %s %s\n", recipe.GalleryId, recipe.Name, rarity)
 	msg += fmt.Sprintf("💰: %d(%d) --- %d/h\n", recipe.Price, recipe.Price+recipe.ExPrice, recipe.GoldEfficiency)
 	msg += fmt.Sprintf("来源: %s\n", recipe.Origin)
 	msg += fmt.Sprintf("单时间: %s\n", util.FormatSecondToString(recipe.Time))
 	msg += fmt.Sprintf("总时间: %s (%d份)\n", util.FormatSecondToString(recipe.Time*recipe.Limit), recipe.Limit)
-	msg += fmt.Sprintf("炒:%d 烤:%d 煮:%d\n", recipe.Stirfry, recipe.Bake, recipe.Boil)
-	msg += fmt.Sprintf("蒸:%d 炸:%d 切:%d\n", recipe.Steam, recipe.Fry, recipe.Cut)
+	msg += fmt.Sprintf("技法: %s\n", recipeSkill)
 	msg += fmt.Sprintf("食材: %s\n", materials)
 	msg += fmt.Sprintf("耗材效率: %d/h\n", recipe.MaterialEfficiency)
 	msg += fmt.Sprintf("可解锁: %s\n", recipe.Unlock)
 	msg += fmt.Sprintf("可合成: %s\n", recipe.Combo)
 	msg += fmt.Sprintf("神级符文: %s\n", recipe.Gift)
-	msg += fmt.Sprintf("贵客-符文: %s\n", recipe.GuestAntiques)
+	msg += fmt.Sprintf("贵客礼物: %s\n", giftInfo)
 	msg += fmt.Sprintf("升阶贵客: %s", guests)
 	return msg
 }
@@ -240,7 +273,7 @@ func getRecipesMessage(recipes []database.Recipe, order string, rarity int, pric
 		}
 		for i := (page - 1) * listLength; i < page*listLength && i < len(results); i++ {
 			orderInfo := getRecipeInfoWithOrder(results[i], order)
-			msg += fmt.Sprintf("[%s]%s %s", recipes[i].GalleryId, recipes[i].Name, orderInfo)
+			msg += fmt.Sprintf("%s %s %s", results[i].GalleryId, results[i].Name, orderInfo)
 			if i < page*listLength-1 && i < len(results)-1 {
 				msg += "\n"
 			}
@@ -296,7 +329,7 @@ func getRecipesWithMaterial(arg string, order string) ([]database.Recipe, string
 		return nil, util.SystemErrorNote
 	}
 	if !has {
-		return nil, fmt.Sprintf("厨师长说他们没有用%s做过菜", arg)
+		return nil, fmt.Sprintf("厨师长说没有用%s做过菜", arg)
 	}
 	recipes := make([]database.Recipe, 0)
 	recipeMaterials := make([]database.RecipeMaterial, 0)

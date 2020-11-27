@@ -134,7 +134,7 @@ func CondimentQuery(c *onebot.Context, args []string) {
 				condiment.Origin,
 				switchSkillAndOrigin(condiment.Origin),
 			))
-			if p != len(condiments)-1 && p == util.MaxSearchList {
+			if p != len(condiments)-1 && p == util.MaxQueryListLength {
 				sb.WriteString("......")
 				break
 			}

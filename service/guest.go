@@ -29,8 +29,8 @@ func GuestQuery(c *onebot.Context, args []string) {
 		return
 	}
 
-	guests := make([]database.Guest, 0)
-	err := database.DB.Where("gallery_id = ?", args[0]).Asc("gallery_id").Find(&guests)
+	guests := make([]database.GuestGift, 0)
+	err := database.DB.Where("guest_id = ?", args[0]).Find(&guests)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_ = bot.SendMessage(c, "查询数据失败!")
@@ -38,7 +38,7 @@ func GuestQuery(c *onebot.Context, args []string) {
 	}
 
 	if len(guests) == 0 {
-		err = database.DB.Where("name like ?", "%"+args[0]+"%").Asc("gallery_id").Find(&guests)
+		err = database.DB.Where("guest_name like ?", "%"+args[0]+"%").Find(&guests)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_ = bot.SendMessage(c, "查询数据失败!")
@@ -46,31 +46,35 @@ func GuestQuery(c *onebot.Context, args []string) {
 		}
 	}
 
-	var msg string
-	if len(guests) == 0 {
-		msg = "哎呀，好像找不到呢!"
-	} else if len(guests) == 1 {
-		guest := guests[0]
-		var gifts string
-		for p, gift := range guest.Gifts {
-			gifts += fmt.Sprintf("%s-%s", gift.Antique, gift.Recipe)
-			if p != len(guest.Gifts)-1 {
-				gifts += "\n"
-			}
+	guestInfo := make(map[string]string)
+	for _, guest := range guests {
+		key := fmt.Sprintf("%s %s", guest.GuestId, guest.GuestName)
+		value, hasKey := guestInfo[key]
+		if hasKey {
+			value += "\n"
+			value += fmt.Sprintf("%s-%s", guest.Antique, guest.Recipe)
+		} else {
+			value = fmt.Sprintf("%s %s\n", guest.GuestId, guest.GuestName)
+			value += fmt.Sprintf("%s-%s", guest.Antique, guest.Recipe)
 		}
-		msg += fmt.Sprintf("%s %s\n", guest.GalleryId, guest.Name)
-		msg += fmt.Sprintf("%s", gifts)
+		guestInfo[key] = value
+	}
+	var msg string
+	if len(guestInfo) == 0 {
+		msg = "哎呀，好像找不到呢!"
+	} else if len(guestInfo) == 1 {
+		key := fmt.Sprintf("%s %s", guests[0].GuestId, guests[0].GuestName)
+		msg = guestInfo[key]
 	} else {
-		msg = "查询到以下贵客:\n"
-		for p, guest := range guests {
-			msg += fmt.Sprintf("%s %s", guest.GalleryId, guest.Name)
-			if p != len(guests)-1 {
-				msg += "\n"
-				if p == util.MaxQueryListLength-1 {
-					msg += "......"
-					break
-				}
+		msg = "查询到以下贵客:"
+		p := 0
+		for k, _ := range guestInfo {
+			msg += fmt.Sprintf("\n%s", k)
+			if p == util.MaxQueryListLength-1 {
+				msg += "\n......"
+				break
 			}
+			p++
 		}
 	}
 

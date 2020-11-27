@@ -12,7 +12,7 @@ var tables = []interface{}{
 	&Chef{},
 	&Equip{},
 	&Recipe{},
-	&Guest{},
+	&GuestGift{},
 	&Material{},
 	&Skill{},
 	&RecipeMaterial{},

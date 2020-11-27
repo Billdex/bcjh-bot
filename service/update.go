@@ -319,7 +319,6 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 			ExPrice:        recipeData.ExPrice,
 			GoldEfficiency: recipeData.Price * 3600 / recipeData.Time,
 			Gift:           recipeData.Gift,
-			GuestAntiques:  "",
 			Time:           recipeData.Time,
 			Limit:          recipeData.Limit,
 			TotalTime:      recipeData.Time * recipeData.Limit,
@@ -408,50 +407,24 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Guest).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.GuestGift).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		session.Rollback()
 		return err
 	}
-	guests := make([]database.Guest, 0)
+	guests := make([]database.GuestGift, 0)
 	for p, guestData := range guestsData {
-		// 30后的图鉴编号有误!!!
-		guest := database.Guest{
-			GuestId:   p + 1,
-			Name:      guestData.Name,
-			GalleryId: fmt.Sprintf("%03d", p+1),
-		}
-		gifts := make([]database.GuestGift, 0)
-		for p, gift := range guestData.Gifts {
-			// 记录贵客表信息
-			gifts = append(gifts, database.GuestGift{
-				Antique: gift.Antique,
-				Recipe:  gift.Recipe,
-			})
-			// 记录贵客-符文信息到菜谱表
-			recipe := new(database.Recipe)
-			has, err := session.Where("name = ?", gift.Recipe).Get(recipe)
-			if err != nil {
-				session.Rollback()
-				return err
+		// 图鉴网未指明贵客id，只能按数据顺序排序，因此30后的图鉴编号有误!!!
+		for _, gift := range guestData.Gifts {
+			guest := database.GuestGift{
+				GuestId:   fmt.Sprintf("%03d", p+1),
+				GuestName: guestData.Name,
+				Antique:   gift.Antique,
+				Recipe:    gift.Recipe,
 			}
-			if !has {
-				logger.Warnf("未查询到菜谱%s的数据!", gift.Recipe)
-			} else {
-				recipe.GuestAntiques += fmt.Sprintf("%s-%s", guestData.Name, gift.Antique)
-				if p != len(guestData.Gifts)-1 {
-					recipe.GuestAntiques += ", "
-				}
-				_, err = session.Where("name = ?", gift.Recipe).Update(recipe)
-				if err != nil {
-					session.Rollback()
-					return err
-				}
-			}
+			guests = append(guests, guest)
 		}
-		guest.Gifts = gifts
-		guests = append(guests, guest)
 	}
 	_, err = session.Insert(&guests)
 	if err != nil {
@@ -591,10 +564,10 @@ func updateCondiments(condimentsData []gamedata.Condiment) error {
 	for _, condimentData := range condimentsData {
 		skill := database.Condiment{
 			CondimentId: condimentData.CondimentId,
-			Name:     condimentData.Name,
-			Rarity:   condimentData.Rarity,
-			Skill:   condimentData.Skill,
-			Origin:  condimentData.Origin,
+			Name:        condimentData.Name,
+			Rarity:      condimentData.Rarity,
+			Skill:       condimentData.Skill,
+			Origin:      condimentData.Origin,
 		}
 		condiments = append(condiments, skill)
 	}

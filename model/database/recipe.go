@@ -18,7 +18,6 @@ type Recipe struct {
 	MaterialEfficiency int      `xorm:"material_efficiency comment('耗材效率')"`
 	Gift               string   `xorm:"gift comment('第一次做到神级送的符文')"`
 	Guests             []string `xorm:"guests comment('升阶贵客')"`
-	GuestAntiques      string   `xorm:"guest_antiques comment('营业贵客与符文')"`
 	Time               int      `xorm:"'time' comment('每份时间(秒)')"`
 	Limit              int      `xorm:"limit comment('每组数量')"`
 	TotalTime          int      `xorm:"total_time comment('每组时间(秒)')"`
