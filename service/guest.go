@@ -66,7 +66,7 @@ func GuestQuery(c *onebot.Context, args []string) {
 			msg += fmt.Sprintf("%s %s", guest.GalleryId, guest.Name)
 			if p != len(guests)-1 {
 				msg += "\n"
-				if p == util.MaxSearchList-1 {
+				if p == util.MaxQueryListLength-1 {
 					msg += "......"
 					break
 				}
