@@ -145,6 +145,17 @@ func UpdateData(c *onebot.Context, args []string) {
 	DecorationConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新装修家具数据完毕, 耗时%s", DecorationConsume)
 
+	// 更新调料数据
+	start = time.Now().UnixNano()
+	err = updateCondiments(gameData.Condiments)
+	if err != nil {
+		logger.Error("更新调料数据出错!", err)
+		_ = bot.SendMessage(c, "更新调料数据出错!")
+		return
+	}
+	CondimentConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新调料数据完毕, 耗时%s", CondimentConsume)
+
 	// 发送成功消息
 	logger.Info("更新数据完毕")
 	var strBdr = strings.Builder{}
@@ -159,7 +170,8 @@ func UpdateData(c *onebot.Context, args []string) {
 	strBdr.WriteString(fmt.Sprintf("更新贵客数据耗时%s\n", guestConsume))
 	strBdr.WriteString(fmt.Sprintf("更新食材数据耗时%s\n", materialConsume))
 	strBdr.WriteString(fmt.Sprintf("更新技能数据耗时%s\n", skillConsume))
-	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s", DecorationConsume))
+	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s\n", DecorationConsume))
+	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s", CondimentConsume))
 	err = bot.SendMessage(c, strBdr.String())
 	if err != nil {
 		logger.Error("发送消息失败!", err)
@@ -553,6 +565,40 @@ func updateDecorations(decorationsData []gamedata.Decoration) error {
 		decorations = append(decorations, skill)
 	}
 	_, err = session.Insert(&decorations)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
+	return err
+}
+
+// 更新调料信息
+func updateCondiments(condimentsData []gamedata.Condiment) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Condiment).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	condiments := make([]database.Condiment, 0)
+	for _, condimentData := range condimentsData {
+		skill := database.Condiment{
+			CondimentId: condimentData.CondimentId,
+			Name:     condimentData.Name,
+			Rarity:   condimentData.Rarity,
+			Skill:   condimentData.Skill,
+			Origin:  condimentData.Origin,
+		}
+		condiments = append(condiments, skill)
+	}
+	_, err = session.Insert(&condiments)
 	if err != nil {
 		session.Rollback()
 		return err

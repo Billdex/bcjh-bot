@@ -9,4 +9,5 @@ type GameData struct {
 	Materials   []MaterialData `json:"materials"`   // 材料
 	Skills      []SkillData    `json:"skills"`      // 技能
 	Decorations []Decoration   `json:"decorations"` // 装修家具
+	Condiments  []Condiment    `json:"condiments"`  // 调料
 }
