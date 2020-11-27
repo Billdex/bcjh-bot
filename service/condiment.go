@@ -82,7 +82,7 @@ func CondimentQuery(c *onebot.Context, args []string) {
 		msg = "哎呀，好像找不到呢!"
 	case condimentsDistinct(condiments) == 1:
 		sb := strings.Builder{}
-		sb.WriteString(fmt.Sprintf("[%d]%s   %s | %s",
+		sb.WriteString(fmt.Sprintf("%d %s   %s | %s",
 			condiments[0].CondimentId,
 			condiments[0].Name,
 			condiments[0].Origin,
@@ -105,7 +105,7 @@ func CondimentQuery(c *onebot.Context, args []string) {
 		sb := strings.Builder{}
 		sb.WriteString(fmt.Sprintf("查询到%d种调料，共%d个", condimentsDistinct(condiments), len(condiments)))
 		for p, condiment := range condiments {
-			sb.WriteString(fmt.Sprintf("\n[%d]%s   %s | %s",
+			sb.WriteString(fmt.Sprintf("\n%d %s   %s | %s",
 				condiment.CondimentId,
 				condiment.Name,
 				condiment.Origin,
