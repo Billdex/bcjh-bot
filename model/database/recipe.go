@@ -1,9 +1,9 @@
 package database
 
 type Recipe struct {
-	RecipeId           int      `xorm:"recipe_id comment('菜谱ID')"`
+	RecipeId           int      `xorm:"pk recipe_id comment('菜谱ID')"`
 	Name               string   `xorm:"name comment('菜名')"`
-	GalleryId          string   `xorm:"gallery_id comment('图鉴ID')"`
+	GalleryId          string   `xorm:"index gallery_id comment('图鉴ID')"`
 	Rarity             int      `xorm:"rarity comment('稀有度')"`
 	Origin             string   `xorm:"origin comment('来源')"`
 	Stirfry            int      `xorm:"stirfry comment('炒技法')"`

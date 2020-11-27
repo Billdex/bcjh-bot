@@ -12,38 +12,25 @@ import (
 
 // 调料查询
 func CondimentQuery(c *onebot.Context, args []string) {
-	// res := make([]database.Condiment, 0)
-	// session := database.DB.Select("*")
-	//
-	// for _, id := range []int{153, 608, 123} {
-	// 	session.SQL("json_contains(skill->'$', ?) ", id)
-	// }
-	// session.Find(&res)
-	// logger.Warnf("%v", res)
-	// return
-
 	prefix := util.PrefixCharacter
 	split := util.ArgsSplitCharacter
 	logger.Info("调料查询，参数:", args)
 
 	// 无参数的情况
 	if len(args) == 0 {
-		msg := "指令示例:\n"
-		msg += "1. 简单查询，接名称或ID:\n"
-		msg += fmt.Sprintf("「%s调料 香菜」「%s调料 1」\n", prefix, prefix)
-		msg += "2. 限制品质，和菜名写在一起:\n"
-		msg += fmt.Sprintf("「%s调料 三火香菜」「%s调料 3星香菜」\n", prefix, prefix)
-		msg += "3. 限制技能:\n"
-		msg += fmt.Sprintf("「%s调料 三火%s炒技法+15」「%s调料 三火%s采集」「%s调料 三火%s售价」\n",
-			prefix, split,
-			prefix, split,
-			prefix, split)
-		msg += "4. 限制来源，或对应阁楼的技法:\n"
-		msg += fmt.Sprintf("「%s调料 %%%s%%%s梵正」「%s调料 三火%s%%%s切」",
-			prefix, split,
-			split, prefix,
-			split, split)
-		if err := bot.SendMessage(c, msg); err != nil {
+		sb := strings.Builder{}
+		sb.WriteString("【调料信息查询】:\n")
+		sb.WriteString("1. 简单查询，接名称或ID:\n")
+		sb.WriteString(fmt.Sprintf("『%s调料 香菜』『%s调料 1』\n", prefix, prefix))
+		sb.WriteString("2. 限制稀有度，和菜名写在一起:\n")
+		sb.WriteString(fmt.Sprintf("『%s调料 三火』『%s调料 三星香菜』『%s调料 3星香菜』\n", prefix, prefix, prefix))
+		sb.WriteString("3. 限制来源，或对应阁楼的技法:\n")
+		sb.WriteString(fmt.Sprintf("『%s调料 %%%s切』『%s调料 三火%s切』『%s调料 1星%s梵正』",
+			prefix, split, prefix, split, prefix, split))
+		// sb.WriteString("4. 限制技能:\n")
+		// sb.WriteString(fmt.Sprintf("『%s调料 三火%s炒技法+15』『%s调料 三火%s采集』『%s调料 三火%s售价』\n",
+		// 	prefix, split, prefix, split, prefix, split))
+		if err := bot.SendMessage(c, sb.String()); err != nil {
 			logger.Error("发送信息失败!", err)
 		}
 		return
@@ -54,13 +41,13 @@ func CondimentQuery(c *onebot.Context, args []string) {
 
 	// 1. 第一个参数
 	// 过滤等级，在调料中查询是否包含等级相关的参数，查询后保留原有参数
-	if substr, ok := StringContainsAny(args[0], []string{"1火", "一星", "1星", "一火"}); ok {
+	if substr, ok := StringContainsAny(args[0], []string{"1火", "一火", "1星", "一星"}); ok {
 		args[0] = strings.ReplaceAll(args[0], substr, "")
 		Session.Where("rarity = 1")
-	} else if substr, ok := StringContainsAny(args[0], []string{"2火", "二星", "2星", "二火"}); ok {
+	} else if substr, ok := StringContainsAny(args[0], []string{"2火", "二火", "两火", "2星", "二星", "两星"}); ok {
 		args[0] = strings.ReplaceAll(args[0], substr, "")
 		Session.Where("rarity = 2")
-	} else if substr, ok := StringContainsAny(args[0], []string{"3火", "三星", "3星", "三火"}); ok {
+	} else if substr, ok := StringContainsAny(args[0], []string{"3火", "三火", "3星", "三星"}); ok {
 		args[0] = strings.ReplaceAll(args[0], substr, "")
 		Session.Where("rarity = 3")
 	}
@@ -70,21 +57,11 @@ func CondimentQuery(c *onebot.Context, args []string) {
 		Session.Where("name like ? or condiment_id = ?", "%"+args[0]+"%", args[0])
 	}
 
-	// 2. 当传入第二个参数时，默认认为是技法
-	skills := make([]database.Skill, 0)
+	// 2. 当传入第三个参数时，默认认为是来源
 	if len(args) > 1 && args[1] != "" && args[1] != "%" {
-		// TODO: 还没做的东西
-		_ = bot.SendMessage(c, "限制技能还没做好，用%或空代替")
-		return
-		_ = database.DB.Select("skill_id").Where("description like ?", "%"+args[1]+"%").Find(&skills)
-		logger.Debugf("%v", skills)
-	}
-
-	// 3. 当传入第三个参数时，默认认为是来源
-	if len(args) > 2 && args[2] != "" && args[2] != "%" {
-		if skill, ok := StringContainsAny(args[2], []string{"切", "蒸", "炸", "煮", "烤", "炒"}); ok {
+		if skill, ok := StringContainsAny(args[1], []string{"切", "蒸", "炸", "煮", "烤", "炒"}); ok {
 			Session.Where("origin = ?", switchSkillAndOrigin(skill))
-		} else if origin, ok := StringContainsAny(args[2], []string{"庖丁", "梵正", "膳祖", "彭铿", "易牙", "伊尹"}); ok {
+		} else if origin, ok := StringContainsAny(args[1], []string{"庖丁", "梵正", "膳祖", "彭铿", "易牙", "伊尹"}); ok {
 			Session.Where("origin = ?", origin+"阁")
 		}
 	}
@@ -105,7 +82,7 @@ func CondimentQuery(c *onebot.Context, args []string) {
 		msg = "哎呀，好像找不到呢!"
 	case condimentsDistinct(condiments) == 1:
 		sb := strings.Builder{}
-		sb.WriteString(fmt.Sprintf("%d.%s   %s | %s",
+		sb.WriteString(fmt.Sprintf("[%d]%s   %s | %s",
 			condiments[0].CondimentId,
 			condiments[0].Name,
 			condiments[0].Origin,
@@ -126,16 +103,16 @@ func CondimentQuery(c *onebot.Context, args []string) {
 		msg = sb.String()
 	default:
 		sb := strings.Builder{}
-		sb.WriteString(fmt.Sprintf("查询到%d种调料，共%d个\n", condimentsDistinct(condiments), len(condiments)))
+		sb.WriteString(fmt.Sprintf("查询到%d种调料，共%d个", condimentsDistinct(condiments), len(condiments)))
 		for p, condiment := range condiments {
-			sb.WriteString(fmt.Sprintf("%d.%s   %s | %s\n",
+			sb.WriteString(fmt.Sprintf("\n[%d]%s   %s | %s",
 				condiment.CondimentId,
 				condiment.Name,
 				condiment.Origin,
 				switchSkillAndOrigin(condiment.Origin),
 			))
-			if p != len(condiments)-1 && p == util.MaxSearchList {
-				sb.WriteString("......")
+			if p != len(condiments)-1 && p == util.MaxQueryListLength {
+				sb.WriteString("\n......")
 				break
 			}
 		}

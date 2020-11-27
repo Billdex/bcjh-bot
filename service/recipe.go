@@ -240,7 +240,7 @@ func getRecipesMessage(recipes []database.Recipe, order string, rarity int, pric
 		}
 		for i := (page - 1) * listLength; i < page*listLength && i < len(results); i++ {
 			orderInfo := getRecipeInfoWithOrder(results[i], order)
-			msg += fmt.Sprintf("[%s]%s %s", recipes[i].GalleryId, recipes[i].Name, orderInfo)
+			msg += fmt.Sprintf("[%s]%s %s", results[i].GalleryId, results[i].Name, orderInfo)
 			if i < page*listLength-1 && i < len(results)-1 {
 				msg += "\n"
 			}
