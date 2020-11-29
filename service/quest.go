@@ -15,7 +15,7 @@ func QuestQuery(c *onebot.Context, args []string) {
 	prefix := util.PrefixCharacters[0]
 	split := util.ArgsSplitCharacter
 	logger.Info("任务查询，参数:", args)
-	maxLen := 5
+	maxLen := 10
 
 	// 无参数的情况
 	if len(args) == 0 {
@@ -71,9 +71,9 @@ func QuestQuery(c *onebot.Context, args []string) {
 					left, right = right, left
 				}
 				// 区间不能过大，不然消息太长
-				if right-left > 4 { // 可以查 5 条
+				if right-left > maxLen-1 { // 可以查 5 条
 					_ = bot.SendMessage(c, "区间跨度不能太大哦，不然消息会很长")
-					right = left + 4
+					right = left + maxLen - 1
 				}
 				Session.Where("questId >= ? and questId <= ?", left, right)
 			} else {
@@ -84,6 +84,9 @@ func QuestQuery(c *onebot.Context, args []string) {
 		} else { // 支线或限时
 			Session.Where("questIdDisp = ?", args[1])
 		}
+	} else {
+		_ = bot.SendMessage(c, "要指定一下任务 id 哦")
+		return
 	}
 
 	// 查询得到结果
