@@ -72,13 +72,13 @@ func QuestQuery(c *onebot.Context, args []string) {
 					_ = bot.SendMessage(c, "区间跨度不能太大哦，不然消息会很长")
 					right = left + maxLen - 1
 				}
-				Session.Where("questId >= ? and questId <= ?", left, right)
+				Session.Where("quest_id >= ? and quest_id <= ?", left, right)
 			} else {
 				// 限制查询的 id 在 700 以内
-				Session.Where("questId = ?", id)
+				Session.Where("quest_id = ?", id)
 			}
 		} else { // 支线或限时
-			Session.Where("questIdDisp = ?", args[1])
+			Session.Where("quest_id_disp = ?", args[1])
 		}
 	} else {
 		_ = bot.SendMessage(c, "要指定一下任务 id 哦")

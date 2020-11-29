@@ -62,15 +62,26 @@ func ChefQuery(c *onebot.Context, args []string) {
 		_, err = database.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			_ = bot.SendMessage(c, "查询数据失败!")
+			_ = bot.SendMessage(c, util.SystemErrorNote)
 			return
 		}
-		ultimate := new(database.Skill)
-		_, err = database.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimate)
+		ultimateSkill := new(database.Skill)
+		_, err = database.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			_ = bot.SendMessage(c, "查询数据失败!")
+			_ = bot.SendMessage(c, util.SystemErrorNote)
 			return
+		}
+		ultimateGoals := make([]database.Quest, 0)
+		err = database.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			_ = bot.SendMessage(c, util.SystemErrorNote)
+			return
+		}
+		goals := ""
+		for p, ultimateGoal := range ultimateGoals {
+			goals += fmt.Sprintf("\n%d.%s", p+1, ultimateGoal.Goal)
 		}
 		msg += fmt.Sprintf("%s %s %s\n", chef.GalleryId, chef.Name, gender)
 		msg += fmt.Sprintf("%s\n", rarity)
@@ -79,7 +90,8 @@ func ChefQuery(c *onebot.Context, args []string) {
 		msg += fmt.Sprintf("蒸:%d 炸:%d 切:%d\n", chef.Steam, chef.Fry, chef.Cut)
 		msg += fmt.Sprintf("🍖:%d 🍞:%d 🥕:%d 🐟:%d\n", chef.Meat, chef.Flour, chef.Vegetable, chef.Fish)
 		msg += fmt.Sprintf("技能:%s\n", skill.Description)
-		msg += fmt.Sprintf("修炼效果:%s", ultimate.Description)
+		msg += fmt.Sprintf("修炼效果:%s\n", ultimateSkill.Description)
+		msg += fmt.Sprintf("修炼任务:%s", goals)
 	} else {
 		msg = "查询到以下厨师:\n"
 		for p, chef := range chefs {

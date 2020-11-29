@@ -74,8 +74,8 @@ func feedbackHelp() string {
 	msg += fmt.Sprintf("在使用过程中如果遇到了什么bug或者有什么好的建议，可以通过该功能反馈给我\n")
 	msg += fmt.Sprintf("反馈方式:\n")
 	msg += fmt.Sprintf("%s反馈 问题描述或建议\n", util.PrefixCharacters[0])
-	msg += fmt.Sprintf("如果比较紧急可以私聊我:\n")
-	msg += fmt.Sprintf("QQ:591404144")
+	msg += fmt.Sprintf("如果比较紧急可以私聊我们:\n")
+	msg += fmt.Sprintf("QQ:591404144(罗觉觉)或646792290(汪汪泥)")
 	return msg
 }
 
