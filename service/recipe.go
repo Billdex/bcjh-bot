@@ -37,12 +37,18 @@ func RecipeQuery(c *onebot.Context, args []string) {
 			updateQueryArgs(args[i], &order, &rarity, &price, &page)
 		}
 		switch args[0] {
-		case "任意":
+		case "任意", "%":
 			recipes, note = getAllRecipes(order)
-		case "食材":
+		case "食材", "材料":
 			recipes, note = getRecipesWithMaterial(args[1], order)
 		case "技法":
 			recipes, note = getRecipesWithSkill(args[1], order)
+		case "贵客":
+			recipes, note = getRecipesWithGuest(args[1], order)
+		case "符文", "礼物":
+			recipes, note = getRecipesWithAntique(args[1], order)
+		case "来源":
+			recipes, note = getRecipesWithOrigin(args[1], order)
 		default:
 			note = util.QueryParamWrongNote
 		}
@@ -407,6 +413,93 @@ func getRecipesWithSkill(arg string, order string) ([]database.Recipe, string) {
 
 	recipes := make([]database.Recipe, 0)
 	err := database.DB.Where(skill).OrderBy(orderStr).Find(&recipes)
+	if err != nil {
+		logger.Error("数据库查询出错!", err)
+		return nil, util.SystemErrorNote
+	}
+	return recipes, ""
+}
+
+func getRecipesWithGuest(arg string, order string) ([]database.Recipe, string) {
+	guests := make([]database.GuestGift, 0)
+	err := database.DB.Where("guest_id = ?", arg).Find(&guests)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		return nil, util.SystemErrorNote
+	}
+
+	if len(guests) == 0 {
+		err = database.DB.Where("guest_name like ?", "%"+arg+"%").Find(&guests)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			return nil, util.SystemErrorNote
+		}
+	}
+
+	if len(guests) == 0 {
+		return nil, "没有找到该贵客"
+	}
+
+	recipesName := make([]string, 0)
+
+	for _, guest := range guests {
+		recipesName = append(recipesName, guest.Recipe)
+	}
+
+	orderStr, success := getRecipeOrderString(order)
+	if !(success) {
+		return nil, util.QueryParamWrongNote
+	}
+
+	recipes := make([]database.Recipe, 0)
+	err = database.DB.In("name", recipesName).OrderBy(orderStr).Find(&recipes)
+	if err != nil {
+		logger.Error("数据库查询出错!", err)
+		return nil, util.SystemErrorNote
+	}
+	return recipes, ""
+}
+
+func getRecipesWithAntique(arg string, order string) ([]database.Recipe, string) {
+	guests := make([]database.GuestGift, 0)
+	err := database.DB.Where("antique like ?", "%"+arg+"%").Find(&guests)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		return nil, util.SystemErrorNote
+	}
+
+	if len(guests) == 0 {
+		return nil, "没有找到该符文"
+	}
+
+	recipesName := make([]string, 0)
+
+	for _, guest := range guests {
+		recipesName = append(recipesName, guest.Recipe)
+	}
+
+	orderStr, success := getRecipeOrderString(order)
+	if !(success) {
+		return nil, util.QueryParamWrongNote
+	}
+
+	recipes := make([]database.Recipe, 0)
+	err = database.DB.In("name", recipesName).OrderBy(orderStr).Find(&recipes)
+	if err != nil {
+		logger.Error("数据库查询出错!", err)
+		return nil, util.SystemErrorNote
+	}
+	return recipes, ""
+}
+
+func getRecipesWithOrigin(arg string, order string) ([]database.Recipe, string) {
+	orderStr, success := getRecipeOrderString(order)
+	if !(success) {
+		return nil, util.QueryParamWrongNote
+	}
+
+	recipes := make([]database.Recipe, 0)
+	err := database.DB.Where("origin like ?", "%"+arg+"%").OrderBy(orderStr).Find(&recipes)
 	if err != nil {
 		logger.Error("数据库查询出错!", err)
 		return nil, util.SystemErrorNote

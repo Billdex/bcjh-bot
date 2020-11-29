@@ -10,7 +10,14 @@ import (
 // 处理消息事件
 func MessageEventHandler(c *onebot.Context) {
 	// 判断前缀
-	text, hasPrefix := PrefixFilter(c.RawMessage, util.PrefixCharacter)
+	var text string
+	var hasPrefix bool
+	for _, prefix := range util.PrefixCharacters {
+		text, hasPrefix = PrefixFilter(c.RawMessage, prefix)
+		if hasPrefix {
+			break
+		}
+	}
 	if !hasPrefix {
 		return
 	}

@@ -13,9 +13,7 @@ func ChefQuery(c *onebot.Context, args []string) {
 	logger.Info("厨师查询，参数:", args)
 
 	if len(args) == 0 {
-		err := bot.SendMessage(c,
-			fmt.Sprintf("指令示例:\n"+
-				"%s厨师 羽十六", util.PrefixCharacter))
+		err := bot.SendMessage(c, chefHelp())
 		if err != nil {
 			logger.Error("发送信息失败!", err)
 		}

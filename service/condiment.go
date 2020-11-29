@@ -12,7 +12,7 @@ import (
 
 // 调料查询
 func CondimentQuery(c *onebot.Context, args []string) {
-	prefix := util.PrefixCharacter
+	prefix := util.PrefixCharacters[0]
 	split := util.ArgsSplitCharacter
 	logger.Info("调料查询，参数:", args)
 

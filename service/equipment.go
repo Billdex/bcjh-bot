@@ -12,9 +12,7 @@ import (
 func EquipmentQuery(c *onebot.Context, args []string) {
 	logger.Info("厨具查询，参数:", args)
 	if len(args) == 0 {
-		err := bot.SendMessage(c,
-			fmt.Sprintf("指令示例:\n"+
-				"%s厨具 金烤叉", util.PrefixCharacter))
+		err := bot.SendMessage(c, equipmentHelp())
 		if err != nil {
 			logger.Error("发送信息失败!", err)
 		}

@@ -13,9 +13,7 @@ func GuestQuery(c *onebot.Context, args []string) {
 	logger.Info("贵客查询，参数:", args)
 
 	if len(args) == 0 {
-		err := bot.SendMessage(c,
-			fmt.Sprintf("指令示例:\n"+
-				"%s贵客 木良", util.PrefixCharacter))
+		err := bot.SendMessage(c, guestHelp())
 		if err != nil {
 			logger.Error("发送信息失败!", err)
 		}
