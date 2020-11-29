@@ -2,6 +2,7 @@ package service
 
 import (
 	"bcjh-bot/bot"
+	"bcjh-bot/config"
 	"bcjh-bot/model/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
@@ -89,13 +90,20 @@ func galleryWebsiteHelp() string {
 // 游戏术语
 func termHelp() string {
 	var msg string
-	msg += fmt.Sprintf("[爆炒江湖游戏术语]\n")
-	msg += fmt.Sprintf("[技法]: 游戏内有炒、烤、煮、蒸、炸、切共6种技法，每道菜有1或2种技法属性，厨师技法达到菜谱所有要求即可做这道菜。\n")
-	msg += fmt.Sprintf("[菜谱品阶]: 菜谱有可、优、特、神、传5个品阶, 当做菜的厨师达到菜谱所有技法要求的1、2、3、4、5倍时可达成对应品阶。" +
-		"不同品阶的金币收益不同，分别为100%%(可),110%%(优),130%%(特),150%%(神),200%%(传)\n")
-	msg += fmt.Sprintf("[熟练/专精]: 营业制作的菜会增加菜谱熟练度, 品阶越高增加越多, 熟练度满后会提高一定售价。\n")
-	msg += fmt.Sprintf("[碰瓷/升阶贵客]: 当一道菜首次提升至优、特、神时必来贵客(不需要做完整一组, 只需做一份即可), " +
-		"注意, 碰瓷过高品阶贵客后无法再碰瓷低品阶贵客, 如直接做到神级后, 便无法再碰瓷优和特品阶的贵客。")
+	//msg += fmt.Sprintf("[爆炒江湖游戏术语]\n")
+	//msg += fmt.Sprintf("[技法]: 游戏内有炒、烤、煮、蒸、炸、切共6种技法，每道菜有1或2种技法属性，厨师技法达到菜谱所有要求即可做这道菜。\n")
+	//msg += fmt.Sprintf("[菜谱品阶]: 菜谱有可、优、特、神、传5个品阶, 当做菜的厨师达到菜谱所有技法要求的1、2、3、4、5倍时可达成对应品阶。" +
+	//	"不同品阶的金币收益不同，分别为100%%(可),110%%(优),130%%(特),150%%(神),200%%(传)\n")
+	//msg += fmt.Sprintf("[熟练/专精]: 营业制作的菜会增加菜谱熟练度, 品阶越高增加越多, 熟练度满后会提高一定售价。\n")
+	//msg += fmt.Sprintf("[碰瓷/升阶贵客]: 当一道菜首次提升至优、特、神时必来贵客(不需要做完整一组, 只需做一份即可), " +
+	//	"注意, 碰瓷过高品阶贵客后无法再碰瓷低品阶贵客, 如直接做到神级后, 便无法再碰瓷优和特品阶的贵客。")
+	termImagePath := config.AppConfig.Resource.Image + "/游戏术语.jpg"
+	CQImage, err := bot.GetCQImage(termImagePath, "file")
+	if err != nil {
+		logger.Error("图片类型错误!", err)
+		return ""
+	}
+	msg += fmt.Sprintf("%s", CQImage)
 	return msg
 }
 

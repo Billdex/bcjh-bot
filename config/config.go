@@ -22,6 +22,10 @@ type dbConfig struct {
 	ExportDir string `ini:"export_dir"`
 }
 
+type Resource struct {
+	Image string `ini:"image"`
+}
+
 type logConfig struct {
 	Style string `ini:"style"`
 	Level string `ini:"level"`
@@ -29,10 +33,11 @@ type logConfig struct {
 }
 
 type appConfig struct {
-	Server serverConfig `ini:"server"`
-	OneBot OneBotConfig `ini:"onebot"`
-	DB     dbConfig     `ini:"database"`
-	Log    logConfig    `ini:"log"`
+	Server   serverConfig `ini:"server"`
+	OneBot   OneBotConfig `ini:"onebot"`
+	DB       dbConfig     `ini:"database"`
+	Resource Resource     `ini:"resource"`
+	Log      logConfig    `ini:"log"`
 }
 
 var AppConfig *appConfig

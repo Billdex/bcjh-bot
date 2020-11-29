@@ -84,3 +84,16 @@ func SendGroupMsg(msg onebot.GroupMsg) error {
 	err = OneBotPost(byteMsg, url)
 	return err
 }
+
+func GetCQImage(path string, pathType string) (string, error) {
+	switch pathType {
+	case "file":
+		return "[CQ:image,file=file:///" + path + "]", nil
+	case "url":
+		return "[CQ:image,url=" + path + "]", nil
+	case "base64":
+		return "{CQ:image,base64=base64://" + path + "]", nil
+	default:
+		return "", errors.New("未知格式")
+	}
+}
