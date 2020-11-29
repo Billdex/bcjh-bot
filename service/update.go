@@ -156,6 +156,17 @@ func UpdateData(c *onebot.Context, args []string) {
 	CondimentConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新调料数据完毕, 耗时%s", CondimentConsume)
 
+	// 更新任务数据
+	start = time.Now().UnixNano()
+	err = updateQuests(gameData.Quests)
+	if err != nil {
+		logger.Error("更新任务数据出错!", err)
+		_ = bot.SendMessage(c, "更新任务数据出错!")
+		return
+	}
+	QuestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新任务数据完毕, 耗时%s", QuestConsume)
+
 	// 发送成功消息
 	logger.Info("更新数据完毕")
 	var strBdr = strings.Builder{}
@@ -171,7 +182,8 @@ func UpdateData(c *onebot.Context, args []string) {
 	strBdr.WriteString(fmt.Sprintf("更新食材数据耗时%s\n", materialConsume))
 	strBdr.WriteString(fmt.Sprintf("更新技能数据耗时%s\n", skillConsume))
 	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s\n", DecorationConsume))
-	strBdr.WriteString(fmt.Sprintf("更新调料数据耗时%s", CondimentConsume))
+	strBdr.WriteString(fmt.Sprintf("更新调料数据耗时%s\n", CondimentConsume))
+	strBdr.WriteString(fmt.Sprintf("更新任务数据耗时%s", QuestConsume))
 	err = bot.SendMessage(c, strBdr.String())
 	if err != nil {
 		logger.Error("发送消息失败!", err)
@@ -572,6 +584,47 @@ func updateCondiments(condimentsData []gamedata.Condiment) error {
 		condiments = append(condiments, skill)
 	}
 	_, err = session.Insert(&condiments)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	err = session.Commit()
+	return err
+}
+
+// 更新任务信息
+func updateQuests(questsData []gamedata.QuestData) error {
+	session := database.DB.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Quest).TableName())
+	_, err = session.Exec(sql)
+	if err != nil {
+		session.Rollback()
+		return err
+	}
+	quests := make([]database.Quest, 0)
+	for _, questData := range questsData {
+		quest := database.Quest{
+			QuestId:     questData.QuestId,
+			QuestIdDisp: fmt.Sprintf("%v", questData.QuestIdDisp),
+			Type:        questData.Type,
+			Goal:        questData.Goal,
+		}
+		rewards := make([]database.QuestRewards, 0)
+		for _, rewardData := range questData.Rewards {
+			rewards = append(rewards, database.QuestRewards{
+				Name:     rewardData.Name,
+				Quantity: rewardData.Quantity,
+			})
+		}
+		quest.Rewards = rewards
+		quests = append(quests, quest)
+	}
+	_, err = session.Insert(&quests)
 	if err != nil {
 		session.Rollback()
 		return err

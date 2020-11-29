@@ -42,4 +42,5 @@ func RegisterInstructions() {
 	Ins.Bind(RecipeQuery, "菜谱")
 	Ins.Bind(GuestQuery, "贵客")
 	Ins.Bind(CondimentQuery, "调料")
+	Ins.Bind(QuestQuery, "任务")
 }

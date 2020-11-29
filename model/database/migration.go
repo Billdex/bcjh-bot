@@ -18,6 +18,7 @@ var tables = []interface{}{
 	&RecipeMaterial{},
 	&Decoration{},
 	&Condiment{},
+	&Quest{},
 }
 
 var migrations = []*migrate.Migration{
