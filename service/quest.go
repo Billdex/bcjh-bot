@@ -56,13 +56,10 @@ func QuestQuery(c *onebot.Context, args []string) {
 				return
 			}
 			// 如果是查询主线区间
-			logger.Warn(len(args))
-			logger.Warn(args[2])
 			if len(args) > 2 && args[2] != "" {
 				left := id
 				right, _ := strconv.Atoi(args[2])
-				logger.Debug(left)
-				logger.Debug(right)
+
 				if right > 700 {
 					_ = bot.SendMessage(c, "主线任务目前只有 700 个哦")
 					return
@@ -80,7 +77,6 @@ func QuestQuery(c *onebot.Context, args []string) {
 				// 限制查询的 id 在 700 以内
 				Session.Where("questId = ?", id)
 			}
-
 		} else { // 支线或限时
 			Session.Where("questIdDisp = ?", args[1])
 		}
@@ -93,7 +89,6 @@ func QuestQuery(c *onebot.Context, args []string) {
 	quests := make([]database.Quest, 0)
 	err := Session.Find(&quests)
 
-	logger.Warn(Session.LastSQL())
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_ = bot.SendMessage(c, "查询数据失败!")
