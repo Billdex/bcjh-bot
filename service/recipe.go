@@ -328,20 +328,45 @@ func getAllRecipes(order string) ([]database.Recipe, string) {
 // 根据食材名字查询菜谱
 func getRecipesWithMaterial(arg string, order string) ([]database.Recipe, string) {
 	// 根据食材名查询食材信息
-	material := new(database.Material)
-	has, err := database.DB.Where("name = ?", arg).Get(material)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		return nil, util.SystemErrorNote
+	materials := make([]database.Material, 0)
+	materialsId := make([]int, 0)
+	var materialOrigin []string
+	switch arg {
+	case "鱼类", "水产", "海鲜":
+		materialOrigin = []string{"池塘"}
+	case "蔬菜", "菜类":
+		materialOrigin = []string{"菜棚", "菜地", "森林"}
+	case "肉类":
+		materialOrigin = []string{"牧场", "鸡舍", "猪圈"}
+	case "面类":
+		materialOrigin = []string{"作坊"}
+	default:
+		materialOrigin = []string{}
 	}
-	if !has {
-		return nil, fmt.Sprintf("厨师长说没有用%s做过菜", arg)
+	if len(materialOrigin) != 0 {
+		err := database.DB.In("origin", materialOrigin).Find(&materials)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			return nil, util.SystemErrorNote
+		}
+	} else {
+		err := database.DB.Where("name = ?", arg).Find(&materials)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			return nil, util.SystemErrorNote
+		}
+		if len(materials) == 0 {
+			return nil, fmt.Sprintf("厨师长说没有用%s做过菜", arg)
+		}
+	}
+	for _, material := range materials {
+		materialsId = append(materialsId, material.MaterialId)
 	}
 	recipes := make([]database.Recipe, 0)
 	recipeMaterials := make([]database.RecipeMaterial, 0)
 	if order == "食材效率" {
 		// 根据食材id查菜谱-食材表并根据食材效率排序
-		err = database.DB.Where("material_id = ?", material.MaterialId).Desc("efficiency").Find(&recipeMaterials)
+		err := database.DB.In("material_id", materialsId).Desc("efficiency").Find(&recipeMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return nil, util.SystemErrorNote
@@ -349,7 +374,7 @@ func getRecipesWithMaterial(arg string, order string) ([]database.Recipe, string
 		// 根据查出的信息查询菜谱信息
 		for _, recipeMaterial := range recipeMaterials {
 			var recipe database.Recipe
-			has, err = database.DB.Where("gallery_id = ?", recipeMaterial.RecipeGalleryId).Get(&recipe)
+			has, err := database.DB.Where("gallery_id = ?", recipeMaterial.RecipeGalleryId).Get(&recipe)
 			if err != nil {
 				logger.Error("查询数据库出错!", err)
 				return nil, util.SystemErrorNote
@@ -363,7 +388,7 @@ func getRecipesWithMaterial(arg string, order string) ([]database.Recipe, string
 		}
 	} else {
 		// 根据食材id查菜谱-食材表
-		err = database.DB.Where("material_id = ?", material.MaterialId).Find(&recipeMaterials)
+		err := database.DB.In("material_id", materialsId).Find(&recipeMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return nil, util.SystemErrorNote
