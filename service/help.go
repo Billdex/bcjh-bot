@@ -21,6 +21,8 @@ func HelpGuide(c *onebot.Context, args []string) {
 			msg = feedbackHelp()
 		case "图鉴网":
 			msg = galleryWebsiteHelp()
+		case "游戏术语", "术语", "黑话":
+			msg = termHelp()
 		case "菜谱":
 			msg = recipeHelp()
 		default:
@@ -44,7 +46,7 @@ func introHelp() string {
 	sb.WriteString(fmt.Sprintf("使用『%s功能名 参数』查询信息\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s厨师 羽十六」\n", preChar))
 	sb.WriteString("目前提供以下功能:\n")
-	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 厨师, 厨具, 菜谱, 贵客\n"))
+	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 贵客\n"))
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("使用 %s帮助 功能名 查询用法\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例 %s帮助 厨师\n", preChar))
@@ -91,5 +93,18 @@ func recipeHelp() string {
 	msg += fmt.Sprintf("目前提供以下排序方式\n")
 	msg += fmt.Sprintf("单时间, 总时间, 单价, 金币效率, ")
 	msg += fmt.Sprintf("耗材效率, 食材效率")
+	return msg
+}
+
+// 游戏术语
+func termHelp() string {
+	var msg string
+	msg += fmt.Sprintf("[爆炒江湖游戏术语]\n")
+	msg += fmt.Sprintf("技法: 游戏内有炒、烤、煮、蒸、炸、切共6种技法，每道菜有1或2种技法属性，厨师技法达到菜谱所有要求即可做这道菜。\n")
+	msg += fmt.Sprintf("菜谱品阶: 菜谱有可、优、特、神、传5个品阶, 当做菜的厨师达到菜谱所有技法要求的1、2、3、4、5倍时可达成对应品阶。" +
+		"不同品阶的金币收益不同，分别为100%%(可),110%%(优),130%%(特),150%%(神),200%%(传)\n")
+	msg += fmt.Sprintf("熟练/专精: 营业制作的菜会增加菜谱熟练度, 品阶越高增加越多, 熟练度满后会提高一定售价。\n")
+	msg += fmt.Sprintf("碰瓷/升阶贵客: 当一道菜首次提升至优、特、神时必来贵客(不需要做完整一组, 只需做一份即可), " +
+		"注意, 碰瓷过高品阶贵客后无法再碰瓷低品阶贵客, 如直接做到神级后, 便无法再碰瓷优和特品阶的贵客。")
 	return msg
 }
