@@ -25,8 +25,14 @@ func HelpGuide(c *onebot.Context, args []string) {
 			msg = termHelp()
 		case "厨师", "厨子":
 			msg = chefHelp()
+		case "厨具":
+			msg = equipmentHelp()
 		case "菜谱":
 			msg = recipeHelp()
+		case "贵客":
+			msg = guestHelp()
+		case "符文":
+			msg = antiqueHelp()
 		default:
 			msg = "似乎还没有开发这个功能呢~"
 		}
@@ -48,7 +54,7 @@ func introHelp() string {
 	sb.WriteString(fmt.Sprintf("使用『%s功能名 参数』查询信息\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s厨师 羽十六」\n", preChar))
 	sb.WriteString("目前提供以下功能:\n")
-	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 贵客\n"))
+	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 贵客, 符文\n"))
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("使用 %s帮助 功能名 查询用法\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例 %s帮助 厨师\n", preChar))
@@ -113,16 +119,6 @@ func equipmentHelp() string {
 	return msg
 }
 
-// 厨具功能指引
-func guestHelp() string {
-	preChar := util.PrefixCharacters[0]
-	var msg string
-	msg += fmt.Sprintf("[贵客信息查询]\n")
-	msg += fmt.Sprintf("[基础信息查询]: %s贵客 贵客名\n", preChar)
-	msg += fmt.Sprintf("示例: %s贵客 如来", preChar)
-	return msg
-}
-
 // 菜谱功能指引
 func recipeHelp() string {
 	preChar := util.PrefixCharacters[0]
@@ -141,5 +137,27 @@ func recipeHelp() string {
 	msg += fmt.Sprintf("目前提供以下排序方式\n")
 	msg += fmt.Sprintf("单时间, 总时间, 单价, 金币效率, ")
 	msg += fmt.Sprintf("耗材效率, 食材效率")
+	return msg
+}
+
+// 贵客功能指引
+func guestHelp() string {
+	preChar := util.PrefixCharacters[0]
+	var msg string
+	msg += fmt.Sprintf("[贵客信息查询]\n")
+	msg += fmt.Sprintf("[基础信息查询]: %s贵客 贵客名\n", preChar)
+	msg += fmt.Sprintf("示例: %s贵客 如来", preChar)
+	return msg
+}
+
+// 符文功能指引
+func antiqueHelp() string {
+	preChar := util.PrefixCharacters[0]
+	var msg string
+	msg += fmt.Sprintf("[符文信息查询]\n")
+	msg += fmt.Sprintf("提供根据符文名查询对应菜谱的功能, 并按照一组时间升序排序\n")
+	msg += fmt.Sprintf("[基础信息查询]: %s符文 符文名\n", preChar)
+	msg += fmt.Sprintf("当结果过多时可以使用「p」参数分页\n")
+	msg += fmt.Sprintf("示例: %s符文 五香果 %s符文 一昧真火-p2", preChar, preChar)
 	return msg
 }
