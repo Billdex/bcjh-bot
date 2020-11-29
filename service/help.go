@@ -98,11 +98,7 @@ func termHelp() string {
 	//msg += fmt.Sprintf("[碰瓷/升阶贵客]: 当一道菜首次提升至优、特、神时必来贵客(不需要做完整一组, 只需做一份即可), " +
 	//	"注意, 碰瓷过高品阶贵客后无法再碰瓷低品阶贵客, 如直接做到神级后, 便无法再碰瓷优和特品阶的贵客。")
 	termImagePath := config.AppConfig.Resource.Image + "/游戏术语.jpg"
-	CQImage, err := bot.GetCQImage(termImagePath, "file")
-	if err != nil {
-		logger.Error("图片类型错误!", err)
-		return ""
-	}
+	CQImage := bot.GetCQImage(termImagePath, "file")
 	msg += fmt.Sprintf("%s", CQImage)
 	return msg
 }
