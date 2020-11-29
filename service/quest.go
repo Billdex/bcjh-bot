@@ -15,7 +15,7 @@ func QuestQuery(c *onebot.Context, args []string) {
 	prefix := util.PrefixCharacters[0]
 	split := util.ArgsSplitCharacter
 	logger.Info("任务查询，参数:", args)
-	maxLen := 10
+	maxLen := 5
 
 	// 无参数的情况
 	if len(args) == 0 {
