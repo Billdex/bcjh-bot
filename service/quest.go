@@ -25,8 +25,8 @@ func QuestQuery(c *onebot.Context, args []string) {
 		sb.WriteString(fmt.Sprintf("『%s任务 主线%v1』『%s任务 主线%v1%v5』\n", prefix, split, prefix, split, split))
 		sb.WriteString("2. 支线，接ID:\n")
 		sb.WriteString(fmt.Sprintf("『%s任务 支线%v9.1』\n", prefix, split))
-		sb.WriteString("3. 限时，接ID，需要指定系列:\n")
-		sb.WriteString(fmt.Sprintf("『%s任务 民国风云%v3』『%s任务 风云%v3』", prefix, split, prefix, split))
+		sb.WriteString("3. 限时，接ID，可以指定系列:\n")
+		sb.WriteString(fmt.Sprintf("『%s任务 限时%v3』『%s任务 民国风云%v3』", prefix, split, prefix, split))
 		if err := bot.SendMessage(c, sb.String()); err != nil {
 			logger.Error("发送信息失败!", err)
 		}
@@ -40,8 +40,10 @@ func QuestQuery(c *onebot.Context, args []string) {
 	if args[0] != "" {
 		if arg, ok := StringContainsAny(args[0], []string{"主线", "支线"}); ok { // 主线或支线任务
 			Session.Where("type like ?", arg+"%")
-		} else { // 限时或所有
-			Session.Where("type like ?", "%"+args[0]+"%")
+		} else if args[0] == "限时" { // 限时或所有
+			Session.Where("type <> '主线任务' and type <> '支线任务'")
+		} else {
+			Session.Where("type like ?", "%"+arg+"%")
 		}
 	}
 
