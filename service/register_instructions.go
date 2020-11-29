@@ -41,6 +41,7 @@ func RegisterInstructions() {
 	Ins.Bind(EquipmentQuery, "厨具", "装备")
 	Ins.Bind(RecipeQuery, "菜谱")
 	Ins.Bind(GuestQuery, "贵客")
+	Ins.Bind(AntiqueQuery, "符文")
 	Ins.Bind(CondimentQuery, "调料")
 	Ins.Bind(QuestQuery, "任务")
 }
