@@ -24,35 +24,54 @@ func RecipeQuery(c *onebot.Context, args []string) {
 
 	recipes := make([]database.Recipe, 0)
 	note := ""
+	queryType := ""
+	arg := ""
+	getArg := false
 	order := ""
 	rarity := 1
 	price := 1
 	page := 1
-	if len(args) == 1 {
-		// 处理简单查询
-		recipes, note = getRecipesWithName(args[0])
-	} else {
-		// 处理组合查询
-		for i := 1; i < len(args); i++ {
-			updateQueryArgs(args[i], &order, &rarity, &price, &page)
+	condition := 0
+	// 处理组合查询
+	for i := 0; i < len(args); i++ {
+		c := updateQueryArgs(args[i], &queryType, &order, &rarity, &price, &page)
+		if queryType != "" && i+1 < len(args) && !getArg {
+			arg = args[i+1]
+			getArg = true
 		}
-		switch args[0] {
-		case "任意", "%":
-			recipes, note = getAllRecipes(order)
-		case "食材", "材料":
-			recipes, note = getRecipesWithMaterial(args[1], order)
-		case "技法":
-			recipes, note = getRecipesWithSkill(args[1], order)
-		case "贵客":
-			recipes, note = getRecipesWithGuest(args[1], order)
-		case "符文", "礼物":
-			recipes, note = getRecipesWithAntique(args[1], order)
-		case "来源":
-			recipes, note = getRecipesWithOrigin(args[1], order)
-		default:
+		if c != 0 {
+			condition = 1
+		}
+	}
+	if queryType != "" && queryType != "任意" && arg == "" {
+		_ = bot.SendMessage(c, "请填一下查询参数哦")
+		return
+	}
+	if queryType == "" && condition == 1 {
+		queryType = "任意"
+	}
+	switch queryType {
+	case "任意", "%":
+		recipes, note = getAllRecipes(order)
+	case "食材", "材料":
+		recipes, note = getRecipesWithMaterial(arg, order)
+	case "技法":
+		recipes, note = getRecipesWithSkill(arg, order)
+	case "贵客":
+		recipes, note = getRecipesWithGuest(arg, order)
+	case "符文", "礼物":
+		recipes, note = getRecipesWithAntique(arg, order)
+	case "来源":
+		recipes, note = getRecipesWithOrigin(arg, order)
+	default:
+		if len(args) == 1 && condition == 0 {
+			// 处理简单查询
+			recipes, note = getRecipesWithName(args[0])
+		} else {
 			note = util.QueryParamWrongNote
 		}
 	}
+
 	if note != "" {
 		logger.Info("菜谱查询失败结果:", note)
 		_ = bot.SendMessage(c, note)
@@ -67,48 +86,59 @@ func RecipeQuery(c *onebot.Context, args []string) {
 	}
 }
 
-// 更新查询参数信息
-func updateQueryArgs(arg string, order *string, rarity *int, price *int, page *int) {
+// 更新查询参数信息, 返回值1表示有修改, 0表示无修改
+func updateQueryArgs(arg string, queryType *string, order *string, rarity *int, price *int, page *int) int {
 	switch arg {
+	// 判断是否是查询类型参数
+	case "任意", "食材", "材料", "技法", "贵客", "符文", "礼物", "来源":
+		*queryType = arg
+		return 1
 	// 判断是否是排序参数
 	case "图鉴序", "单时间", "总时间", "单价", "金币效率", "耗材效率", "食材效率":
 		*order = arg
+		return 1
 	// 判断是否是稀有度筛选参数
 	case "1火", "1星", "一火", "一星":
 		*rarity = 1
+		return 1
 	case "2火", "2星", "二火", "二星", "两火", "两星":
 		*rarity = 2
+		return 1
 	case "3火", "3星", "三火", "三星":
 		*rarity = 3
+		return 1
 	case "4火", "4星", "四火", "四星":
 		*rarity = 4
+		return 1
 	case "5火", "5星", "五火", "五星":
 		*rarity = 5
+		return 1
 	default:
 		// 判断是否是单价筛选参数
 		if strings.HasPrefix(arg, "$") {
 			num, err := strconv.Atoi(arg[1:])
 			if err != nil {
-				return
+				return 0
 			} else {
 				*price = num
-				return
+				return 1
 			}
 		}
 		// 判断是否是分页参数
 		if strings.HasPrefix(arg, "p") || strings.HasPrefix(arg, "P") {
 			num, err := strconv.Atoi(arg[1:])
 			if err != nil {
-				return
+				return 0
 			} else {
 				if num < 1 {
 					num = 1
 				}
 				*page = num
-				return
+				return 1
 			}
 		}
 	}
+	return 0
 }
 
 // 根据排序参数获取order by的sql语句
