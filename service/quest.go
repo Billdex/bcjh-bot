@@ -12,22 +12,11 @@ import (
 )
 
 func QuestQuery(c *onebot.Context, args []string) {
-	prefix := util.PrefixCharacters[0]
-	split := util.ArgsSplitCharacter
 	logger.Info("任务查询，参数:", args)
-	maxLen := 5
-
+	maxLen := util.MaxQueryListLength
 	// 无参数的情况
 	if len(args) == 0 {
-		sb := strings.Builder{}
-		sb.WriteString("【任务信息查询】:\n")
-		sb.WriteString(fmt.Sprintf("1. 主线，接ID（可以指定区间，最多%d条）:\n", maxLen))
-		sb.WriteString(fmt.Sprintf("『%s任务 主线%v1』『%s任务 主线%v1%v5』\n", prefix, split, prefix, split, split))
-		sb.WriteString("2. 支线，接ID:\n")
-		sb.WriteString(fmt.Sprintf("『%s任务 支线%v9.1』\n", prefix, split))
-		sb.WriteString("3. 限时，接ID，可以指定系列:\n")
-		sb.WriteString(fmt.Sprintf("『%s任务 限时%v3』『%s任务 民国风云%v3』", prefix, split, prefix, split))
-		if err := bot.SendMessage(c, sb.String()); err != nil {
+		if err := bot.SendMessage(c, questHelp()); err != nil {
 			logger.Error("发送信息失败!", err)
 		}
 		return

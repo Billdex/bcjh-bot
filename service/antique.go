@@ -12,7 +12,7 @@ import (
 )
 
 func AntiqueQuery(c *onebot.Context, args []string) {
-	logger.Info("菜谱查询, 参数:", args)
+	logger.Info("符文查询, 参数:", args)
 	if len(args) == 0 {
 		err := bot.SendMessage(c, antiqueHelp())
 		if err != nil {

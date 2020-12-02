@@ -30,10 +30,14 @@ func HelpGuide(c *onebot.Context, args []string) {
 			msg = equipmentHelp()
 		case "菜谱":
 			msg = recipeHelp()
+		case "调料":
+			msg = condimentHelp()
 		case "贵客":
 			msg = guestHelp()
 		case "符文":
 			msg = antiqueHelp()
+		case "任务":
+			msg = questHelp()
 		default:
 			msg = "似乎还没有开发这个功能呢~"
 		}
@@ -55,7 +59,7 @@ func introHelp() string {
 	sb.WriteString(fmt.Sprintf("使用『%s功能名 参数』查询信息\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s厨师 羽十六」\n", preChar))
 	sb.WriteString("目前提供以下功能:\n")
-	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 贵客, 符文\n"))
+	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 调料, 贵客, 符文, 任务\n"))
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("使用 %s帮助 功能名 查询用法\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例 %s帮助 厨师\n", preChar))
@@ -144,6 +148,25 @@ func recipeHelp() string {
 	return msg
 }
 
+// 调料查询功能指引
+func condimentHelp() string {
+	prefix := util.PrefixCharacters[0]
+	split := util.ArgsSplitCharacter
+	sb := strings.Builder{}
+	sb.WriteString("【调料信息查询】:\n")
+	sb.WriteString("1. 简单查询，接名称或ID:\n")
+	sb.WriteString(fmt.Sprintf("『%s调料 香菜』『%s调料 1』\n", prefix, prefix))
+	sb.WriteString("2. 限制稀有度，和菜名写在一起:\n")
+	sb.WriteString(fmt.Sprintf("『%s调料 三火』『%s调料 三星香菜』『%s调料 3星香菜』\n", prefix, prefix, prefix))
+	sb.WriteString("3. 限制来源，或对应阁楼的技法:\n")
+	sb.WriteString(fmt.Sprintf("『%s调料 %%%s切』『%s调料 三火%s切』『%s调料 1星%s梵正』",
+		prefix, split, prefix, split, prefix, split))
+	// sb.WriteString("4. 限制技能:\n")
+	// sb.WriteString(fmt.Sprintf("『%s调料 三火%s炒技法+15』『%s调料 三火%s采集』『%s调料 三火%s售价』\n",
+	// 	prefix, split, prefix, split, prefix, split))
+	return sb.String()
+}
+
 // 贵客功能指引
 func guestHelp() string {
 	preChar := util.PrefixCharacters[0]
@@ -164,4 +187,20 @@ func antiqueHelp() string {
 	msg += fmt.Sprintf("当结果过多时可以使用「p」参数分页\n")
 	msg += fmt.Sprintf("示例: %s符文 五香果 %s符文 一昧真火-p2", preChar, preChar)
 	return msg
+}
+
+// 任务功能指引
+func questHelp() string {
+	prefix := util.PrefixCharacters[0]
+	split := util.ArgsSplitCharacter
+	maxLen := util.MaxQueryListLength
+	sb := strings.Builder{}
+	sb.WriteString("【任务信息查询】:\n")
+	sb.WriteString(fmt.Sprintf("1. 主线，接ID（可以指定区间，最多%d条）:\n", maxLen))
+	sb.WriteString(fmt.Sprintf("『%s任务 主线%v1』『%s任务 主线%v1%v5』\n", prefix, split, prefix, split, split))
+	sb.WriteString("2. 支线，接ID:\n")
+	sb.WriteString(fmt.Sprintf("『%s任务 支线%v9.1』\n", prefix, split))
+	sb.WriteString("3. 限时，接ID，可以指定系列:\n")
+	sb.WriteString(fmt.Sprintf("『%s任务 限时%v3』『%s任务 民国风云%v3』", prefix, split, prefix, split))
+	return sb.String()
 }

@@ -12,25 +12,11 @@ import (
 
 // 调料查询
 func CondimentQuery(c *onebot.Context, args []string) {
-	prefix := util.PrefixCharacters[0]
-	split := util.ArgsSplitCharacter
 	logger.Info("调料查询，参数:", args)
 
 	// 无参数的情况
 	if len(args) == 0 {
-		sb := strings.Builder{}
-		sb.WriteString("【调料信息查询】:\n")
-		sb.WriteString("1. 简单查询，接名称或ID:\n")
-		sb.WriteString(fmt.Sprintf("『%s调料 香菜』『%s调料 1』\n", prefix, prefix))
-		sb.WriteString("2. 限制稀有度，和菜名写在一起:\n")
-		sb.WriteString(fmt.Sprintf("『%s调料 三火』『%s调料 三星香菜』『%s调料 3星香菜』\n", prefix, prefix, prefix))
-		sb.WriteString("3. 限制来源，或对应阁楼的技法:\n")
-		sb.WriteString(fmt.Sprintf("『%s调料 %%%s切』『%s调料 三火%s切』『%s调料 1星%s梵正』",
-			prefix, split, prefix, split, prefix, split))
-		// sb.WriteString("4. 限制技能:\n")
-		// sb.WriteString(fmt.Sprintf("『%s调料 三火%s炒技法+15』『%s调料 三火%s采集』『%s调料 三火%s售价』\n",
-		// 	prefix, split, prefix, split, prefix, split))
-		if err := bot.SendMessage(c, sb.String()); err != nil {
+		if err := bot.SendMessage(c, condimentHelp()); err != nil {
 			logger.Error("发送信息失败!", err)
 		}
 		return
