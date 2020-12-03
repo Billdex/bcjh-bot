@@ -24,6 +24,7 @@ type dbConfig struct {
 
 type Resource struct {
 	Image string `ini:"image"`
+	Font  string `ini:"font"`
 }
 
 type logConfig struct {

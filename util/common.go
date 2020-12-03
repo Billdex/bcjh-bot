@@ -1,6 +1,9 @@
 package util
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 func FormatSecondToString(t int) string {
 	if t < 0 {
@@ -23,4 +26,15 @@ func FormatSecondToString(t int) string {
 		}
 		return time
 	}
+}
+
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }

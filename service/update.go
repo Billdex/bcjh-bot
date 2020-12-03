@@ -327,6 +327,7 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 			Steam:          recipeData.Steam,
 			Fry:            recipeData.Fry,
 			Cut:            recipeData.Cut,
+			Condiment:      recipeData.Condiment,
 			Price:          recipeData.Price,
 			ExPrice:        recipeData.ExPrice,
 			GoldEfficiency: recipeData.Price * 3600 / recipeData.Time,

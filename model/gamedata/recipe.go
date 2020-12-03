@@ -12,6 +12,7 @@ type RecipeData struct {
 	Steam     int    `json:"steam"`
 	Fry       int    `json:"fry"`
 	Cut       int    `json:"knife"`
+	Condiment string `json:"condiment"`
 	Price     int    `json:"price"`
 	ExPrice   int    `json:"exPrice"`
 	Gift      string `json:"gift"`
