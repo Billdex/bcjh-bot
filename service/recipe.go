@@ -711,7 +711,7 @@ func RecipeInfoToImage(recipe recipeGallery, dst *os.File) error {
 	if err != nil {
 		return err
 	}
-	// 输出贵客礼物
+	// 输出贵客礼物?/
 	pt = freetype.Pt(110, 420+fontSize)
 	_, err = c.DrawString(fmt.Sprintf("%s", recipe.GuestGift), pt)
 	if err != nil {

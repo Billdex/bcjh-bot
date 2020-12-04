@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+const (
+	close = iota
+	open
+	finish
+)
+
 func Feedback(c *onebot.Context, args []string) {
 	logger.Info("有人提交了反馈:", args)
 	if len(args) == 0 {
@@ -19,6 +25,7 @@ func Feedback(c *onebot.Context, args []string) {
 	feedback.Sender = c.Sender.UserId
 	feedback.Nickname = c.Sender.Nickname
 	feedback.Message = message
+	feedback.Status = open
 	affected, err := database.DB.Insert(feedback)
 	if err != nil {
 		logger.Error("插入数据失败!", err)

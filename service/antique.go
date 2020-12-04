@@ -21,8 +21,10 @@ func AntiqueQuery(c *onebot.Context, args []string) {
 		return
 	}
 
+	antique := args[0]
+
 	guests := make([]database.GuestGift, 0)
-	err := database.DB.Where("antique like ?", "%"+args[0]+"%").Find(&guests)
+	err := database.DB.Where("antique like ?", "%"+antique+"%").Find(&guests)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_ = bot.SendMessage(c, util.SystemErrorNote)
@@ -67,9 +69,9 @@ func AntiqueQuery(c *onebot.Context, args []string) {
 		if page > maxPage {
 			page = maxPage
 		}
-		msg += fmt.Sprintf("这里有你想点的菜吗: (%d/%d)\n", page, maxPage)
+		msg += fmt.Sprintf("以下菜有概率得%s: (%d/%d)\n", antique, page, maxPage)
 	} else {
-		msg += "这里有你想点的菜吗:\n"
+		msg += fmt.Sprintf("以下菜有概率得%s:\n", antique)
 	}
 	for i := (page - 1) * listLength; i < page*listLength && i < len(recipes); i++ {
 		totalTime := util.FormatSecondToString(recipes[i].Time * recipes[i].Limit)
