@@ -91,7 +91,7 @@ func ChefQuery(c *onebot.Context, args []string) {
 		msg += fmt.Sprintf("🍖:%d 🍞:%d 🥕:%d 🐟:%d\n", chef.Meat, chef.Flour, chef.Vegetable, chef.Fish)
 		msg += fmt.Sprintf("技能:%s\n", skill.Description)
 		msg += fmt.Sprintf("修炼效果:%s\n", ultimateSkill.Description)
-		msg += fmt.Sprintf("修炼任务:%s", goals)
+		//msg += fmt.Sprintf("修炼任务:%s", goals)
 	} else {
 		msg = "查询到以下厨师:\n"
 		for p, chef := range chefs {

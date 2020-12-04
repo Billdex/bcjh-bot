@@ -283,6 +283,7 @@ func getRecipeMessage(recipe database.Recipe) string {
 		if err != nil {
 			logger.Debugf("无法确定文件是否存在!", err)
 		}
+		logger.Info("未找到菜谱图鉴，重新生成")
 		dst, _ := os.Create(imagePath)
 		err = RecipeInfoToImage(gallery, dst)
 		if err != nil {
