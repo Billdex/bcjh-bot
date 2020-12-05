@@ -17,6 +17,12 @@ type ChefData struct {
 	Flour         int    `json:"creation"`
 	Fish          int    `json:"fish"`
 	Vegetable     int    `json:"veg"`
+	Sweet         int    `json:"sweet"`
+	Sour          int    `json:"sour"`
+	Spicy         int    `json:"spicy"`
+	Salty         int    `json:"salty"`
+	Bitter        int    `json:"bitter"`
+	Tasty         int    `json:"tasty"`
 	SkillId       int    `json:"skill"`
 	UltimateGoals []int  `json:"ultimateGoal"`
 	UltimateSkill int    `json:"ultimateSkill"`

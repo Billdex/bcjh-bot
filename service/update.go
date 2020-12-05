@@ -238,6 +238,12 @@ func updateChefs(chefsData []gamedata.ChefData) error {
 			Flour:         chefData.Flour,
 			Fish:          chefData.Fish,
 			Vegetable:     chefData.Vegetable,
+			Sweet:         chefData.Sweet,
+			Sour:          chefData.Sour,
+			Spicy:         chefData.Spicy,
+			Salty:         chefData.Salty,
+			Bitter:        chefData.Bitter,
+			Tasty:         chefData.Tasty,
 			SkillId:       chefData.SkillId,
 			UltimateGoals: chefData.UltimateGoals,
 			UltimateSkill: chefData.UltimateSkill,
@@ -495,7 +501,7 @@ func updateSkills(skillsData []gamedata.SkillData) error {
 	for _, skillData := range skillsData {
 		skill := database.Skill{
 			SkillId:     skillData.SkillId,
-			Description: skillData.Description,
+			Description: strings.ReplaceAll(skillData.Description, "<br>", ","),
 		}
 		effects := make([]database.SkillEffect, 0)
 		for _, effectData := range skillData.Effects {

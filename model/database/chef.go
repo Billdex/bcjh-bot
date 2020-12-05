@@ -17,6 +17,12 @@ type Chef struct {
 	Flour         int    `xorm:"flour comment('面类采集')"`
 	Fish          int    `xorm:"fish comment('水产采集')"`
 	Vegetable     int    `xorm:"vegetable comment('蔬菜采集')"`
+	Sweet         int    `xorm:"sweet comment('甜')"`
+	Sour          int    `xorm:"sour comment('酸')"`
+	Spicy         int    `xorm:"spicy comment('辣')"`
+	Salty         int    `xorm:"salty comment('咸')"`
+	Bitter        int    `xorm:"bitter comment(苦)"`
+	Tasty         int    `xorm:"tasty comment(鲜)"`
 	SkillId       int    `xorm:"skill_id comment('技能id')"`
 	UltimateGoals []int  `xorm:"ultimate_goals comment('修炼任务id数组')"`
 	UltimateSkill int    `xorm:"ultimate_skill comment('修炼效果id')"`

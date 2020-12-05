@@ -276,7 +276,7 @@ func getRecipeMessage(recipe database.Recipe) string {
 		UpgradeGuests:      recipe.Guests,
 	}
 
-	resourceImageDir := config.AppConfig.Resource.Image
+	resourceImageDir := config.AppConfig.Resource.Image + "recipe"
 	imagePath := fmt.Sprintf("%s/recipe_%s.png", resourceImageDir, recipe.GalleryId)
 	logger.Debug("imagePath:", imagePath)
 	if has, err := util.PathExists(imagePath); !has {
