@@ -53,6 +53,7 @@ func AntiqueQuery(c *onebot.Context, args []string) {
 	recipesName := make([]string, 0)
 	for _, guest := range guests {
 		recipesName = append(recipesName, guest.Recipe)
+		antique = guest.Antique
 	}
 	recipes := make([]database.Recipe, 0)
 	err = database.DB.In("name", recipesName).OrderBy("`total_time` ASC").Find(&recipes)
