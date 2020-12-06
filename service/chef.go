@@ -338,7 +338,7 @@ func ChefInfoToImage(chefs []database.Chef) error {
 			return err
 		}
 		pt = freetype.Pt(149, 500+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", skill.Description), pt)
+		_, err = c.DrawString(fmt.Sprintf("%s", ultimateSkill.Description), pt)
 		if err != nil {
 			return err
 		}
