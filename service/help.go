@@ -63,7 +63,7 @@ func introHelp() string {
 	sb.WriteString(fmt.Sprintf("使用『%s功能名 参数』查询信息\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s厨师 羽十六」\n", preChar))
 	sb.WriteString("目前提供以下功能:\n")
-	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 调料, 贵客, 符文, 任务, 碰瓷, 后厨\n"))
+	sb.WriteString(fmt.Sprintf("「帮助」「反馈」「图鉴网」「术语」「厨师」「厨具」「菜谱」「调料」「贵客」「符文」「任务」「碰瓷」「后厨」\n"))
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("使用『%s帮助 功能名』查询用法\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s帮助 厨师」\n", preChar))
@@ -78,10 +78,10 @@ func introHelp() string {
 // 反馈功能指引
 func feedbackHelp() string {
 	var msg string
-	msg += fmt.Sprintf("[问题反馈与建议]\n")
+	msg += fmt.Sprintf("【问题反馈与建议】\n")
 	msg += fmt.Sprintf("在使用过程中如果遇到了什么bug或者有什么好的建议，可以通过该功能反馈给我\n")
 	msg += fmt.Sprintf("反馈方式:\n")
-	msg += fmt.Sprintf("%s反馈 问题描述或建议\n", util.PrefixCharacters[0])
+	msg += fmt.Sprintf("「%s反馈 问题描述或建议」\n", util.PrefixCharacters[0])
 	msg += fmt.Sprintf("如果比较紧急可以私聊我们:\n")
 	msg += fmt.Sprintf("QQ:591404144(罗觉觉)或646792290(汪汪泥)")
 	return msg
@@ -90,7 +90,7 @@ func feedbackHelp() string {
 // 图鉴网功能指引
 func galleryWebsiteHelp() string {
 	var msg string
-	msg += fmt.Sprintf("[图鉴网-网址查询]\n")
+	msg += fmt.Sprintf("【图鉴网-网址查询】\n")
 	msg += fmt.Sprintf("给出L图鉴网与手机版图鉴网地址，方便记不住网址的小可爱快速访问。")
 	return msg
 }
@@ -115,9 +115,9 @@ func termHelp() string {
 func chefHelp() string {
 	preChar := util.PrefixCharacters[0]
 	var msg string
-	msg += fmt.Sprintf("[厨师信息查询]\n")
-	msg += fmt.Sprintf("[基础信息查询]: %s厨师 厨师名\n", preChar)
-	msg += fmt.Sprintf("示例: %s厨师 羽十六", preChar)
+	msg += fmt.Sprintf("【厨师信息查询】\n")
+	msg += fmt.Sprintf("基础信息查询:『%s厨师 厨师名』\n", preChar)
+	msg += fmt.Sprintf("示例:「%s厨师 羽十六」", preChar)
 	return msg
 }
 
@@ -125,9 +125,9 @@ func chefHelp() string {
 func equipmentHelp() string {
 	preChar := util.PrefixCharacters[0]
 	var msg string
-	msg += fmt.Sprintf("[厨具信息查询]\n")
-	msg += fmt.Sprintf("[基础信息查询]: %s厨具 厨具名\n", preChar)
-	msg += fmt.Sprintf("示例: %s厨具 金烤叉", preChar)
+	msg += fmt.Sprintf("【厨具信息查询】\n")
+	msg += fmt.Sprintf("基础信息查询:『%s厨具 厨具名』\n", preChar)
+	msg += fmt.Sprintf("示例:「%s厨具 金烤叉」", preChar)
 	return msg
 }
 
@@ -135,13 +135,13 @@ func equipmentHelp() string {
 func recipeHelp() string {
 	preChar := util.PrefixCharacters[0]
 	var msg string
-	msg += fmt.Sprintf("[菜谱信息查询]\n")
-	msg += fmt.Sprintf("[基础信息查询]: %s菜谱 菜谱名\n", preChar)
-	msg += fmt.Sprintf("示例: %s菜谱 荷包蛋\n", preChar)
-	msg += fmt.Sprintf("[复合信息查询]:\n")
-	msg += fmt.Sprintf("%s菜谱 查询条件-参数-筛选条件\n", preChar)
-	msg += fmt.Sprintf("示例: %s菜谱 食材-茄子-单时间-$100-p2\n", preChar)
-	msg += fmt.Sprintf("%s菜谱 耗材效率-4火-$800\n", preChar)
+	msg += fmt.Sprintf("【菜谱信息查询】\n")
+	msg += fmt.Sprintf("基础信息查询:『%s菜谱 菜谱名』\n", preChar)
+	msg += fmt.Sprintf("示例:「%s菜谱 荷包蛋」\n", preChar)
+	msg += fmt.Sprintf("复合信息查询:\n")
+	msg += fmt.Sprintf("『%s菜谱 查询条件-参数-筛选条件』\n", preChar)
+	msg += fmt.Sprintf("示例:「%s菜谱 食材-茄子-3火-单时间-p2」\n", preChar)
+	msg += fmt.Sprintf("即查询使用茄子的三火以上菜谱,按单时间排序,并显示第二页内容\n")
 	msg += fmt.Sprintf("目前提供以下查询条件(可不填):\n")
 	msg += fmt.Sprintf("食材, 技法, 贵客, 符文, 来源\n")
 	msg += fmt.Sprintf("目前提供以下筛选条件(可不填或叠加):\n")
@@ -175,9 +175,9 @@ func condimentHelp() string {
 func guestHelp() string {
 	preChar := util.PrefixCharacters[0]
 	var msg string
-	msg += fmt.Sprintf("[贵客信息查询]\n")
-	msg += fmt.Sprintf("[基础信息查询]: %s贵客 贵客名\n", preChar)
-	msg += fmt.Sprintf("示例: %s贵客 如来", preChar)
+	msg += fmt.Sprintf("【贵客信息查询】\n")
+	msg += fmt.Sprintf("基础信息查询:『%s贵客 贵客名』\n", preChar)
+	msg += fmt.Sprintf("示例:「%s贵客 如来」", preChar)
 	return msg
 }
 
@@ -185,11 +185,10 @@ func guestHelp() string {
 func antiqueHelp() string {
 	preChar := util.PrefixCharacters[0]
 	var msg string
-	msg += fmt.Sprintf("[符文信息查询]\n")
+	msg += fmt.Sprintf("【符文信息查询】\n")
 	msg += fmt.Sprintf("提供根据符文名查询对应菜谱的功能, 并按照一组时间升序排序\n")
-	msg += fmt.Sprintf("[基础信息查询]: %s符文 符文名\n", preChar)
-	msg += fmt.Sprintf("当结果过多时可以使用「p」参数分页\n")
-	msg += fmt.Sprintf("示例: %s符文 五香果 %s符文 一昧真火-p2", preChar, preChar)
+	msg += fmt.Sprintf("结果过多可使用「p」参数分页\n")
+	msg += fmt.Sprintf("示例:『%s符文 五香果』『%s符文 一昧真火-p2』", preChar, preChar)
 	return msg
 }
 
@@ -213,10 +212,9 @@ func upgradeGuestHelp() string {
 	prefix := util.PrefixCharacters[0]
 	sb := strings.Builder{}
 	sb.WriteString("【升阶贵客查询】:\n")
-	sb.WriteString(fmt.Sprintf("查询升阶贵客可用的菜:\n"))
-	sb.WriteString(fmt.Sprintf("示例: 『%s碰瓷 如来』\n", prefix))
-	sb.WriteString("结果过多可使用「p」参数分页:\n")
-	sb.WriteString(fmt.Sprintf("示例: 『%s碰瓷 唐伯虎-p2』", prefix))
+	sb.WriteString(fmt.Sprintf("查询碰瓷贵客可用的菜:\n"))
+	sb.WriteString("结果过多可使用「p」参数分页\n")
+	sb.WriteString(fmt.Sprintf("示例:『%s碰瓷 如来』『%s碰瓷 唐伯虎-p2』", prefix, prefix))
 	return sb.String()
 
 }
@@ -226,6 +224,6 @@ func comboHelp() string {
 	sb := strings.Builder{}
 	sb.WriteString("【后厨合成菜谱查询】:\n")
 	sb.WriteString(fmt.Sprintf("查询后厨合成菜的前置菜谱:\n"))
-	sb.WriteString(fmt.Sprintf("示例: 『%s后厨 BBQ烧烤』", prefix))
+	sb.WriteString(fmt.Sprintf("示例:『%s后厨 BBQ烧烤』", prefix))
 	return sb.String()
 }
