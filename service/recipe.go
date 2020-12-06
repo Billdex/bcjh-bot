@@ -342,7 +342,12 @@ func getRecipesMessage(recipes []database.Recipe, order string, rarity int, pric
 // 根据菜谱名字或ID查询菜谱
 func getRecipesWithName(arg string) ([]database.Recipe, string) {
 	recipes := make([]database.Recipe, 0)
-	err := database.DB.Where("gallery_id = ?", arg).Asc("gallery_id").Find(&recipes)
+	numId, err := strconv.Atoi(arg)
+	if err == nil {
+		arg = fmt.Sprintf("%03d", numId)
+	}
+
+	err = database.DB.Where("gallery_id = ?", arg).Asc("gallery_id").Find(&recipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		return nil, util.SystemErrorNote
