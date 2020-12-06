@@ -313,7 +313,7 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		}
 
 		// 输出来源数据
-		pt = freetype.Pt(149, 360+fontSize)
+		pt = freetype.Pt(150, 365+fontSize)
 		_, err = c.DrawString(fmt.Sprintf("%s", chef.Origin), pt)
 		if err != nil {
 			return err
@@ -325,7 +325,7 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		if err != nil {
 			return err
 		}
-		pt = freetype.Pt(149, 430+fontSize)
+		pt = freetype.Pt(150, 435+fontSize)
 		_, err = c.DrawString(fmt.Sprintf("%s", skill.Description), pt)
 		if err != nil {
 			return err
@@ -337,7 +337,7 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		if err != nil {
 			return err
 		}
-		pt = freetype.Pt(149, 500+fontSize)
+		pt = freetype.Pt(150, 505+fontSize)
 		_, err = c.DrawString(fmt.Sprintf("%s", ultimateSkill.Description), pt)
 		if err != nil {
 			return err
@@ -350,7 +350,7 @@ func ChefInfoToImage(chefs []database.Chef) error {
 			return err
 		}
 		for p, goal := range ultimateGoals {
-			pt = freetype.Pt(120, 620+p*50+fontSize)
+			pt = freetype.Pt(120, 625+p*50+fontSize)
 			_, err = c.DrawString(fmt.Sprintf("%s", goal.Goal), pt)
 			if err != nil {
 				return err
