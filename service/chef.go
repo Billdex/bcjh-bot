@@ -15,11 +15,13 @@ import (
 	"image/png"
 	"io/ioutil"
 	"os"
+	"strconv"
 )
 
 func ChefQuery(c *onebot.Context, args []string) {
 	logger.Info("厨师查询，参数:", args)
 
+	var msg string
 	if len(args) == 0 {
 		err := bot.SendMessage(c, chefHelp())
 		if err != nil {
@@ -34,16 +36,25 @@ func ChefQuery(c *onebot.Context, args []string) {
 		}
 		return
 	}
+	arg := args[0]
+	numId, err := strconv.Atoi(arg)
+	if err == nil {
+		if numId%3 != 0 {
+			numId = numId + (3 - numId%3)
+
+		}
+		arg = fmt.Sprintf("%03d", numId)
+	}
 
 	chefs := make([]database.Chef, 0)
-	err := database.DB.Where("gallery_id = ?", args[0]).Asc("gallery_id").Find(&chefs)
+	err = database.DB.Where("gallery_id = ?", arg).Asc("gallery_id").Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_ = bot.SendMessage(c, "查询数据失败!")
 		return
 	}
 	if len(chefs) == 0 {
-		err = database.DB.Where("name like ?", "%"+args[0]+"%").Asc("gallery_id").Find(&chefs)
+		err = database.DB.Where("name like ?", "%"+arg+"%").Asc("gallery_id").Find(&chefs)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_ = bot.SendMessage(c, "查询数据失败!")
@@ -51,7 +62,6 @@ func ChefQuery(c *onebot.Context, args []string) {
 		}
 	}
 
-	var msg string
 	if len(chefs) == 0 {
 		msg = "哎呀，好像找不到呢!"
 	} else if len(chefs) == 1 {
@@ -218,8 +228,20 @@ func ChefInfoToImage(chefs []database.Chef) error {
 			draw.Over)
 
 		// 输出图鉴ID与厨师名
-		pt := freetype.Pt(35, 20+titleSize)
-		_, err = c.DrawString(fmt.Sprintf("%s %s", chef.GalleryId, chef.Name), pt)
+		pt := freetype.Pt(150, 20+titleSize)
+		_, err = c.DrawString(fmt.Sprintf("%s", chef.Name), pt)
+		if err != nil {
+			return err
+		}
+
+		pt = freetype.Pt(45, 15+titleSize)
+		_, err = c.DrawString(fmt.Sprintf("%03d", chef.ChefId), pt)
+		if err != nil {
+			return err
+		}
+		c.SetFontSize(float64(25))
+		pt = freetype.Pt(30, 70+25)
+		_, err = c.DrawString(fmt.Sprintf("(%03d, %03d)", chef.ChefId-2, chef.ChefId-1), pt)
 		if err != nil {
 			return err
 		}
@@ -338,6 +360,9 @@ func ChefInfoToImage(chefs []database.Chef) error {
 			return err
 		}
 		pt = freetype.Pt(150, 505+fontSize)
+		if ultimateSkill.Description == "" {
+			ultimateSkill.Description = "暂无"
+		}
 		_, err = c.DrawString(fmt.Sprintf("%s", ultimateSkill.Description), pt)
 		if err != nil {
 			return err
@@ -349,11 +374,19 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		if err != nil {
 			return err
 		}
-		for p, goal := range ultimateGoals {
-			pt = freetype.Pt(120, 625+p*50+fontSize)
-			_, err = c.DrawString(fmt.Sprintf("%s", goal.Goal), pt)
-			if err != nil {
-				return err
+		for i := 0; i < 3; i++ {
+			pt = freetype.Pt(120, 625+i*50+fontSize)
+			if len(ultimateGoals)-1 < i {
+				_, err = c.DrawString(fmt.Sprintf("暂无"), pt)
+				if err != nil {
+					return err
+				}
+			} else {
+				_, err = c.DrawString(fmt.Sprintf("%s", ultimateGoals[i].Goal), pt)
+				if err != nil {
+					return err
+				}
+
 			}
 		}
 
