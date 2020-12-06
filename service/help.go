@@ -40,6 +40,8 @@ func HelpGuide(c *onebot.Context, args []string) {
 			msg = questHelp()
 		case "碰瓷", "升阶贵客":
 			msg = upgradeGuestHelp()
+		case "后厨", "合成":
+			msg = comboHelp()
 		default:
 			msg = "似乎还没有开发这个功能呢~"
 		}
@@ -61,7 +63,7 @@ func introHelp() string {
 	sb.WriteString(fmt.Sprintf("使用『%s功能名 参数』查询信息\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s厨师 羽十六」\n", preChar))
 	sb.WriteString("目前提供以下功能:\n")
-	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 调料, 贵客, 符文, 任务, 碰瓷\n"))
+	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 调料, 贵客, 符文, 任务, 碰瓷, 后厨\n"))
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("使用『%s帮助 功能名』查询用法\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s帮助 厨师」\n", preChar))
@@ -217,4 +219,13 @@ func upgradeGuestHelp() string {
 	sb.WriteString(fmt.Sprintf("示例: 『%s碰瓷 唐伯虎-p2』", prefix))
 	return sb.String()
 
+}
+
+func comboHelp() string {
+	prefix := util.PrefixCharacters[0]
+	sb := strings.Builder{}
+	sb.WriteString("【后厨合成菜谱查询】:\n")
+	sb.WriteString(fmt.Sprintf("查询后厨合成菜的前置菜谱:\n"))
+	sb.WriteString(fmt.Sprintf("示例: 『%s后厨 BBQ烧烤』", prefix))
+	return sb.String()
 }
