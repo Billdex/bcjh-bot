@@ -285,6 +285,7 @@ func getRecipeMessage(recipe database.Recipe) string {
 		}
 		logger.Info("未找到菜谱图鉴，重新生成")
 		dst, _ := os.Create(imagePath)
+		defer dst.Close()
 		err = RecipeInfoToImage(gallery, dst)
 		if err != nil {
 			logger.Error("菜谱数据转图鉴出错!", err)

@@ -167,6 +167,24 @@ func UpdateData(c *onebot.Context, args []string) {
 	QuestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新任务数据完毕, 耗时%s", QuestConsume)
 
+	// 更新厨师图鉴图片数据
+	start = time.Now().UnixNano()
+	chefs := make([]database.Chef, 0)
+	err = database.DB.Asc("gallery_id").Find(&chefs)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		_ = bot.SendMessage(c, "更新厨师图鉴图片数据出错!")
+		return
+	}
+	err = ChefInfoToImage(chefs)
+	if err != nil {
+		logger.Error("更新厨师图鉴图片数据出错!", err)
+		_ = bot.SendMessage(c, "更新厨师图鉴图片数据出错!")
+		return
+	}
+	chefImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新厨师图鉴图片数据完毕, 耗时%s", chefImgConsume)
+
 	// 发送成功消息
 	logger.Info("更新数据完毕")
 	var strBdr = strings.Builder{}
@@ -183,7 +201,8 @@ func UpdateData(c *onebot.Context, args []string) {
 	strBdr.WriteString(fmt.Sprintf("更新技能数据耗时%s\n", skillConsume))
 	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s\n", DecorationConsume))
 	strBdr.WriteString(fmt.Sprintf("更新调料数据耗时%s\n", CondimentConsume))
-	strBdr.WriteString(fmt.Sprintf("更新任务数据耗时%s", QuestConsume))
+	strBdr.WriteString(fmt.Sprintf("更新任务数据耗时%s\n", QuestConsume))
+	strBdr.WriteString(fmt.Sprintf("更新厨师图鉴图片数据耗时%s", chefImgConsume))
 	err = bot.SendMessage(c, strBdr.String())
 	if err != nil {
 		logger.Error("发送消息失败!", err)
