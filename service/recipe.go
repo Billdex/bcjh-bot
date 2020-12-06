@@ -611,8 +611,9 @@ func RecipeInfoToImage(recipe recipeGallery, dst *os.File) error {
 	resourceFontDir := config.AppConfig.Resource.Font
 	fontPath := "yuan500W.ttf"
 	fontFile := fmt.Sprintf("%s/%s", resourceFontDir, fontPath) // 需要使用的字体文件
-	resourceImageDir := config.AppConfig.Resource.Image
-	bgFile, err := os.Open(fmt.Sprintf("%s/recipe_%s.png", resourceImageDir, recipe.Condiment))
+	resourceImgDir := config.AppConfig.Resource.Image
+	recipeImgPath := resourceImgDir + "/recipe"
+	bgFile, err := os.Open(fmt.Sprintf("%s/recipe_%s.png", recipeImgPath, recipe.Condiment))
 	if err != nil {
 		return err
 	}

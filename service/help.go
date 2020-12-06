@@ -38,6 +38,8 @@ func HelpGuide(c *onebot.Context, args []string) {
 			msg = antiqueHelp()
 		case "任务":
 			msg = questHelp()
+		case "碰瓷", "升阶贵客":
+			msg = upgradeGuestHelp()
 		default:
 			msg = "似乎还没有开发这个功能呢~"
 		}
@@ -55,14 +57,14 @@ func HelpGuide(c *onebot.Context, args []string) {
 func introHelp() string {
 	preChar := util.PrefixCharacters[0]
 	sb := strings.Builder{}
-	sb.WriteString("【爆炒机器人查询使用说明】\n")
+	sb.WriteString("【爆炒查询机器人使用说明】\n")
 	sb.WriteString(fmt.Sprintf("使用『%s功能名 参数』查询信息\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s厨师 羽十六」\n", preChar))
 	sb.WriteString("目前提供以下功能:\n")
-	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 调料, 贵客, 符文, 任务\n"))
+	sb.WriteString(fmt.Sprintf("帮助, 反馈, 图鉴网, 术语, 厨师, 厨具, 菜谱, 调料, 贵客, 符文, 任务, 碰瓷\n"))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("使用 %s帮助 功能名 查询用法\n", preChar))
-	sb.WriteString(fmt.Sprintf("示例 %s帮助 厨师\n", preChar))
+	sb.WriteString(fmt.Sprintf("使用『%s帮助 功能名』查询用法\n", preChar))
+	sb.WriteString(fmt.Sprintf("示例「%s帮助 厨师」\n", preChar))
 	sb.WriteString("\n")
 	sb.WriteString("数据来源: L图鉴网\n")
 	sb.WriteString("https://foodgame.gitee.io\n")
@@ -203,4 +205,16 @@ func questHelp() string {
 	sb.WriteString("3. 限时，接ID，可以指定系列:\n")
 	sb.WriteString(fmt.Sprintf("『%s任务 限时%v3』『%s任务 民国风云%v3』", prefix, split, prefix, split))
 	return sb.String()
+}
+
+func upgradeGuestHelp() string {
+	prefix := util.PrefixCharacters[0]
+	sb := strings.Builder{}
+	sb.WriteString("【升阶贵客查询】:\n")
+	sb.WriteString(fmt.Sprintf("查询升阶贵客可用的菜:\n"))
+	sb.WriteString(fmt.Sprintf("示例: 『%s碰瓷 如来』\n", prefix))
+	sb.WriteString("结果过多可使用「p」参数分页:\n")
+	sb.WriteString(fmt.Sprintf("示例: 『%s碰瓷 唐伯虎-p2』", prefix))
+	return sb.String()
+
 }
