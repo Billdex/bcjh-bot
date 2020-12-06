@@ -1,0 +1,4 @@
+.idea/
+data.min.json
+tmp/
+go.sum
