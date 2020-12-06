@@ -33,9 +33,9 @@ func ComboQuery(c *onebot.Context, args []string) {
 	if len(preRecipes) == 0 {
 		msg = fmt.Sprintf("%s不是后厨合成菜哦!", comboRecipeName)
 	} else {
-		msg += fmt.Sprintf("合成%s需要以下前置菜谱:\n", comboRecipeName)
+		msg += fmt.Sprintf("合成%s需要以下前置菜谱:", comboRecipeName)
 		for _, recipe := range preRecipes {
-			msg += fmt.Sprintf("「%s %s」", recipe.GalleryId, recipe.Name)
+			msg += fmt.Sprintf("\n「%s-%s-%s」", recipe.GalleryId, recipe.Name, recipe.Origin)
 		}
 	}
 
