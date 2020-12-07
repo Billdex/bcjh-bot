@@ -138,8 +138,8 @@ func recipeHelp() string {
 	msg += fmt.Sprintf("【菜谱信息查询】\n")
 	msg += fmt.Sprintf("基础信息查询:『%s菜谱 菜谱名』\n", preChar)
 	msg += fmt.Sprintf("示例:「%s菜谱 荷包蛋」\n", preChar)
-	msg += fmt.Sprintf("复合信息查询:\n")
-	msg += fmt.Sprintf("http://bcjhbot.billdex.cn/#/%E6%9F%A5%E8%8F%9C%E8%B0%B1")
+	msg += fmt.Sprintf("复合信息查询说明请看文档:\n")
+	msg += "http://bcjhbot.billdex.cn/#/%E6%9F%A5%E8%8F%9C%E8%B0%B1"
 	//msg += fmt.Sprintf("『%s菜谱 查询条件-参数-筛选条件』\n", preChar)
 	//msg += fmt.Sprintf("示例:「%s菜谱 食材-茄子-3火-单时间-p2」\n", preChar)
 	//msg += fmt.Sprintf("即查询使用茄子的三火以上菜谱,按单时间排序,并显示第二页内容\n")
