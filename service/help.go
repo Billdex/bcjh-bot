@@ -139,16 +139,17 @@ func recipeHelp() string {
 	msg += fmt.Sprintf("基础信息查询:『%s菜谱 菜谱名』\n", preChar)
 	msg += fmt.Sprintf("示例:「%s菜谱 荷包蛋」\n", preChar)
 	msg += fmt.Sprintf("复合信息查询:\n")
-	msg += fmt.Sprintf("『%s菜谱 查询条件-参数-筛选条件』\n", preChar)
-	msg += fmt.Sprintf("示例:「%s菜谱 食材-茄子-3火-单时间-p2」\n", preChar)
-	msg += fmt.Sprintf("即查询使用茄子的三火以上菜谱,按单时间排序,并显示第二页内容\n")
-	msg += fmt.Sprintf("目前提供以下查询条件(可不填):\n")
-	msg += fmt.Sprintf("食材, 技法, 贵客, 符文, 来源\n")
-	msg += fmt.Sprintf("目前提供以下筛选条件(可不填或叠加):\n")
-	msg += fmt.Sprintf("单价下限($100), 稀有度下限(3火/星), 页数(p5)\n")
-	msg += fmt.Sprintf("目前提供以下排序方式\n")
-	msg += fmt.Sprintf("单时间, 总时间, 单价, 金币效率, ")
-	msg += fmt.Sprintf("耗材效率, 食材效率")
+	msg += fmt.Sprintf("http://bcjhbot.billdex.cn/#/%E6%9F%A5%E8%8F%9C%E8%B0%B1")
+	//msg += fmt.Sprintf("『%s菜谱 查询条件-参数-筛选条件』\n", preChar)
+	//msg += fmt.Sprintf("示例:「%s菜谱 食材-茄子-3火-单时间-p2」\n", preChar)
+	//msg += fmt.Sprintf("即查询使用茄子的三火以上菜谱,按单时间排序,并显示第二页内容\n")
+	//msg += fmt.Sprintf("目前提供以下查询条件(可不填):\n")
+	//msg += fmt.Sprintf("食材, 技法, 贵客, 符文, 来源\n")
+	//msg += fmt.Sprintf("目前提供以下筛选条件(可不填或叠加):\n")
+	//msg += fmt.Sprintf("单价下限($100), 稀有度下限(3火/星), 页数(p5)\n")
+	//msg += fmt.Sprintf("目前提供以下排序方式\n")
+	//msg += fmt.Sprintf("单时间, 总时间, 单价, 金币效率, ")
+	//msg += fmt.Sprintf("耗材效率, 食材效率")
 	return msg
 }
 
@@ -208,6 +209,7 @@ func questHelp() string {
 	return sb.String()
 }
 
+// 碰瓷功能指引
 func upgradeGuestHelp() string {
 	prefix := util.PrefixCharacters[0]
 	sb := strings.Builder{}
@@ -219,6 +221,7 @@ func upgradeGuestHelp() string {
 
 }
 
+// 后厨合成菜功能指引
 func comboHelp() string {
 	prefix := util.PrefixCharacters[0]
 	sb := strings.Builder{}
