@@ -19,8 +19,150 @@ import (
 	"strings"
 )
 
-// 处理菜谱查询请求
 func RecipeQuery(c *onebot.Context, args []string) {
+	logger.Info("菜谱查询, 参数:", args)
+
+
+	if len(args) == 0 {
+		err := bot.SendMessage(c, recipeHelp())
+		if err != nil {
+			logger.Error("发送信息失败!", err)
+		}
+		return
+	}
+
+	recipes := make([]database.Recipe, 0)
+	var order string
+	var page string
+	var note string
+
+	for p, arg := range args {
+		switch arg {
+		case "图鉴序", "单时间", "总时间", "单价", "金币效率", "耗材效率", "食材效率":
+			order = arg
+		case "1火", "1星", "一火", "一星":
+			recipes, note = filterRecipesByRarity(recipes, 1, p)
+		case "2火", "2星", "二火", "二星", "两火", "两星":
+			recipes, note = filterRecipesByRarity(recipes, 2, p)
+		case "3火", "3星", "三火", "三星":
+			recipes, note = filterRecipesByRarity(recipes, 3, p)
+		case "4火", "4星", "四火", "四星":
+			recipes, note = filterRecipesByRarity(recipes, 4, p)
+		case "5火", "5星", "五火", "五星":
+			recipes, note = filterRecipesByRarity(recipes, 5, p)
+		default:
+			if util.HasPrefixIn(arg, "食材", "材料") {
+				materials := strings.Split(arg, util.ArgsConnectCharacter)
+				recipes, note = filterRecipesByMaterial(recipes, materials[1:], p)
+			} else if util.HasPrefixIn(arg, "技法") {
+
+			} else if util.HasPrefixIn(arg, "贵客", "稀有客人") {
+
+			} else if util.HasPrefixIn(arg, "符文", "礼物") {
+
+			} else if util.HasPrefixIn(arg, "来源") {
+
+			} else if util.HasPrefixIn(arg, "$") {
+
+			} else if util.HasPrefixIn(arg, "p", "P") {
+
+			} else {
+				recipes, note = filterRecipesByName(recipes, p)
+			}
+		}
+
+
+
+
+
+		if note != "" {
+			logger.Info("菜谱查询失败:", note)
+			_ = bot.SendMessage(c, note)
+			return
+		}
+	}
+
+
+
+
+
+
+
+}
+
+// 根据稀有度筛选菜谱
+func filterRecipesByRarity(recipes []database.Recipe, rarity int, pos int) ([]database.Recipe, string){
+	result := make([]database.Recipe, 0)
+	if pos == 0 {
+		err := database.DB.Where("rarity >= ", rarity).Find(&result)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			return result, util.SystemErrorNote
+		}
+	} else {
+		for _, recipe := range recipes {
+			if recipe.Rarity >= rarity {
+				result = append(result, recipe)
+			}
+		}
+	}
+	return result, ""
+}
+
+// 根据食材筛选菜谱
+func filterRecipesByMaterial(recipes []database.Recipe, materials []string, pos int) ([]database.Recipe, string) {
+	result := make([]database.Recipe, 0)
+	if len(materials) == 0 {
+		return result, "请填写想要筛选的食材"
+	}
+
+	for _, material := range mater
+
+
+
+
+
+}
+
+func filterRecipesBySkill(recipes []database.Recipe, skills []string, pos int) ([]database.Recipe, string) {
+
+
+
+
+
+
+
+}
+
+func filterRecipesByGuest(recipes []database.Recipe, guest string, pos int) ([]database.Recipe, string) {
+
+
+
+
+}
+
+func filterRecipesByAntique(recipes []database.Recipe, antique string, pos int) ([]database.Recipe, string) {
+
+
+
+
+
+}
+
+func filterRecipesByName(recipes []database.Recipe, name string, pos int) ([]database.Recipe, string) {
+
+
+
+
+}
+
+
+
+
+
+
+// 处理菜谱查询请求
+func RecipeQueryBack(c *onebot.Context, args []string) {
 	logger.Info("菜谱查询, 参数:", args)
 	if len(args) == 0 {
 		err := bot.SendMessage(c, recipeHelp())
