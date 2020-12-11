@@ -70,7 +70,7 @@ func QuestQuery(c *onebot.Context, args []string) {
 			Session.Where("quest_id_disp = ?", args[1])
 		}
 	} else {
-		_ = bot.SendMessage(c, "要指定一下任务 id 哦")
+		_ = bot.SendMessage(c, "查询参数有误")
 		return
 	}
 
