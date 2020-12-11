@@ -59,19 +59,17 @@ func HelpGuide(c *onebot.Context, args []string) {
 func introHelp() string {
 	preChar := util.PrefixCharacters[0]
 	sb := strings.Builder{}
-	sb.WriteString("【爆炒查询机器人使用说明】\n")
-	sb.WriteString(fmt.Sprintf("使用『%s功能名 参数』查询信息\n", preChar))
+	sb.WriteString("【爆炒江湖查询机器人】\n")
+	sb.WriteString(fmt.Sprintf("使用方式『%s功能名 参数』\n", preChar))
 	sb.WriteString(fmt.Sprintf("示例「%s厨师 羽十六」\n", preChar))
-	sb.WriteString("目前提供以下功能:\n")
-	sb.WriteString(fmt.Sprintf("「帮助」「反馈」「图鉴网」「术语」「厨师」「厨具」「菜谱」「调料」「贵客」「符文」「任务」「碰瓷」「后厨」\n"))
+	//sb.WriteString("目前提供以下功能:\n")
+	//sb.WriteString(fmt.Sprintf("「帮助」「反馈」「图鉴网」「术语」「厨师」「厨具」「菜谱」「调料」「贵客」「符文」「任务」「碰瓷」「后厨」\n"))
+	//sb.WriteString(fmt.Sprintf("查看功能指引『%s帮助 功能名』\n", preChar))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("使用『%s帮助 功能名』查询用法\n", preChar))
-	sb.WriteString(fmt.Sprintf("示例「%s帮助 厨师」\n", preChar))
-	sb.WriteString("\n")
+	sb.WriteString("详情请看说明文档(编写中):\n")
+	sb.WriteString("http://bcjhbot.billdex.cn\n")
 	sb.WriteString("数据来源: L图鉴网\n")
-	sb.WriteString("https://foodgame.gitee.io\n")
-	sb.WriteString("项目地址（给个star呀）:\n")
-	sb.WriteString("https://github.com/Billdex/bcjh-bot")
+	sb.WriteString("https://foodgame.gitee.io")
 	return sb.String()
 }
 
