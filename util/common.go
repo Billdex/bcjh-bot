@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func FormatSecondToString(t int) string {
@@ -37,4 +38,13 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func HasPrefixIn(s string, prefix ...string) bool {
+	for _, p := range prefix {
+		if !strings.HasPrefix(s, p) {
+			return false
+		}
+	}
+	return true
 }
