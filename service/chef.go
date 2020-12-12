@@ -120,7 +120,7 @@ func ChefQuery(c *onebot.Context, args []string) {
 			msg += fmt.Sprintf("🍖:%d 🍞:%d 🥕:%d 🐟:%d\n", chef.Meat, chef.Flour, chef.Vegetable, chef.Fish)
 			msg += fmt.Sprintf("技能:%s\n", skill.Description)
 			msg += fmt.Sprintf("修炼效果:%s\n", ultimateSkill.Description)
-			//msg += fmt.Sprintf("修炼任务:%s", goals)
+			msg += fmt.Sprintf("修炼任务:%s", goals)
 		}
 
 	} else {
@@ -395,12 +395,11 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		if err != nil {
 			return err
 		}
-		defer dst.Close()
-
 		err = png.Encode(dst, img)
 		if err != nil {
 			return err
 		}
+		dst.Close()
 	}
 	return nil
 }

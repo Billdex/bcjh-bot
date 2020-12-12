@@ -42,9 +42,9 @@ func PathExists(path string) (bool, error) {
 
 func HasPrefixIn(s string, prefix ...string) bool {
 	for _, p := range prefix {
-		if !strings.HasPrefix(s, p) {
-			return false
+		if strings.HasPrefix(s, p) {
+			return true
 		}
 	}
-	return true
+	return false
 }
