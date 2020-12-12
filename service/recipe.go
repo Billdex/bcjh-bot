@@ -100,7 +100,9 @@ func RecipeQuery(c *onebot.Context, args []string) {
 				if err != nil {
 					note = "分页参数有误"
 				} else {
-					page = pageNum
+					if pageNum > 0 {
+						page = pageNum
+					}
 				}
 			} else {
 				recipes, note = filterRecipesByName(recipes, arg)
@@ -555,10 +557,10 @@ func echoRecipesMessage(recipes []database.Recipe, order string, page int, priva
 			listLength = listLength * 2
 		}
 		maxPage := (len(recipes)-1)/listLength + 1
+		if page > maxPage {
+			page = maxPage
+		}
 		if len(recipes) > listLength {
-			if page > maxPage {
-				page = maxPage
-			}
 			msg += fmt.Sprintf("这里有你想点的菜吗: (%d/%d)\n", page, maxPage)
 		} else {
 			msg += "这里有你想点的菜吗:\n"
