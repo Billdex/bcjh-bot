@@ -71,8 +71,8 @@ func SendPrivateMsg(msg onebot.PrivateMsg) error {
 	}
 	baseUrl := "http://" + config.AppConfig.OneBot.Host + ":" + strconv.Itoa(config.AppConfig.OneBot.Port)
 	url := baseUrl + "/send_private_msg"
-	err = OneBotPost(byteMsg, url)
 	logger.Debug("尝试发送一条私聊消息:", msg)
+	err = OneBotPost(byteMsg, url)
 	return err
 }
 
@@ -83,8 +83,8 @@ func SendGroupMsg(msg onebot.GroupMsg) error {
 	}
 	baseUrl := "http://" + config.AppConfig.OneBot.Host + ":" + strconv.Itoa(config.AppConfig.OneBot.Port)
 	url := baseUrl + "/send_group_msg"
-	err = OneBotPost(byteMsg, url)
 	logger.Debug("尝试发送一条群聊消息:", msg)
+	err = OneBotPost(byteMsg, url)
 	return err
 }
 
