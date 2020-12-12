@@ -12,8 +12,15 @@ import (
 	"strings"
 )
 
+// 任务查询
 func QuestQuery(c *onebot.Context, args []string) {
-	str := strings.Join(args, util.ArgsSplitCharacter)
+	var str string
+	for _, prefix := range util.PrefixCharacters {
+		if strings.HasPrefix(c.RawMessage, prefix) {
+			str = c.RawMessage[len(prefix):]
+			break
+		}
+	}
 	pattern := regexp.MustCompile(`^(任务)?\s*(主线|支线)?\s*(任务)?\s*-?\s*([0-9]+(\.[0-9]+)?)([-\s]+([0-9]+))?`)
 	allIndexes := pattern.FindAllSubmatchIndex([]byte(str), -1)
 	// logger.Debugf("%v", allIndexes)
@@ -54,25 +61,28 @@ func QuestQuery(c *onebot.Context, args []string) {
 		return
 	}
 
+	// 查询条目数
+	if pos[lenPos] != -1 && pos[lenPos+1] != -1 {
+		length, _ = strconv.Atoi(str[pos[lenPos]:pos[lenPos+1]])
+	}
+
 	// 确定主线还是支线
+	var prefixMsg string
 	if pos[isSubQuestPos] != -1 && pos[isSubQuestPos+1] != -1 &&
-		strings.HasSuffix(str[pos[isSubQuestPos]:pos[isSubQuestPos+1]], ".") {
+		strings.HasPrefix(str[pos[isSubQuestPos]:pos[isSubQuestPos+1]], ".") {
 		if questType == "主线" {
-			_ = bot.SendMessage(c, "您要找的是「支线任务 "+idStr+"」吗")
-			return
+			prefixMsg = "你想找的是「支线 " + idStr + "」吗\n"
 		}
 		questType = "支线"
 	} else {
 		if questType == "支线" {
-			_ = bot.SendMessage(c, "您要找的是「主线任务 "+idStr+"」吗")
-			return
+			lenStr := ""
+			if length > 1 {
+				lenStr = " " + strconv.Itoa(length)
+			}
+			prefixMsg = "你想找的是「主线 " + idStr + lenStr + "」吗\n"
 		}
 		questType = "主线"
-	}
-
-	// 查询条目数
-	if pos[lenPos] != -1 && pos[lenPos+1] != -1 {
-		length, _ = strconv.Atoi(str[pos[lenPos]:pos[lenPos+1]])
 	}
 
 	// logger.Debugf("查询结果：[%v %v] 查询%v条", questType, idStr, length)
@@ -84,7 +94,7 @@ func QuestQuery(c *onebot.Context, args []string) {
 	if questType == "主线" {
 		id, _ := strconv.Atoi(idStr)
 		if id > 700 {
-			_ = bot.SendMessage(c, "主线任务目前只有 700 个哦")
+			_ = bot.SendMessage(c, prefixMsg+"主线任务目前只有 700 个哦")
 			return
 		}
 		if length == 1 {
@@ -105,7 +115,7 @@ func QuestQuery(c *onebot.Context, args []string) {
 		return
 	}
 	// 构造返回语句
-	_ = bot.SendMessage(c, makeQuestsString(quests))
+	_ = bot.SendMessage(c, prefixMsg+echoQuestsMessage(quests))
 }
 
 // 主线查询（单条）
@@ -142,7 +152,7 @@ func findSubQuest(subId string) ([]database.Quest, error) {
 }
 
 // 构造返回信息及格式
-func makeQuestsString(quests []database.Quest) string {
+func echoQuestsMessage(quests []database.Quest) string {
 	if len(quests) == 0 {
 		return "哎呀，好像找不到呢!"
 	}
