@@ -70,10 +70,10 @@ const (
 
 	ArgsSplitCharacter   = " "
 	ArgsConnectCharacter = "-"
-	MaxQueryListLength   = 5
+	MaxQueryListLength   = 10
 
 	QueryParamWrongNote = "查询格式错了哦"
 	SystemErrorNote     = "唔，系统开小差啦"
 )
 
-var PrefixCharacters = []string{"*"}
+var PrefixCharacters = []string{"#", "＃"}
