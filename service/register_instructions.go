@@ -43,7 +43,7 @@ func RegisterInstructions() {
 	Ins.Bind(GuestQuery, "贵客")
 	Ins.Bind(AntiqueQuery, "符文")
 	Ins.Bind(CondimentQuery, "调料")
-	Ins.Bind(QuestQuery, "任务")
+	Ins.Bind(QuestQuery, "任务", "主线", "支线")
 	Ins.Bind(UpgradeGuestQuery, "碰瓷", "升阶贵客")
 	Ins.Bind(ComboQuery, "后厨", "合成")
 }
