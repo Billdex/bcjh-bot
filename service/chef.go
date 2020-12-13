@@ -15,13 +15,15 @@ import (
 	"image/png"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 )
 
 func ChefQuery(c *onebot.Context, args []string) {
-	logger.Info("厨师查询，参数:", args)
+	logger.Info("厨师查询, 参数:", args)
 
-	var msg string
 	if len(args) == 0 {
 		err := bot.SendMessage(c, chefHelp())
 		if err != nil {
@@ -29,117 +31,282 @@ func ChefQuery(c *onebot.Context, args []string) {
 		}
 		return
 	}
-	if args[0] == "%" {
-		err := bot.SendMessage(c, "参数有误!")
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
-		return
-	}
-	arg := args[0]
-	numId, err := strconv.Atoi(arg)
-	if err == nil {
-		if numId%3 != 0 {
-			numId = numId + (3 - numId%3)
 
-		}
-		arg = fmt.Sprintf("%03d", numId)
-	}
-
+	order := "稀有度"
+	page := 1
+	var note string
 	chefs := make([]database.Chef, 0)
-	err = database.DB.Where("gallery_id = ?", arg).Asc("gallery_id").Find(&chefs)
+	err := database.DB.Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "查询数据失败!")
-		return
+		_ = bot.SendMessage(c, util.SystemErrorNote)
 	}
-	if len(chefs) == 0 {
-		err = database.DB.Where("name like ?", "%"+arg+"%").Asc("gallery_id").Find(&chefs)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			_ = bot.SendMessage(c, "查询数据失败!")
+	argCount := 0
+	for _, arg := range args {
+		switch arg {
+		case "图鉴序", "稀有度":
+			order = arg
+		case "1火", "1星", "一火", "一星":
+			chefs, note = filterChefsByRarity(chefs, 1)
+		case "2火", "2星", "二火", "二星", "两火", "两星":
+			chefs, note = filterChefsByRarity(chefs, 2)
+		case "3火", "3星", "三火", "三星":
+			chefs, note = filterChefsByRarity(chefs, 3)
+		case "4火", "4星", "四火", "四星":
+			chefs, note = filterChefsByRarity(chefs, 4)
+		case "5火", "5星", "五火", "五星":
+			chefs, note = filterChefsByRarity(chefs, 5)
+		default:
+			if util.HasPrefixIn(arg, "来源") {
+				origins := strings.Split(arg, util.ArgsConnectCharacter)
+				if len(origins) > 1 {
+					chefs, note = filterChefsByOrigin(chefs, origins[1])
+				}
+			} else if util.HasPrefixIn(arg, "p", "P") {
+				pageNum, err := strconv.Atoi(arg[1:])
+				if err != nil {
+					note = "分页参数有误"
+				} else {
+					if pageNum > 0 {
+						page = pageNum
+					}
+				}
+			} else {
+				chefs, note = filterChefsByName(chefs, arg)
+			}
+		}
+		if note != "" {
+			logger.Info("厨师查询失败:", note)
+			_ = bot.SendMessage(c, note)
 			return
 		}
+		argCount++
 	}
 
-	if len(chefs) == 0 {
-		msg = "哎呀，好像找不到呢!"
-	} else if len(chefs) == 1 {
-		chef := chefs[0]
-		// 尝试寻找图片文件，未找到则按照文字格式发送
-		resourceImageDir := config.AppConfig.Resource.Image + "/chef"
-		imagePath := fmt.Sprintf("%s/chef_%s.png", resourceImageDir, chef.GalleryId)
-		logger.Debug("imagePath:", imagePath)
-		if has, err := util.PathExists(imagePath); has {
-			msg = bot.GetCQImage(imagePath, "file")
-		} else {
-			if err != nil {
-				logger.Debugf("无法确定文件是否存在!", err)
-			}
-			logger.Info("未找到厨师图鉴图片, 以文字格式发送数据")
-			var gender string
-			if chef.Gender == 1 {
-				gender = "♂️"
-			} else if chef.Gender == 2 {
-				gender = "♀️"
-			}
-			rarity := ""
-			for i := 0; i < chef.Rarity; i++ {
-				rarity += "🔥"
-			}
-			skill := new(database.Skill)
-			_, err = database.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
-			if err != nil {
-				logger.Error("查询数据库出错!", err)
-				_ = bot.SendMessage(c, util.SystemErrorNote)
-				return
-			}
-			ultimateSkill := new(database.Skill)
-			_, err = database.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
-			if err != nil {
-				logger.Error("查询数据库出错!", err)
-				_ = bot.SendMessage(c, util.SystemErrorNote)
-				return
-			}
-			ultimateGoals := make([]database.Quest, 0)
-			err = database.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
-			if err != nil {
-				logger.Error("查询数据库出错!", err)
-				_ = bot.SendMessage(c, util.SystemErrorNote)
-				return
-			}
-			goals := ""
-			for p, ultimateGoal := range ultimateGoals {
-				goals += fmt.Sprintf("\n%d.%s", p+1, ultimateGoal.Goal)
-			}
-			msg += fmt.Sprintf("%s %s %s\n", chef.GalleryId, chef.Name, gender)
-			msg += fmt.Sprintf("%s\n", rarity)
-			msg += fmt.Sprintf("来源: %s\n", chef.Origin)
-			msg += fmt.Sprintf("炒:%d 烤:%d 煮:%d\n", chef.Stirfry, chef.Bake, chef.Boil)
-			msg += fmt.Sprintf("蒸:%d 炸:%d 切:%d\n", chef.Steam, chef.Fry, chef.Cut)
-			msg += fmt.Sprintf("🍖:%d 🍞:%d 🥕:%d 🐟:%d\n", chef.Meat, chef.Flour, chef.Vegetable, chef.Fish)
-			msg += fmt.Sprintf("技能:%s\n", skill.Description)
-			msg += fmt.Sprintf("修炼效果:%s\n", ultimateSkill.Description)
-			//msg += fmt.Sprintf("修炼任务:%s", goals)
-		}
-
-	} else {
-		msg = "查询到以下厨师:\n"
-		for p, chef := range chefs {
-			msg += fmt.Sprintf("%s %s", chef.GalleryId, chef.Name)
-			if p != len(chefs)-1 {
-				msg += "\n"
-				if p == util.MaxQueryListLength-1 {
-					msg += "......"
-					break
-				}
-			}
-		}
+	if argCount == 0 {
+		_ = bot.SendMessage(c, recipeHelp())
+		return
 	}
 
+	// 对厨师查询结果排序
+	chefs, note = orderChefs(chefs, order)
+	if note != "" {
+		logger.Info("厨师查询失败:", note)
+		_ = bot.SendMessage(c, note)
+		return
+	}
+	// 根据查询结果分页并发送消息
+	msg := echoChefsMessage(chefs, order, page, c.MessageType == util.OneBotMessagePrivate)
+	logger.Info("发送厨师查询结果:", msg)
 	err = bot.SendMessage(c, msg)
 	if err != nil {
 		logger.Error("发送信息失败!", err)
+	}
+
+}
+
+// 根据厨师稀有度筛选厨师
+func filterChefsByRarity(chefs []database.Chef, rarity int) ([]database.Chef, string) {
+	if len(chefs) == 0 {
+		return chefs, ""
+	}
+	result := make([]database.Chef, 0)
+	for i, _ := range chefs {
+		if chefs[i].Rarity >= rarity {
+			result = append(result, chefs[i])
+		}
+	}
+	return result, ""
+}
+
+// 根据来源筛选厨师
+func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef, string) {
+	if len(chefs) == 0 {
+		return chefs, ""
+	}
+	result := make([]database.Chef, 0)
+	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
+	for i, _ := range chefs {
+		re := regexp.MustCompile(pattern)
+		if re.MatchString(chefs[i].Origin) {
+			result = append(result, chefs[i])
+		}
+	}
+	return result, ""
+}
+
+// 根据厨师名或厨师ID筛选菜谱
+func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, string) {
+	result := make([]database.Chef, 0)
+	numId, err := strconv.Atoi(name)
+	if err != nil {
+		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
+		for i, _ := range chefs {
+			re := regexp.MustCompile(pattern)
+			if re.MatchString(chefs[i].Name) {
+				result = append(result, chefs[i])
+			}
+		}
+	} else {
+		galleryId := fmt.Sprintf("%03d", numId)
+		for i, _ := range chefs {
+			if chefs[i].GalleryId == galleryId {
+				result = append(result, chefs[i])
+			}
+		}
+	}
+	return result, ""
+}
+
+type chefWrapper struct {
+	chef     []database.Chef
+	chefLess func(p *database.Chef, q *database.Chef) bool
+}
+
+func (w chefWrapper) Len() int {
+	return len(w.chef)
+}
+
+func (w chefWrapper) Swap(i int, j int) {
+	w.chef[i], w.chef[j] = w.chef[j], w.chef[i]
+}
+
+func (w chefWrapper) Less(i int, j int) bool {
+	return w.chefLess(&w.chef[i], &w.chef[j])
+}
+
+// 根据排序参数排序厨师
+func orderChefs(chefs []database.Chef, order string) ([]database.Chef, string) {
+	if len(chefs) == 0 {
+		return chefs, ""
+	}
+	switch order {
+	case "图鉴序":
+		sort.Sort(chefWrapper{chefs, func(m, n *database.Chef) bool {
+			return m.ChefId < n.ChefId
+		}})
+	case "稀有度":
+		sort.Sort(chefWrapper{chefs, func(m, n *database.Chef) bool {
+			return m.Rarity > n.Rarity
+		}})
+	default:
+		return nil, "排序参数有误"
+	}
+	return chefs, ""
+}
+
+// 输出单厨师消息数据
+func echoChefMessage(chef database.Chef) string {
+	// 尝试寻找图片文件，未找到则按照文字格式发送
+	resourceImageDir := config.AppConfig.Resource.Image + "/chef"
+	imagePath := fmt.Sprintf("%s/chef_%s.png", resourceImageDir, chef.GalleryId)
+	logger.Debug("imagePath:", imagePath)
+	var msg string
+	if has, err := util.PathExists(imagePath); has {
+		msg = bot.GetCQImage(imagePath, "file")
+	} else {
+		if err != nil {
+			logger.Debugf("无法确定文件是否存在!", err)
+		}
+		logger.Info("未找到厨师图鉴图片, 以文字格式发送数据")
+		var gender string
+		if chef.Gender == 1 {
+			gender = "♂️"
+		} else if chef.Gender == 2 {
+			gender = "♀️"
+		}
+		rarity := ""
+		for i := 0; i < chef.Rarity; i++ {
+			rarity += "🔥"
+		}
+		skill := new(database.Skill)
+		_, err = database.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			return util.SystemErrorNote
+		}
+		ultimateSkill := new(database.Skill)
+		_, err = database.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			return util.SystemErrorNote
+		}
+		ultimateGoals := make([]database.Quest, 0)
+		err = database.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			return util.SystemErrorNote
+		}
+		goals := ""
+		for p, ultimateGoal := range ultimateGoals {
+			goals += fmt.Sprintf("\n%d.%s", p+1, ultimateGoal.Goal)
+		}
+		msg += fmt.Sprintf("%s %s %s\n", chef.GalleryId, chef.Name, gender)
+		msg += fmt.Sprintf("%s\n", rarity)
+		msg += fmt.Sprintf("来源: %s\n", chef.Origin)
+		msg += fmt.Sprintf("炒:%d 烤:%d 煮:%d\n", chef.Stirfry, chef.Bake, chef.Boil)
+		msg += fmt.Sprintf("蒸:%d 炸:%d 切:%d\n", chef.Steam, chef.Fry, chef.Cut)
+		msg += fmt.Sprintf("🍖:%d 🍞:%d 🥕:%d 🐟:%d\n", chef.Meat, chef.Flour, chef.Vegetable, chef.Fish)
+		msg += fmt.Sprintf("技能:%s\n", skill.Description)
+		msg += fmt.Sprintf("修炼效果:%s\n", ultimateSkill.Description)
+		msg += fmt.Sprintf("修炼任务:%s", goals)
+	}
+	return msg
+}
+
+// 根据来源和排序参数，输出厨师列表消息数据
+func echoChefsMessage(chefs []database.Chef, order string, page int, private bool) string {
+	if len(chefs) == 0 {
+		return "哎呀，好像找不到呢!"
+	} else if len(chefs) == 1 {
+		return echoChefMessage(chefs[0])
+	} else {
+		logger.Debug("查询到多个厨师")
+		var msg string
+		listLength := util.MaxQueryListLength
+		if private {
+			listLength = listLength * 2
+		}
+		maxPage := (len(chefs)-1)/listLength + 1
+		if page > maxPage {
+			page = maxPage
+		}
+		if len(chefs) > listLength {
+			msg += fmt.Sprintf("查询到以下厨师: (%d/%d)\n", page, maxPage)
+		} else {
+			msg += "查询到以下厨师:\n"
+		}
+		for i := (page - 1) * listLength; i < page*listLength && i < len(chefs); i++ {
+			orderInfo := getChefInfoWithOrder(chefs[i], order)
+			msg += fmt.Sprintf("%s %s %s", chefs[i].GalleryId, chefs[i].Name, orderInfo)
+			if i < page*listLength-1 && i < len(chefs)-1 {
+				msg += "\n"
+			}
+		}
+		if page < maxPage {
+			msg += "\n......"
+		}
+		return msg
+	}
+}
+
+// 根据排序参数获取厨师需要输出的信息
+func getChefInfoWithOrder(chef database.Chef, order string) string {
+	switch order {
+	case "图鉴序":
+		msg := ""
+		for i := 0; i < chef.Rarity; i++ {
+			msg += "🔥"
+		}
+		return msg
+	case "稀有度":
+		msg := ""
+		for i := 0; i < chef.Rarity; i++ {
+			msg += "🔥"
+		}
+		return msg
+	default:
+		return ""
 	}
 }
 
@@ -395,12 +562,11 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		if err != nil {
 			return err
 		}
-		defer dst.Close()
-
 		err = png.Encode(dst, img)
 		if err != nil {
 			return err
 		}
+		dst.Close()
 	}
 	return nil
 }

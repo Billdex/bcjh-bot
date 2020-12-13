@@ -7,6 +7,7 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"fmt"
+	"strconv"
 )
 
 func ComboQuery(c *onebot.Context, args []string) {
@@ -22,8 +23,41 @@ func ComboQuery(c *onebot.Context, args []string) {
 
 	comboRecipeName := args[0]
 
+	// 判断菜名是否唯一
+	recipes := make([]database.Recipe, 0)
+	recipeId, err := strconv.Atoi(comboRecipeName)
+	if err == nil {
+		err = database.DB.Where("gallery_id = ?", fmt.Sprintf("%03d", recipeId)).Find(&recipes)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			_ = bot.SendMessage(c, util.SystemErrorNote)
+			return
+		}
+	} else {
+		err = database.DB.Where("name like ?", "%"+comboRecipeName+"%").Find(&recipes)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			_ = bot.SendMessage(c, util.SystemErrorNote)
+			return
+		}
+	}
+	if len(recipes) == 0 {
+		_ = bot.SendMessage(c, "没有查询到相关餐谱呢")
+		return
+	}
+	if len(recipes) > 1 {
+		msg := "你想查询哪个菜谱呢:"
+		for _, recipe := range recipes {
+			msg += fmt.Sprintf("\n%s", recipe.Name)
+		}
+		_ = bot.SendMessage(c, msg)
+		return
+	}
+
+	comboRecipeName = recipes[0].Name
+
 	preRecipes := make([]database.Recipe, 0)
-	err := database.DB.Where("combo = ?", comboRecipeName).Find(&preRecipes)
+	err = database.DB.Where("combo = ?", comboRecipeName).Find(&preRecipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_ = bot.SendMessage(c, util.SystemErrorNote)
