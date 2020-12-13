@@ -32,7 +32,7 @@ func RecipeQuery(c *onebot.Context, args []string) {
 		return
 	}
 
-	order := "图鉴序"
+	order := "稀有度"
 	page := 1
 	var note string
 	recipes := make([]database.Recipe, 0)
@@ -47,7 +47,7 @@ func RecipeQuery(c *onebot.Context, args []string) {
 			continue
 		}
 		switch arg {
-		case "图鉴序", "单时间", "总时间", "单价", "售价", "金币效率", "耗材效率":
+		case "图鉴序", "单时间", "总时间", "单价", "售价", "金币效率", "耗材效率", "稀有度":
 			order = arg
 		case "1火", "1星", "一火", "一星":
 			recipes, note = filterRecipesByRarity(recipes, 1)
@@ -472,7 +472,6 @@ func filterRecipesByName(recipes []database.Recipe, name string) ([]database.Rec
 				result = append(result, recipes[i])
 			}
 		}
-
 	}
 	return result, ""
 }
@@ -535,70 +534,18 @@ func orderRecipes(recipes []database.Recipe, order string) ([]database.Recipe, s
 		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
 			return m.MaterialEfficiency > n.MaterialEfficiency
 		}})
+	case "稀有度":
+		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
+			return m.Rarity > n.Rarity
+		}})
 	default:
 		return nil, "排序参数有误"
 	}
 	return recipes, ""
 }
 
-// 根据排序规则与分页参数，返回菜谱列表消息数据
-func echoRecipesMessage(recipes []database.Recipe, order string, page int, private bool) string {
-	if len(recipes) == 0 {
-		logger.Debug("未查询到菜谱")
-		return "本店没有这道菜呢!"
-	} else if len(recipes) == 1 {
-		logger.Debug("查询到一个菜谱")
-		return getRecipeMessage(recipes[0])
-	} else {
-		logger.Debug("查询到多个菜谱")
-		var msg string
-		listLength := util.MaxQueryListLength
-		if private {
-			listLength = listLength * 2
-		}
-		maxPage := (len(recipes)-1)/listLength + 1
-		if page > maxPage {
-			page = maxPage
-		}
-		if len(recipes) > listLength {
-			msg += fmt.Sprintf("这里有你想点的菜吗: (%d/%d)\n", page, maxPage)
-		} else {
-			msg += "这里有你想点的菜吗:\n"
-		}
-		for i := (page - 1) * listLength; i < page*listLength && i < len(recipes); i++ {
-			orderInfo := getRecipeInfoWithOrder(recipes[i], order)
-			msg += fmt.Sprintf("%s %s %s", recipes[i].GalleryId, recipes[i].Name, orderInfo)
-			if i < page*listLength-1 && i < len(recipes)-1 {
-				msg += "\n"
-			}
-		}
-		if page < maxPage {
-			msg += "\n......"
-		}
-		return msg
-	}
-}
-
-// 根据排序参数获取菜谱需要输出的信息
-func getRecipeInfoWithOrder(recipe database.Recipe, order string) string {
-	switch order {
-	case "单时间":
-		return util.FormatSecondToString(recipe.Time)
-	case "总时间":
-		return util.FormatSecondToString(recipe.Time * recipe.Limit)
-	case "单价", "售价":
-		return fmt.Sprintf("💰%d", recipe.Price)
-	case "金币效率":
-		return fmt.Sprintf("💰%d/h", recipe.GoldEfficiency)
-	case "耗材效率":
-		return fmt.Sprintf("🥗%d/h", recipe.MaterialEfficiency)
-	default:
-		return ""
-	}
-}
-
 // 输出单菜谱消息数据
-func getRecipeMessage(recipe database.Recipe) string {
+func echoRecipeMessage(recipe database.Recipe) string {
 	// 尝试寻找图片文件，未找到则按照文字格式发送
 	resourceImageDir := config.AppConfig.Resource.Image + "/recipe"
 	imagePath := fmt.Sprintf("%s/recipe_%s.png", resourceImageDir, recipe.GalleryId)
@@ -703,6 +650,68 @@ func getRecipeMessage(recipe database.Recipe) string {
 		msg += fmt.Sprintf("升阶贵客: %s", guests)
 	}
 	return msg
+}
+
+// 根据排序规则与分页参数，返回菜谱列表消息数据
+func echoRecipesMessage(recipes []database.Recipe, order string, page int, private bool) string {
+	if len(recipes) == 0 {
+		logger.Debug("未查询到菜谱")
+		return "本店没有相关的菜呢!"
+	} else if len(recipes) == 1 {
+		logger.Debug("查询到一个菜谱")
+		return echoRecipeMessage(recipes[0])
+	} else {
+		logger.Debug("查询到多个菜谱")
+		var msg string
+		listLength := util.MaxQueryListLength
+		if private {
+			listLength = listLength * 2
+		}
+		maxPage := (len(recipes)-1)/listLength + 1
+		if page > maxPage {
+			page = maxPage
+		}
+		if len(recipes) > listLength {
+			msg += fmt.Sprintf("这里有你想点的菜吗: (%d/%d)\n", page, maxPage)
+		} else {
+			msg += "这里有你想点的菜吗:\n"
+		}
+		for i := (page - 1) * listLength; i < page*listLength && i < len(recipes); i++ {
+			orderInfo := getRecipeInfoWithOrder(recipes[i], order)
+			msg += fmt.Sprintf("%s %s %s", recipes[i].GalleryId, recipes[i].Name, orderInfo)
+			if i < page*listLength-1 && i < len(recipes)-1 {
+				msg += "\n"
+			}
+		}
+		if page < maxPage {
+			msg += "\n......"
+		}
+		return msg
+	}
+}
+
+// 根据排序参数获取菜谱需要输出的信息
+func getRecipeInfoWithOrder(recipe database.Recipe, order string) string {
+	switch order {
+	case "单时间":
+		return util.FormatSecondToString(recipe.Time)
+	case "总时间":
+		return util.FormatSecondToString(recipe.Time * recipe.Limit)
+	case "单价", "售价":
+		return fmt.Sprintf("💰%d", recipe.Price)
+	case "金币效率":
+		return fmt.Sprintf("💰%d/h", recipe.GoldEfficiency)
+	case "耗材效率":
+		return fmt.Sprintf("🥗%d/h", recipe.MaterialEfficiency)
+	case "稀有度":
+		msg := ""
+		for i := 0; i < recipe.Rarity; i++ {
+			msg += "🔥"
+		}
+		return msg
+	default:
+		return ""
+	}
 }
 
 func RecipeInfoToImage(recipes []database.Recipe) error {
