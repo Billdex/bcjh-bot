@@ -35,6 +35,19 @@ func AntiqueQuery(c *onebot.Context, args []string) {
 		return
 	}
 
+	antiqueMap := make(map[string]string)
+	for _, guest := range guests {
+		antiqueMap[guest.Antique] = guest.Antique
+	}
+	if len(antiqueMap) > 1 {
+		msg := "你要找哪个符文的数据呢:"
+		for _, v := range antiqueMap {
+			msg += fmt.Sprintf("\n%s", v)
+		}
+		_ = bot.SendMessage(c, msg)
+		return
+	}
+
 	page := 1
 	if len(args) > 1 {
 		if strings.HasPrefix(args[1], "p") || strings.HasPrefix(args[1], "P") {
@@ -51,8 +64,10 @@ func AntiqueQuery(c *onebot.Context, args []string) {
 	}
 
 	recipesName := make([]string, 0)
+	recipeGuestMap := make(map[string]string)
 	for _, guest := range guests {
 		recipesName = append(recipesName, guest.Recipe)
+		recipeGuestMap[guest.Recipe] = guest.GuestName
 		antique = guest.Antique
 	}
 	recipes := make([]database.Recipe, 0)
@@ -76,7 +91,7 @@ func AntiqueQuery(c *onebot.Context, args []string) {
 	}
 	for i := (page - 1) * listLength; i < page*listLength && i < len(recipes); i++ {
 		totalTime := util.FormatSecondToString(recipes[i].Time * recipes[i].Limit)
-		msg += fmt.Sprintf("%s %s %s", recipes[i].GalleryId, recipes[i].Name, totalTime)
+		msg += fmt.Sprintf("%s %s-%s %s", recipes[i].GalleryId, recipes[i].Name, recipeGuestMap[recipes[i].Name], totalTime)
 		if i < page*listLength-1 && i < len(recipes)-1 {
 			msg += "\n"
 		}
