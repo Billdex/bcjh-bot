@@ -41,7 +41,7 @@ func OneBotMsgHandler(w http.ResponseWriter, r *http.Request) {
 	case util.OneBotMetaEvent:
 		go MetaEventHandler(context)
 	default:
-		logger.Info("未知OneBot事件类型:", context.MessageType)
+		logger.Info("未知OneBot事件类型:", context.PostType)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

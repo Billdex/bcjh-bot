@@ -7,94 +7,155 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
+// 任务查询
 func QuestQuery(c *onebot.Context, args []string) {
-	logger.Info("任务查询，参数:", args)
-	maxLen := util.MaxQueryListLength
-	// 无参数的情况
-	if len(args) == 0 {
-		if err := bot.SendMessage(c, questHelp()); err != nil {
-			logger.Error("发送信息失败!", err)
+	var str string
+	for _, prefix := range util.PrefixCharacters {
+		if strings.HasPrefix(c.RawMessage, prefix) {
+			str = c.RawMessage[len(prefix):]
+			break
 		}
+	}
+	pattern := regexp.MustCompile(`^(任务)?\s*(主线|支线)?\s*(任务)?\s*-?\s*([0-9]+(\.[0-9]+)?)([-\s]+([0-9]+))?`)
+	allIndexes := pattern.FindAllSubmatchIndex([]byte(str), -1)
+	// logger.Debugf("%v", allIndexes)
+
+	// 不满足匹配条件
+	if len(allIndexes) == 0 {
+		_ = bot.SendMessage(c, "输入格式有误")
 		return
 	}
+	pos := allIndexes[0]
 
-	// 建立会话
-	Session := database.DB.Select("*")
+	// 指定参数下标
+	const (
+		allPos = iota * 2
+		mission1Pos
+		typePos
+		mission2Pos
+		idPos
+		isSubQuestPos
+		hasLenPos
+		lenPos
+	)
 
-	// 1. 第一个参数
-	if args[0] != "" {
-		if arg, ok := StringContainsAny(args[0], []string{"主线", "支线"}); ok { // 主线或支线任务
-			Session.Where("type like ?", arg+"%")
-		} else if args[0] == "限时" { // 限时或所有
-			Session.Where("type <> '主线任务' and type <> '支线任务'")
-		} else {
-			Session.Where("type like ?", "%"+arg+"%")
-		}
+	var idStr string
+	var questType string
+	length := 1
+
+	// 初步确定查询的任务类型
+	if pos[typePos] != -1 && pos[typePos+1] != -1 {
+		questType = str[pos[typePos]:pos[typePos+1]]
 	}
 
-	// 2. 确定任务 id
-	if len(args) > 1 && args[1] != "" {
-		if _, ok := StringContainsAny(args[0], []string{"主线"}); ok { // 主线任务
-			id, _ := strconv.Atoi(args[1])
-			if id > 700 {
-				_ = bot.SendMessage(c, "主线任务目前只有 700 个哦")
-				return
-			}
-			// 如果是查询主线区间
-			if len(args) > 2 && args[2] != "" {
-				left := id
-				right, _ := strconv.Atoi(args[2])
-
-				if right > 700 {
-					_ = bot.SendMessage(c, "主线任务目前只有 700 个哦")
-					return
-				}
-				if left > right {
-					left, right = right, left
-				}
-				// 区间不能过大，不然消息太长
-				if right-left > maxLen-1 { // 可以查 5 条
-					_ = bot.SendMessage(c, "区间跨度不能太大哦，不然消息会很长")
-					right = left + maxLen - 1
-				}
-				Session.Where("quest_id >= ? and quest_id <= ?", left, right)
-			} else {
-				// 限制查询的 id 在 700 以内
-				Session.Where("quest_id = ?", id)
-			}
-		} else { // 支线或限时
-			Session.Where("quest_id_disp = ?", args[1])
-		}
+	// 初步确定任务 ID
+	if pos[idPos] != -1 && pos[idPos+1] != -1 {
+		idStr = str[pos[idPos]:pos[idPos+1]]
 	} else {
-		_ = bot.SendMessage(c, "要指定一下任务 id 哦")
+		logger.Errorf("任务 ID 通过了正则但查询不到")
 		return
 	}
 
-	// 查询得到结果
+	// 查询条目数
+	if pos[lenPos] != -1 && pos[lenPos+1] != -1 {
+		length, _ = strconv.Atoi(str[pos[lenPos]:pos[lenPos+1]])
+	}
+
+	// 确定主线还是支线
+	var prefixMsg string
+	if pos[isSubQuestPos] != -1 && pos[isSubQuestPos+1] != -1 &&
+		strings.HasPrefix(str[pos[isSubQuestPos]:pos[isSubQuestPos+1]], ".") {
+		if questType == "主线" {
+			prefixMsg = "你想找的是「支线 " + idStr + "」吗\n"
+		}
+		questType = "支线"
+	} else {
+		if questType == "支线" {
+			lenStr := ""
+			if length > 1 {
+				lenStr = " " + strconv.Itoa(length)
+			}
+			prefixMsg = "你想找的是「主线 " + idStr + lenStr + "」吗\n"
+		}
+		questType = "主线"
+	}
+
+	// logger.Debugf("查询结果：[%v %v] 查询%v条", questType, idStr, length)
+
+	// 准备查询得到结果集
 	quests := make([]database.Quest, 0)
-	err := Session.Find(&quests)
-
+	// 开始查询
+	var err error
+	if questType == "主线" {
+		id, _ := strconv.Atoi(idStr)
+		if id > 700 {
+			_ = bot.SendMessage(c, prefixMsg+"主线任务目前只有 700 个哦")
+			return
+		}
+		if length == 1 {
+			quests, err = findMainQuest(id)
+		} else if length > util.MaxQueryListLength {
+			length = util.MaxQueryListLength
+			quests, err = findMainQuests(id, length)
+		} else {
+			quests, err = findMainQuests(id, length)
+		}
+	} else if questType == "支线" {
+		quests, err = findSubQuest(idStr)
+	}
+	// 处理查询失败的错误
 	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "查询数据失败!")
+		logger.Errorf("查找出错：%v", err)
+		_ = bot.SendMessage(c, util.SystemErrorNote)
 		return
 	}
-
-	var msg string
-	switch {
-	case len(quests) == 0:
-		msg = "哎呀，好像找不到呢!"
-	default:
-		msg = makeQuestsString(quests)
-	}
-	_ = bot.SendMessage(c, msg)
+	// 构造返回语句
+	_ = bot.SendMessage(c, prefixMsg+echoQuestsMessage(quests))
 }
 
-func makeQuestsString(quests []database.Quest) string {
+// 主线查询（单条）
+func findMainQuest(id int) ([]database.Quest, error) {
+	Session := database.DB.Where("type = ? and quest_id = ?", "主线任务", id).
+		Limit(util.MaxQueryListLength)
+	quests := make([]database.Quest, 0)
+	if err := Session.Find(&quests); err != nil {
+		return quests, err
+	}
+	return quests, nil
+}
+
+// 主线查询（多条）
+func findMainQuests(id int, length int) ([]database.Quest, error) {
+	Session := database.DB.Where("type = ? and quest_id >= ? and quest_id <= ?", "主线任务", id, id+length-1).
+		Limit(util.MaxQueryListLength)
+	quests := make([]database.Quest, 0)
+	if err := Session.Find(&quests); err != nil {
+		return quests, err
+	}
+	return quests, nil
+}
+
+// 支线查询（单条）
+func findSubQuest(subId string) ([]database.Quest, error) {
+	Session := database.DB.Where("type = ? and quest_id_disp = ?", "支线任务", subId).
+		Limit(util.MaxQueryListLength)
+	quests := make([]database.Quest, 0)
+	if err := Session.Find(&quests); err != nil {
+		return quests, err
+	}
+	return quests, nil
+}
+
+// 构造返回信息及格式
+func echoQuestsMessage(quests []database.Quest) string {
+	if len(quests) == 0 {
+		return "哎呀，好像找不到呢!"
+	}
 	sb := strings.Builder{}
 
 	for count, quest := range quests {

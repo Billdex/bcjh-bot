@@ -68,8 +68,9 @@ const (
 
 	FoodGameDataURL = "https://foodgame.gitee.io/data/data.min.json"
 
-	ArgsSplitCharacter = "-"
-	MaxQueryListLength = 5
+	ArgsSplitCharacter   = " "
+	ArgsConnectCharacter = "-"
+	MaxQueryListLength   = 10
 
 	QueryParamWrongNote = "查询格式错了哦"
 	SystemErrorNote     = "唔，系统开小差啦"
