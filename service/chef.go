@@ -148,6 +148,9 @@ func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, str
 			}
 		}
 	} else {
+		if numId%3 != 0 {
+			numId = numId + (3 - numId%3)
+		}
 		galleryId := fmt.Sprintf("%03d", numId)
 		for i, _ := range chefs {
 			if chefs[i].GalleryId == galleryId {
