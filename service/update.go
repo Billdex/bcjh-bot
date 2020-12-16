@@ -28,7 +28,7 @@ func UpdateData(c *onebot.Context, args []string) {
 		return
 	}
 	if !has {
-		_ = bot.SendMessage(c, "你没有权限!")
+		_ = bot.SendMessage(c, util.PermissionDeniedNote)
 		return
 	}
 	_ = bot.SendMessage(c, "开始更新数据")
