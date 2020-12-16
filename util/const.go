@@ -72,8 +72,9 @@ const (
 	ArgsConnectCharacter = "-"
 	MaxQueryListLength   = 10
 
-	QueryParamWrongNote = "查询格式错了哦"
-	SystemErrorNote     = "唔，系统开小差啦"
+	QueryParamWrongNote  = "查询格式错了哦"
+	SystemErrorNote      = "唔，系统开小差啦"
+	PermissionDeniedNote = "我不听我不听我不听!"
 )
 
 var PrefixCharacters = []string{"#", "＃"}
