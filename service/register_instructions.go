@@ -45,6 +45,7 @@ func RegisterInstructions() {
 	Ins.Bind(QuestQuery, "任务", "主线", "支线")
 	Ins.Bind(UpgradeGuestQuery, "碰瓷", "升阶贵客")
 	Ins.Bind(ComboQuery, "后厨", "合成")
+	Ins.Bind(StrategyQuery, "攻略")
 
 	// 辅助信息
 	Ins.Bind(GalleryWebsite, "图鉴网", "图鉴")

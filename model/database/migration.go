@@ -7,18 +7,19 @@ import (
 )
 
 var tables = []interface{}{
-	&Feedback{},
 	&Admin{},
 	&Chef{},
+	&Condiment{},
+	&Decoration{},
 	&Equip{},
-	&Recipe{},
+	&Feedback{},
 	&GuestGift{},
 	&Material{},
-	&Skill{},
-	&RecipeMaterial{},
-	&Decoration{},
-	&Condiment{},
 	&Quest{},
+	&Recipe{},
+	&RecipeMaterial{},
+	&Skill{},
+	&Strategy{},
 }
 
 var migrations = []*migrate.Migration{
