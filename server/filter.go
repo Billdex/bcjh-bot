@@ -25,7 +25,7 @@ func InstructionFilter(str string, instructions map[string]service.InstructionHa
 	str = strings.TrimSpace(str)
 	for instruction, handler := range instructions {
 		if strings.HasPrefix(str, instruction) {
-			args := strings.Split(str[len(instruction):], util.ArgsSplitCharacter)
+			args := strings.Split(strings.TrimSpace(str[len(instruction):]), util.ArgsSplitCharacter)
 			if args[0] == "" {
 				args = make([]string, 0)
 			}
