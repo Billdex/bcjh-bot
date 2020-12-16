@@ -43,6 +43,8 @@ func HelpGuide(c *onebot.Context, args []string) {
 			msg = upgradeGuestHelp()
 		case "后厨", "合成":
 			msg = comboHelp()
+		case "攻略":
+			msg = strategyHelp()
 		default:
 			msg = "似乎还没有开发这个功能呢~"
 		}
@@ -188,7 +190,7 @@ func antiqueHelp() string {
 	msg += fmt.Sprintf("【符文信息查询】\n")
 	msg += fmt.Sprintf("提供根据符文名查询对应菜谱的功能, 并按照一组时间升序排序\n")
 	msg += fmt.Sprintf("结果过多可使用「p」参数分页\n")
-	msg += fmt.Sprintf("示例:『%s符文 五香果』『%s符文 一昧真火-p2』", preChar, preChar)
+	msg += fmt.Sprintf("示例:『%s符文 五香果』『%s符文 一昧真火 p2』", preChar, preChar)
 	return msg
 }
 
@@ -196,15 +198,14 @@ func antiqueHelp() string {
 func questHelp() string {
 	prefix := util.PrefixCharacters[0]
 	split := util.ArgsSplitCharacter
-	maxLen := util.MaxQueryListLength
+	maxLen := 5
 	sb := strings.Builder{}
 	sb.WriteString("【任务信息查询】\n")
-	sb.WriteString(fmt.Sprintf("1. 主线，接ID（可以指定区间，最多%d条）:\n", maxLen))
-	sb.WriteString(fmt.Sprintf("『%s任务 主线%v1』『%s任务 主线%v1%v5』\n", prefix, split, prefix, split, split))
+	sb.WriteString(fmt.Sprintf("1. 主线，接ID（可以指定长度，最多%d条）:\n", maxLen))
+	sb.WriteString(fmt.Sprintf("『%s主线%v1』『%s主线%v1%v5』\n", prefix, split, prefix, split, split))
 	sb.WriteString("2. 支线，接ID:\n")
-	sb.WriteString(fmt.Sprintf("『%s任务 支线%v9.1』\n", prefix, split))
-	sb.WriteString("3. 限时，接ID，可以指定系列:\n")
-	sb.WriteString(fmt.Sprintf("『%s任务 限时%v3』『%s任务 民国风云%v3』", prefix, split, prefix, split))
+	sb.WriteString(fmt.Sprintf("『%s支线%v9.1』\n", prefix, split))
+	sb.WriteString("3. 限时，使用#攻略 限时 查看限时任务攻略")
 	return sb.String()
 }
 
@@ -215,7 +216,7 @@ func upgradeGuestHelp() string {
 	sb.WriteString("【升阶贵客查询】\n")
 	sb.WriteString(fmt.Sprintf("查询碰瓷贵客可用的菜:\n"))
 	sb.WriteString("结果过多可使用「p」参数分页\n")
-	sb.WriteString(fmt.Sprintf("示例:『%s碰瓷 如来』『%s碰瓷 唐伯虎-p2』", prefix, prefix))
+	sb.WriteString(fmt.Sprintf("示例:『%s碰瓷 如来』『%s碰瓷 唐伯虎 p2』", prefix, prefix))
 	return sb.String()
 
 }
@@ -233,7 +234,7 @@ func comboHelp() string {
 // 攻略功能指引
 func strategyHelp() string {
 	strategies := make([]database.Strategy, 0)
-	err := database.DB.Find(strategies)
+	err := database.DB.Find(&strategies)
 	if err != nil {
 		return util.SystemErrorNote
 	}
