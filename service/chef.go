@@ -190,7 +190,11 @@ func orderChefs(chefs []database.Chef, order string) ([]database.Chef, string) {
 		}})
 	case "稀有度":
 		sort.Sort(chefWrapper{chefs, func(m, n *database.Chef) bool {
-			return m.Rarity > n.Rarity
+			if m.Rarity == n.Rarity {
+				return m.ChefId < n.ChefId
+			} else {
+				return m.Rarity > n.Rarity
+			}
 		}})
 	default:
 		return nil, "排序参数有误"
