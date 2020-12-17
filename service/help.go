@@ -240,7 +240,7 @@ func strategyHelp() string {
 	}
 	sb := strings.Builder{}
 	sb.WriteString("【游戏攻略快捷查询】\n")
-	sb.WriteString("收录了一些简要的游戏攻略，使用『#攻略 关键词』查询\n")
+	sb.WriteString("收录了一些简要的游戏攻略，查询方式:『#攻略 关键词』\n")
 	sb.WriteString("目前收录了以下内容:\n")
 	for _, strategy := range strategies {
 		sb.WriteString(fmt.Sprintf("「%s」 ", strategy.Keyword))

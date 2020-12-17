@@ -516,27 +516,51 @@ func orderRecipes(recipes []database.Recipe, order string) ([]database.Recipe, s
 		}})
 	case "单时间":
 		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			return m.Time < n.Time
+			if m.Time == n.Time {
+				return m.RecipeId < n.RecipeId
+			} else {
+				return m.Time < n.Time
+			}
 		}})
 	case "总时间":
 		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			return m.TotalTime < n.TotalTime
+			if m.TotalTime == n.TotalTime {
+				return m.RecipeId < n.RecipeId
+			} else {
+				return m.TotalTime < n.TotalTime
+			}
 		}})
 	case "单价", "售价":
 		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			return m.Price > n.Price
+			if m.Price == n.Price {
+				return m.RecipeId < n.RecipeId
+			} else {
+				return m.Price > n.Price
+			}
 		}})
 	case "金币效率":
 		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			return m.GoldEfficiency > n.GoldEfficiency
+			if m.GoldEfficiency == n.GoldEfficiency {
+				return m.GalleryId < n.GalleryId
+			} else {
+				return m.GoldEfficiency > n.GoldEfficiency
+			}
 		}})
 	case "耗材效率":
 		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			return m.MaterialEfficiency > n.MaterialEfficiency
+			if m.MaterialEfficiency == n.MaterialEfficiency {
+				return m.GalleryId < n.GalleryId
+			} else {
+				return m.MaterialEfficiency > n.MaterialEfficiency
+			}
 		}})
 	case "稀有度":
 		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			return m.Rarity > n.Rarity
+			if m.Rarity == n.Rarity {
+				return m.GalleryId < n.GalleryId
+			} else {
+				return m.Rarity > n.Rarity
+			}
 		}})
 	default:
 		return nil, "排序参数有误"
