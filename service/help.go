@@ -154,6 +154,15 @@ func recipeHelp() string {
 	return msg
 }
 
+// 食材及效率查询
+func materialHelp() string {
+	prefix := util.PrefixCharacters[0]
+	sb := strings.Builder{}
+	sb.WriteString("【食材及食材效率查询】\n")
+	sb.WriteString(fmt.Sprintf("查询方式:『%s菜谱 菜谱名』\n", prefix))
+	return sb.String()
+}
+
 // 调料查询功能指引
 func condimentHelp() string {
 	prefix := util.PrefixCharacters[0]
@@ -228,6 +237,16 @@ func comboHelp() string {
 	sb.WriteString("【后厨合成菜谱查询\n")
 	sb.WriteString(fmt.Sprintf("查询后厨合成菜的前置菜谱:\n"))
 	sb.WriteString(fmt.Sprintf("示例:『%s后厨 BBQ烧烤』", prefix))
+	return sb.String()
+}
+
+// 实验室前置功能指引
+func LaboratoryHelp() string {
+	prefix := util.PrefixCharacters[0]
+	sb := strings.Builder{}
+	sb.WriteString("【实验室菜谱查询\n")
+	sb.WriteString(fmt.Sprintf("查询实验室菜谱的前置材料:\n"))
+	sb.WriteString(fmt.Sprintf("示例:『%s实验室 猪肉脯』", prefix))
 	return sb.String()
 }
 
