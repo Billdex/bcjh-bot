@@ -20,6 +20,7 @@ var tables = []interface{}{
 	&RecipeMaterial{},
 	&Skill{},
 	&Strategy{},
+	&Laboratory{},
 }
 
 var migrations = []*migrate.Migration{
