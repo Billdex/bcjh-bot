@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -167,6 +169,17 @@ func UpdateData(c *onebot.Context, args []string) {
 	QuestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新任务数据完毕, 耗时%s", QuestConsume)
 
+	// 解析ImgCSS数据
+	start = time.Now().UnixNano()
+	imgCSS, err := ResolvingImgCSS()
+	if err != nil {
+		logger.Error("解析ImgCSS出错!", err)
+		_ = bot.SendMessage(c, "解析ImgCSS出错!")
+		return
+	}
+	imgCSSConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("解析ImgCSS完毕, 耗时%s", imgCSSConsume)
+
 	// 更新厨师图鉴图片数据
 	start = time.Now().UnixNano()
 	chefs := make([]database.Chef, 0)
@@ -176,7 +189,7 @@ func UpdateData(c *onebot.Context, args []string) {
 		_ = bot.SendMessage(c, "更新厨师图鉴图片数据出错!")
 		return
 	}
-	err = ChefInfoToImage(chefs)
+	err = ChefInfoToImage(chefs, imgCSS)
 	if err != nil {
 		logger.Error("更新厨师图鉴图片数据出错!", err)
 		_ = bot.SendMessage(c, "更新厨师图鉴图片数据出错!")
@@ -220,7 +233,8 @@ func UpdateData(c *onebot.Context, args []string) {
 	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s\n", DecorationConsume))
 	strBdr.WriteString(fmt.Sprintf("更新调料数据耗时%s\n", CondimentConsume))
 	strBdr.WriteString(fmt.Sprintf("更新任务数据耗时%s\n", QuestConsume))
-	strBdr.WriteString(fmt.Sprintf("更新厨师图鉴图片数据耗时%s", chefImgConsume))
+	strBdr.WriteString(fmt.Sprintf("解析ImgCSS数据耗时%s\n", imgCSSConsume))
+	strBdr.WriteString(fmt.Sprintf("更新厨师图鉴图片数据耗时%s\n", chefImgConsume))
 	strBdr.WriteString(fmt.Sprintf("更新菜谱图鉴图片数据耗时%s", recipeImgConsume))
 	err = bot.SendMessage(c, strBdr.String())
 	if err != nil {
@@ -676,4 +690,58 @@ func updateQuests(questsData []gamedata.QuestData) error {
 	}
 	err = session.Commit()
 	return err
+}
+
+// 解析ImgCSS数据
+func ResolvingImgCSS() (*gamedata.ImgCSS, error) {
+	imgCSS := new(gamedata.ImgCSS)
+	imgCSS.ChefImg = make(map[int]gamedata.ObjImgInfo)
+	imgCSS.RecipeImg = make(map[int]gamedata.ObjImgInfo)
+
+	r, err := http.Get(util.FoodGameImageCSSURL)
+	if err != nil {
+		return imgCSS, err
+	}
+	defer r.Body.Close()
+
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return imgCSS, err
+	}
+	chefRegStr := ".icon-chef.chef_([0-9]+?){background-position:(.?[0-9]+)px (.?[0-9]+)px;width:(.?[0-9]+)px;height:(.?[0-9]+)px;}"
+	pattern := regexp.MustCompile(chefRegStr)
+	allIndexes := pattern.FindAllSubmatchIndex(buf, -1)
+	for _, loc := range allIndexes {
+		id, _ := strconv.Atoi(string(buf[loc[2]:loc[3]]))
+		x, _ := strconv.Atoi(string(buf[loc[4]:loc[5]]))
+		y, _ := strconv.Atoi(string(buf[loc[6]:loc[7]]))
+		w, _ := strconv.Atoi(string(buf[loc[8]:loc[9]]))
+		h, _ := strconv.Atoi(string(buf[loc[10]:loc[11]]))
+		imgCSS.ChefImg[id] = gamedata.ObjImgInfo{
+			Id:     id,
+			X:      -x,
+			Y:      -y,
+			Width:  w,
+			Height: h,
+		}
+	}
+	recipeRegStr := ".icon-recipe.recipe_([0-9]+?){background-position:(-?[0-9]+)px (-?[0-9]+)px;width:([0-9]+)px;height:([0-9]+)px;"
+	pattern = regexp.MustCompile(recipeRegStr)
+	allIndexes = pattern.FindAllSubmatchIndex(buf, -1)
+	for _, loc := range allIndexes {
+		id, _ := strconv.Atoi(string(buf[loc[2]:loc[3]]))
+		x, _ := strconv.Atoi(string(buf[loc[4]:loc[5]]))
+		y, _ := strconv.Atoi(string(buf[loc[6]:loc[7]]))
+		w, _ := strconv.Atoi(string(buf[loc[8]:loc[9]]))
+		h, _ := strconv.Atoi(string(buf[loc[10]:loc[11]]))
+		imgCSS.RecipeImg[id] = gamedata.ObjImgInfo{
+			Id:     id,
+			X:      -x,
+			Y:      -y,
+			Width:  w,
+			Height: h,
+		}
+	}
+
+	return imgCSS, nil
 }

@@ -66,7 +66,10 @@ const (
 	OneBotSubMetaConnect     = "connect"
 	OneBotSubMetaHeartbeat   = "heartbeat"
 
-	FoodGameDataURL = "https://foodgame.gitee.io/data/data.min.json"
+	FoodGameDataURL      = "https://foodgame.gitee.io/data/data.min.json"
+	FoodGameImageCSSURL  = "https://foodgame.gitee.io/css/image.css"
+	ChefImageRetinaURL   = "https://foodgame.gitee.io/images/chef_retina.png"
+	RecipeImageRetinaURL = "https://foodgame.gitee.io/images/recipe_retina.png"
 
 	ArgsSplitCharacter   = " "
 	ArgsConnectCharacter = "-"

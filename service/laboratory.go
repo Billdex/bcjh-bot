@@ -38,8 +38,8 @@ func LaboratoryQuery(c *onebot.Context, args []string) {
 		}
 		msg += fmt.Sprintf("「%s」%s", targets[0].Skill, targets[0].Target)
 		msg += fmt.Sprintf("\n%s", rarity)
-		msg += fmt.Sprintf("\n符文:「%s」*%d", targets[0].Antique, targets[0].AntiqueNumber)
-		msg += fmt.Sprintf("\n需求厨具: ")
+		msg += fmt.Sprintf("\n消耗符文:\n「%s」*%d", targets[0].Antique, targets[0].AntiqueNumber)
+		msg += fmt.Sprintf("\n消耗厨具: ")
 		if len(targets[0].Equips) == 0 {
 			msg += "无"
 		} else {
