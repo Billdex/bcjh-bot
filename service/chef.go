@@ -461,7 +461,7 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 		if err != nil {
 			return err
 		}
-		defer genderFile.Close()
+		defer rarityFile.Close()
 		rarityImg, _ := png.Decode(rarityFile)
 		draw.Draw(img,
 			image.Rect(545, 30, 545+240, 30+44),
