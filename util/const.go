@@ -70,6 +70,7 @@ const (
 	FoodGameImageCSSURL  = "https://foodgame.gitee.io/css/image.css"
 	ChefImageRetinaURL   = "https://foodgame.gitee.io/images/chef_retina.png"
 	RecipeImageRetinaURL = "https://foodgame.gitee.io/images/recipe_retina.png"
+	EquipImageRetinaURL  = "https://foodgame.gitee.io/images/equip_retina.png"
 
 	ArgsSplitCharacter   = " "
 	ArgsConnectCharacter = "-"

@@ -216,6 +216,24 @@ func UpdateData(c *onebot.Context, args []string) {
 	recipeImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("更新菜谱图鉴图片数据完毕, 耗时%s", chefImgConsume)
 
+	// 更新厨具图鉴图片数据
+	start = time.Now().UnixNano()
+	equips := make([]database.Equip, 0)
+	err = database.DB.Asc("gallery_id").Find(&equips)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		_ = bot.SendMessage(c, "更新厨具图鉴图片数据出错!")
+		return
+	}
+	err = EquipmentInfoToImage(equips, imgCSS)
+	if err != nil {
+		logger.Error("更新厨具图鉴图片数据出错!", err)
+		_ = bot.SendMessage(c, "更新厨具图鉴图片数据出错!")
+		return
+	}
+	equipImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("更新厨具图鉴图片数据完毕, 耗时%s", equipImgConsume)
+
 	// 发送成功消息
 	logger.Info("更新数据完毕")
 	var strBdr = strings.Builder{}
@@ -235,7 +253,8 @@ func UpdateData(c *onebot.Context, args []string) {
 	strBdr.WriteString(fmt.Sprintf("更新任务数据耗时%s\n", QuestConsume))
 	strBdr.WriteString(fmt.Sprintf("解析ImgCSS数据耗时%s\n", imgCSSConsume))
 	strBdr.WriteString(fmt.Sprintf("更新厨师图鉴图片数据耗时%s\n", chefImgConsume))
-	strBdr.WriteString(fmt.Sprintf("更新菜谱图鉴图片数据耗时%s", recipeImgConsume))
+	strBdr.WriteString(fmt.Sprintf("更新菜谱图鉴图片数据耗时%s\n", recipeImgConsume))
+	strBdr.WriteString(fmt.Sprintf("更新厨具图鉴图片数据耗时%s", equipImgConsume))
 	err = bot.SendMessage(c, strBdr.String())
 	if err != nil {
 		logger.Error("发送消息失败!", err)
@@ -697,6 +716,7 @@ func ResolvingImgCSS() (*gamedata.ImgCSS, error) {
 	imgCSS := new(gamedata.ImgCSS)
 	imgCSS.ChefImg = make(map[int]gamedata.ObjImgInfo)
 	imgCSS.RecipeImg = make(map[int]gamedata.ObjImgInfo)
+	imgCSS.EquipImg = make(map[int]gamedata.ObjImgInfo)
 
 	r, err := http.Get(util.FoodGameImageCSSURL)
 	if err != nil {
@@ -735,6 +755,23 @@ func ResolvingImgCSS() (*gamedata.ImgCSS, error) {
 		w, _ := strconv.Atoi(string(buf[loc[8]:loc[9]]))
 		h, _ := strconv.Atoi(string(buf[loc[10]:loc[11]]))
 		imgCSS.RecipeImg[id] = gamedata.ObjImgInfo{
+			Id:     id,
+			X:      -x,
+			Y:      -y,
+			Width:  w,
+			Height: h,
+		}
+	}
+	equipRegStr := ".icon-equip.equip_([0-9]+?){background-position:(-?[0-9]+)px (-?[0-9]+)px;width:([0-9]+)px;height:([0-9]+)px;"
+	pattern = regexp.MustCompile(equipRegStr)
+	allIndexes = pattern.FindAllSubmatchIndex(buf, -1)
+	for _, loc := range allIndexes {
+		id, _ := strconv.Atoi(string(buf[loc[2]:loc[3]]))
+		x, _ := strconv.Atoi(string(buf[loc[4]:loc[5]]))
+		y, _ := strconv.Atoi(string(buf[loc[6]:loc[7]]))
+		w, _ := strconv.Atoi(string(buf[loc[8]:loc[9]]))
+		h, _ := strconv.Atoi(string(buf[loc[10]:loc[11]]))
+		imgCSS.EquipImg[id] = gamedata.ObjImgInfo{
 			Id:     id,
 			X:      -x,
 			Y:      -y,

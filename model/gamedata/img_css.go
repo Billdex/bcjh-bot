@@ -11,4 +11,5 @@ type ObjImgInfo struct {
 type ImgCSS struct {
 	ChefImg   map[int]ObjImgInfo
 	RecipeImg map[int]ObjImgInfo
+	EquipImg  map[int]ObjImgInfo
 }
