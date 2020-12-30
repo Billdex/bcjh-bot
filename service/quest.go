@@ -99,8 +99,8 @@ func QuestQuery(c *onebot.Context, args []string) {
 		}
 		if length == 1 {
 			quests, err = findMainQuest(id)
-		} else if length > util.MaxQueryListLength {
-			length = util.MaxQueryListLength
+		} else if length > 5 {
+			length = 5
 			quests, err = findMainQuests(id, length)
 		} else {
 			quests, err = findMainQuests(id, length)
@@ -121,7 +121,7 @@ func QuestQuery(c *onebot.Context, args []string) {
 // 主线查询（单条）
 func findMainQuest(id int) ([]database.Quest, error) {
 	Session := database.DB.Where("type = ? and quest_id = ?", "主线任务", id).
-		Limit(util.MaxQueryListLength)
+		Limit(5)
 	quests := make([]database.Quest, 0)
 	if err := Session.Find(&quests); err != nil {
 		return quests, err
@@ -132,7 +132,7 @@ func findMainQuest(id int) ([]database.Quest, error) {
 // 主线查询（多条）
 func findMainQuests(id int, length int) ([]database.Quest, error) {
 	Session := database.DB.Where("type = ? and quest_id >= ? and quest_id <= ?", "主线任务", id, id+length-1).
-		Limit(util.MaxQueryListLength)
+		Limit(5)
 	quests := make([]database.Quest, 0)
 	if err := Session.Find(&quests); err != nil {
 		return quests, err
@@ -143,7 +143,7 @@ func findMainQuests(id int, length int) ([]database.Quest, error) {
 // 支线查询（单条）
 func findSubQuest(subId string) ([]database.Quest, error) {
 	Session := database.DB.Where("type = ? and quest_id_disp = ?", "支线任务", subId).
-		Limit(util.MaxQueryListLength)
+		Limit(5)
 	quests := make([]database.Quest, 0)
 	if err := Session.Find(&quests); err != nil {
 		return quests, err
