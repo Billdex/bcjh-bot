@@ -9,6 +9,7 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/golang/freetype"
 	"github.com/nfnt/resize"
@@ -120,8 +121,8 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 300          // 图鉴背景图片的高度
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
-	titleSize := 48    // 标题字体尺寸
-	fontSize := 32     // 内容字体尺寸
+	titleSize := 42    // 标题字体尺寸
+	fontSize := 28     // 内容字体尺寸
 	fontDPI := 72.0    // dpi
 	// 需要使用的字体文件
 	resourceFontDir := config.AppConfig.Resource.Font
@@ -137,29 +138,30 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 		return err
 	}
 
-	// 从图鉴网下载头像图鉴总图
+	// 从图鉴网下载厨具图鉴总图
 	resourceImgDir := config.AppConfig.Resource.Image
+	commonImgPath := resourceImgDir + "/common"
 	equipImgPath := resourceImgDir + "/equip"
 	galleryImagePath := equipImgPath + "/equip_gallery.png"
 	r, err := http.Get(util.EquipImageRetinaURL)
 	if err != nil {
 		return err
 	}
-	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
+	_ = r.Body.Close()
 
 	out, err := os.Create(galleryImagePath)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 	_, err = io.Copy(out, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
+	_ = out.Close()
 
 	galleryImg, err := png.Decode(bytes.NewReader(body))
 	if err != nil {
@@ -179,9 +181,9 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 		if err != nil {
 			return err
 		}
-		defer bgFile.Close()
 		img := image.NewRGBA(image.Rect(0, 0, dx, dy))
 		bg, _ := png.Decode(bgFile)
+		_ = bgFile.Close()
 
 		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Src)
 
@@ -195,18 +197,18 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 
 		//	绘制ID与厨具名
 		c.SetFontSize(float64(titleSize))
-		pt := freetype.Pt(30, 10+titleSize)
+		pt := freetype.Pt(30, 16+titleSize)
 		_, err = c.DrawString(fmt.Sprintf("%s %s", equip.GalleryId, equip.Name), pt)
 
 		// 绘制稀有度
-		rarityFile, err := os.Open(fmt.Sprintf("%s/rarity_%d.png", equipImgPath, equip.Rarity))
+		rarityFile, err := os.Open(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, equip.Rarity))
 		if err != nil {
 			return err
 		}
-		defer rarityFile.Close()
 		rarityImg, _ := png.Decode(rarityFile)
+		_ = rarityFile.Close()
 		draw.Draw(img,
-			image.Rect(545, 10, 545+240, 30+44),
+			image.Rect(530, 16, 530+240, 16+44),
 			rarityImg,
 			image.ZP,
 			draw.Over)
@@ -218,26 +220,41 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 		avatarWidth := equipImgInfo.Width * magnification
 		avatarHeight := equipImgInfo.Height * magnification
 		draw.Draw(img,
-			image.Rect(30+2+210/2-avatarWidth/2, 70+2+210/2-avatarHeight/2, 30+210/2+avatarWidth/2-2, 70+210/2+avatarHeight/2-2),
+			image.Rect(30+210/2-avatarWidth/2, 75+210/2-avatarHeight/2, 30+210/2+avatarWidth/2, 75+210/2+avatarHeight/2),
 			galleryImg,
-			image.Point{X: avatarStartX + 2, Y: avatarStartY + 2},
+			image.Point{X: avatarStartX, Y: avatarStartY},
 			draw.Over)
 
-		c.SetFontSize(float64(fontSize))
 		//	输出来源数据
-		pt = freetype.Pt(270, 75+fontSize)
+		c.SetFontSize(float64(32))
+		pt = freetype.Pt(350, 75+32)
 		_, err = c.DrawString(fmt.Sprintf("%s", equip.Origin), pt)
 		if err != nil {
 			return err
 		}
+
 		// 输出技法效果数据
+		c.SetFontSize(float64(fontSize))
 		skills := make([]database.Skill, 0)
 		err = database.DB.In("skill_id", equip.Skills).Find(&skills)
 		if err != nil {
 			return err
 		}
 		for i, skill := range skills {
-			pt = freetype.Pt(270, 140+i*50+fontSize)
+			iconImgName, err := getSkillIcon(skill)
+			iconFile, err := os.Open(fmt.Sprintf("%s/%s", commonImgPath, iconImgName))
+			if err != nil {
+				return err
+			}
+			rarityImg, _ := png.Decode(iconFile)
+			_ = iconFile.Close()
+			rarityImg = resize.Resize(0, 40, rarityImg, resize.MitchellNetravali)
+			draw.Draw(img,
+				image.Rect(270, 136+i*50, 270+60, 136+i*50+40),
+				rarityImg,
+				image.ZP,
+				draw.Over)
+			pt = freetype.Pt(320, 138+i*50+fontSize)
 			_, err = c.DrawString(fmt.Sprintf("%s", skill.Description), pt)
 			if err != nil {
 				return err
@@ -256,4 +273,54 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 		dst.Close()
 	}
 	return nil
+}
+
+func getSkillIcon(skill database.Skill) (string, error) {
+	if len(skill.Effects) == 0 {
+		return "", errors.New(fmt.Sprintf("技能 %d 数据有误!", skill.SkillId))
+	} else if len(skill.Effects) == 1 {
+		var iconImgName string
+		switch skill.Effects[0].Type {
+		case "Stirfry", "UseStirfry":
+			iconImgName = "icon_stirfry.png"
+		case "Bake", "UseBake":
+			iconImgName = "icon_bake.png"
+		case "Boil", "UseBoil":
+			iconImgName = "icon_boil.png"
+		case "Steam", "UseSteam":
+			iconImgName = "icon_steam.png"
+		case "Fry", "UseFry":
+			iconImgName = "icon_fry.png"
+		case "Knife", "UseKnife":
+			iconImgName = "icon_cut.png"
+		case "Sweet", "UseSweet":
+			iconImgName = "icon_sweet.png"
+		case "Sour", "UseSour":
+			iconImgName = "icon_sour.png"
+		case "Spicy", "UseSpicy":
+			iconImgName = "icon_spicy.png"
+		case "Salty", "UseSalty":
+			iconImgName = "icon_salty.png"
+		case "Bitter", "UseBitter":
+			iconImgName = "icon_bitter.png"
+		case "Tasty", "UseTasty":
+			iconImgName = "icon_tasty.png"
+		case "Meat", "UseMeat":
+			iconImgName = "icon_meat.png"
+		case "Creation", "UseCreation":
+			iconImgName = "icon_flour.png"
+		case "Vegetable", "UseVegetable":
+			iconImgName = "icon_vegetable.png"
+		case "Fish", "UseFish":
+			iconImgName = "icon_fish.png"
+		case "OpenTime":
+			iconImgName = "icon_time.png"
+		default:
+			iconImgName = "icon_skill.png"
+		}
+		return iconImgName, nil
+	} else {
+		return "icon_skill.png", nil
+	}
+
 }

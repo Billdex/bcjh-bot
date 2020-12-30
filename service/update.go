@@ -207,14 +207,14 @@ func UpdateData(c *onebot.Context, args []string) {
 		_ = bot.SendMessage(c, "更新菜谱图鉴图片数据出错!")
 		return
 	}
-	err = RecipeInfoToImage(recipes)
+	err = RecipeInfoToImage(recipes, imgCSS)
 	if err != nil {
 		logger.Error("更新菜谱图鉴图片数据出错!", err)
 		_ = bot.SendMessage(c, "更新菜谱图鉴图片数据出错!")
 		return
 	}
 	recipeImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新菜谱图鉴图片数据完毕, 耗时%s", chefImgConsume)
+	logger.Infof("更新菜谱图鉴图片数据完毕, 耗时%s", recipeImgConsume)
 
 	// 更新厨具图鉴图片数据
 	start = time.Now().UnixNano()
@@ -297,7 +297,7 @@ func updateChefs(chefsData []gamedata.ChefData) error {
 			ChefId:        chefData.ChefId,
 			Name:          chefData.Name,
 			Rarity:        chefData.Rarity,
-			Origin:        strings.ReplaceAll(chefData.Origin, "<br>", ","),
+			Origin:        strings.ReplaceAll(chefData.Origin, "<br>", ", "),
 			GalleryId:     chefData.GalleryId,
 			Stirfry:       chefData.Stirfry,
 			Bake:          chefData.Bake,
@@ -353,7 +353,7 @@ func updateEquips(equipsData []gamedata.EquipData) error {
 			EquipId:   equipData.EquipId,
 			Name:      equipData.Name,
 			GalleryId: equipData.GalleryId,
-			Origin:    strings.ReplaceAll(equipData.Origin, "<br>", ","),
+			Origin:    strings.ReplaceAll(equipData.Origin, "<br>", ", "),
 			Rarity:    equipData.Rarity,
 			Skills:    equipData.Skills,
 		})
@@ -397,7 +397,7 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 			Name:           recipeData.Name,
 			GalleryId:      recipeData.GalleryId,
 			Rarity:         recipeData.Rarity,
-			Origin:         strings.ReplaceAll(recipeData.Origin, "<br>", ","),
+			Origin:         strings.ReplaceAll(recipeData.Origin, "<br>", ", "),
 			Stirfry:        recipeData.Stirfry,
 			Bake:           recipeData.Bake,
 			Boil:           recipeData.Boil,
