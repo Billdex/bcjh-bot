@@ -17,13 +17,13 @@ func FormatSecondToString(t int) string {
 		minute := t % 3600 / 60
 		second := t % 3600 % 60
 		if hour > 0 {
-			time += fmt.Sprintf("%d小时", hour)
+			time += fmt.Sprintf("%d 小时 ", hour)
 		}
 		if minute > 0 {
-			time += fmt.Sprintf("%d分", minute)
+			time += fmt.Sprintf("%d 分 ", minute)
 		}
 		if second > 0 {
-			time += fmt.Sprintf("%d秒", second)
+			time += fmt.Sprintf("%d 秒", second)
 		}
 		return time
 	}
