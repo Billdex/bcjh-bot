@@ -66,14 +66,19 @@ const (
 	OneBotSubMetaConnect     = "connect"
 	OneBotSubMetaHeartbeat   = "heartbeat"
 
-	FoodGameDataURL = "https://foodgame.gitee.io/data/data.min.json"
+	FoodGameDataURL      = "https://foodgame.gitee.io/data/data.min.json"
+	FoodGameImageCSSURL  = "https://foodgame.gitee.io/css/image.css"
+	ChefImageRetinaURL   = "https://foodgame.gitee.io/images/chef_retina.png"
+	RecipeImageRetinaURL = "https://foodgame.gitee.io/images/recipe_retina.png"
+	EquipImageRetinaURL  = "https://foodgame.gitee.io/images/equip_retina.png"
 
 	ArgsSplitCharacter   = " "
 	ArgsConnectCharacter = "-"
 	MaxQueryListLength   = 10
 
-	QueryParamWrongNote = "查询格式错了哦"
-	SystemErrorNote     = "唔，系统开小差啦"
+	QueryParamWrongNote  = "查询格式错了哦"
+	SystemErrorNote      = "唔，系统开小差啦"
+	PermissionDeniedNote = "我不听我不听我不听!"
 )
 
 var PrefixCharacters = []string{"#", "＃"}

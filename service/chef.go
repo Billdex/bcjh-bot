@@ -4,16 +4,21 @@ import (
 	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
+	"bcjh-bot/model/gamedata"
 	"bcjh-bot/model/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
+	"bytes"
 	"fmt"
 	"github.com/golang/freetype"
+	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 	"sort"
@@ -148,6 +153,9 @@ func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, str
 			}
 		}
 	} else {
+		if numId%3 != 0 {
+			numId = numId + (3 - numId%3)
+		}
 		galleryId := fmt.Sprintf("%03d", numId)
 		for i, _ := range chefs {
 			if chefs[i].GalleryId == galleryId {
@@ -187,7 +195,11 @@ func orderChefs(chefs []database.Chef, order string) ([]database.Chef, string) {
 		}})
 	case "稀有度":
 		sort.Sort(chefWrapper{chefs, func(m, n *database.Chef) bool {
-			return m.Rarity > n.Rarity
+			if m.Rarity == n.Rarity {
+				return m.ChefId < n.ChefId
+			} else {
+				return m.Rarity > n.Rarity
+			}
 		}})
 	default:
 		return nil, "排序参数有误"
@@ -310,14 +322,13 @@ func getChefInfoWithOrder(chef database.Chef, order string) string {
 	}
 }
 
-func ChefInfoToImage(chefs []database.Chef) error {
-	dx := 800           // 图鉴背景图片的宽度
-	dy := 800           // 图鉴背景图片的高度
-	avatarWidth := 200  // 厨师头像图片宽度
-	avatarHeight := 200 // 厨师头像图片高度
-	titleSize := 52     // 标题字体尺寸
-	fontSize := 36      // 内容字体尺寸
-	fontDPI := 72.0     // dpi
+func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
+	dx := 800          // 图鉴背景图片的宽度
+	dy := 800          // 图鉴背景图片的高度
+	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
+	titleSize := 52    // 标题字体尺寸
+	fontSize := 36     // 内容字体尺寸
+	fontDPI := 72.0    // dpi
 
 	// 获取字体文件
 	resourceFontDir := config.AppConfig.Resource.Font
@@ -332,20 +343,38 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		return err
 	}
 	fontColor := color.RGBA{0, 0, 0, 255}
-	// 获取头像图鉴总图
+	// 从图鉴网下载头像图鉴总图
 	resourceImgDir := config.AppConfig.Resource.Image
 	chefImgPath := resourceImgDir + "/chef"
-	galleryFilePath := chefImgPath + "/chef_gallery.png"
-	galleryFile, err := os.Open(galleryFilePath)
+	galleryImagePath := chefImgPath + "/chef_gallery.png"
+	r, err := http.Get(util.ChefImageRetinaURL)
 	if err != nil {
 		return err
 	}
-	defer galleryFile.Close()
-	galleryImg, err := png.Decode(galleryFile)
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
-	for p, chef := range chefs {
+
+	out, err := os.Create(galleryImagePath)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	galleryImg, err := png.Decode(bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	// 放大厨师图鉴图像
+	galleryImg = resize.Resize(3600, 3600, galleryImg, resize.Bilinear)
+
+	for _, chef := range chefs {
 		condiment := 0
 		condimentType := "Sweet"
 		if chef.Sweet > 0 {
@@ -385,13 +414,14 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		c.SetSrc(image.NewUniform(fontColor))
 		c.SetFontSize(float64(titleSize))
 
-		// 输出厨师头像
-		avatarStartX := (p % 18) * avatarWidth
-		avatarStartY := (p / 18) * avatarHeight
+		// 输出厨师头像, 双线性插值算法会对边缘造成影响，去除一点边框
+		chefImgInfo := imgCSS.ChefImg[chef.ChefId]
+		avatarStartX := chefImgInfo.X * magnification
+		avatarStartY := chefImgInfo.Y * magnification
 		draw.Draw(img,
-			image.Rect(50, 118, 50+avatarWidth, 118+avatarHeight),
+			image.Rect(50+2, 118+2, 50+200-2, 118+200-2),
 			galleryImg,
-			image.Point{avatarStartX, avatarStartY},
+			image.Point{X: avatarStartX + 2, Y: avatarStartY + 2},
 			draw.Over)
 
 		// 输出图鉴ID与厨师名
@@ -431,7 +461,7 @@ func ChefInfoToImage(chefs []database.Chef) error {
 		if err != nil {
 			return err
 		}
-		defer genderFile.Close()
+		defer rarityFile.Close()
 		rarityImg, _ := png.Decode(rarityFile)
 		draw.Draw(img,
 			image.Rect(545, 30, 545+240, 30+44),

@@ -100,7 +100,7 @@ func AntiqueQuery(c *onebot.Context, args []string) {
 		msg += "\n......"
 	}
 
-	logger.Info("发送菜谱查询结果:", msg)
+	logger.Info("发送符文礼物查询结果:", msg)
 	err = bot.SendMessage(c, msg)
 	if err != nil {
 		logger.Error("发送信息失败!", err)
