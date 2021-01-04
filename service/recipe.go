@@ -52,7 +52,7 @@ func RecipeQuery(c *onebot.Context, args []string) {
 			continue
 		}
 		switch arg {
-		case "图鉴序", "单时间", "总时间", "单价", "售价", "金币效率", "耗材效率", "稀有度":
+		case "图鉴序", "时间", "单时间", "总时间", "单价", "售价", "金币效率", "耗材效率", "稀有度":
 			order = arg
 		case "1火", "1星", "一火", "一星":
 			recipes, note = filterRecipesByRarity(recipes, 1)
@@ -75,7 +75,7 @@ func RecipeQuery(c *onebot.Context, args []string) {
 			} else if util.HasPrefixIn(arg, "技法") {
 				skills := strings.Split(arg, util.ArgsConnectCharacter)
 				recipes, note = filterRecipesBySkills(recipes, skills[1:])
-			} else if util.HasPrefixIn(arg, "贵客", "稀有客人") {
+			} else if util.HasPrefixIn(arg, "贵客", "稀有客人", "客人") {
 				guests := strings.Split(arg, util.ArgsConnectCharacter)
 				recipes, note = filterRecipesByGuests(recipes, guests[1:])
 			} else if util.HasPrefixIn(arg, "符文", "礼物") {
