@@ -10,6 +10,8 @@
     - [查询任务 🧐](usage/quest.md)
     - [查询调料 💥](usage/condiment.md)
     - [查询后厨 ⏳](usage/combo.md)
+    - [查询实验室💡](usage/laboratory.md)
+    - [查询攻略🎯](usage/strategy.md)
     - [查询升阶贵客 🧚‍♀️](usage/upgrade_guest.md)
 
 * 附录
