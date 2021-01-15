@@ -40,7 +40,7 @@ func RegisterInstructions() {
 	Ins.Bind(EquipmentQuery, "厨具", "装备")
 	Ins.Bind(RecipeQuery, "菜谱", "食谱")
 	Ins.Bind(MaterialQuery, "食材", "材料")
-	Ins.Bind(GuestQuery, "贵客", "贵宾", "客人")
+	Ins.Bind(GuestQuery, "贵客", "稀有客人", "贵宾", "客人", "宾客", "稀客")
 	Ins.Bind(AntiqueQuery, "符文")
 	Ins.Bind(CondimentQuery, "调料")
 	Ins.Bind(QuestQuery, "任务", "主线", "支线")
@@ -48,6 +48,7 @@ func RegisterInstructions() {
 	Ins.Bind(ComboQuery, "后厨", "合成")
 	Ins.Bind(LaboratoryQuery, "实验室", "研究")
 	Ins.Bind(StrategyQuery, "攻略")
+	Ins.Bind(PublicNotice, "公告")
 
 	// 辅助信息
 	Ins.Bind(GalleryWebsite, "图鉴网", "图鉴")

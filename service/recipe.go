@@ -75,7 +75,7 @@ func RecipeQuery(c *onebot.Context, args []string) {
 			} else if util.HasPrefixIn(arg, "技法") {
 				skills := strings.Split(arg, util.ArgsConnectCharacter)
 				recipes, note = filterRecipesBySkills(recipes, skills[1:])
-			} else if util.HasPrefixIn(arg, "贵客", "稀有客人", "客人") {
+			} else if util.HasPrefixIn(arg, "贵客", "稀有客人", "客人", "贵宾", "宾客", "稀客") {
 				guests := strings.Split(arg, util.ArgsConnectCharacter)
 				recipes, note = filterRecipesByGuests(recipes, guests[1:])
 			} else if util.HasPrefixIn(arg, "符文", "礼物") {
