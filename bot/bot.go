@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 )
@@ -86,6 +87,49 @@ func SendGroupMsg(msg onebot.GroupMsg) error {
 	logger.Debug("尝试发送一条群聊消息:", msg)
 	err = OneBotPost(byteMsg, url)
 	return err
+}
+
+func SendMassGroupMsg(msg string, groups []int) {
+	for _, group := range groups {
+		_ = SendGroupMsg(onebot.GroupMsg{
+			GroupId:    group,
+			Message:    msg,
+			AutoEscape: false,
+		})
+	}
+}
+
+func GetGroupList() ([]onebot.GroupInfo, error) {
+	groupList := make([]onebot.GroupInfo, 0)
+	baseUrl := "http://" + config.AppConfig.OneBot.Host + ":" + strconv.Itoa(config.AppConfig.OneBot.Port)
+	url := baseUrl + "/get_group_list"
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return groupList, err
+	}
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return groupList, err
+	}
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return groupList, err
+	}
+	type reqBody struct {
+		Data    []onebot.GroupInfo `json:"data"`
+		RetCode int                `json:"retcode"`
+		Status  string             `json:"status"`
+	}
+	logger.Debug("body:", string(body))
+	var req reqBody
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		return groupList, err
+	}
+	groupList = req.Data
+	return groupList, nil
 }
 
 func GetCQImage(path string, pathType string) string {
