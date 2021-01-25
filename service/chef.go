@@ -63,9 +63,14 @@ func ChefQuery(c *onebot.Context, args []string) {
 			chefs, note = filterChefsByRarity(chefs, 5)
 		default:
 			if util.HasPrefixIn(arg, "来源") {
-				origins := strings.Split(arg, util.ArgsConnectCharacter)
-				if len(origins) > 1 {
-					chefs, note = filterChefsByOrigin(chefs, origins[1])
+				origin := strings.Split(arg, util.ArgsConnectCharacter)
+				if len(origin) > 1 {
+					chefs, note = filterChefsByOrigin(chefs, origin[1])
+				}
+			} else if util.HasPrefixIn(arg, "技能") {
+				skill := strings.Split(arg, util.ArgsConnectCharacter)
+				if len(skill) > 1 {
+					chefs, note = filterChefsBySkill(chefs, skill[1])
 				}
 			} else if util.HasPrefixIn(arg, "p", "P") {
 				pageNum, err := strconv.Atoi(arg[1:])
@@ -140,7 +145,28 @@ func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef,
 	return result, ""
 }
 
-// 根据厨师名或厨师ID筛选菜谱
+// 根据厨师技能筛选厨师
+func filterChefsBySkill(chefs []database.Chef, skill string) ([]database.Chef, string) {
+	result := make([]database.Chef, 0)
+	skills := make(map[int]database.Skill)
+	err := database.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		return result, util.SystemErrorNote
+	}
+	for i, _ := range chefs {
+		if _, ok := skills[chefs[i].SkillId]; ok {
+			result = append(result, chefs[i])
+			continue
+		}
+		if _, ok := skills[chefs[i].UltimateSkill]; ok {
+			result = append(result, chefs[i])
+		}
+	}
+	return result, ""
+}
+
+// 根据厨师名或厨师ID筛选厨师
 func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, string) {
 	result := make([]database.Chef, 0)
 	numId, err := strconv.Atoi(name)
