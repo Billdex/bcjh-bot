@@ -70,7 +70,7 @@ func ChefQuery(c *onebot.Context, args []string) {
 			} else if util.HasPrefixIn(arg, "技能") {
 				skill := strings.Split(arg, util.ArgsConnectCharacter)
 				if len(skill) > 1 {
-					chefs, note = filterChefsBySkill(chefs, skill[1])
+					chefs, note = filterChefsBySkill(chefs, strings.Join(skill[1:], util.ArgsConnectCharacter))
 				}
 			} else if util.HasPrefixIn(arg, "p", "P") {
 				pageNum, err := strconv.Atoi(arg[1:])
@@ -122,7 +122,7 @@ func filterChefsByRarity(chefs []database.Chef, rarity int) ([]database.Chef, st
 	}
 	result := make([]database.Chef, 0)
 	for i, _ := range chefs {
-		if chefs[i].Rarity >= rarity {
+		if chefs[i].Rarity == rarity {
 			result = append(result, chefs[i])
 		}
 	}
@@ -147,6 +147,16 @@ func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef,
 
 // 根据厨师技能筛选厨师
 func filterChefsBySkill(chefs []database.Chef, skill string) ([]database.Chef, string) {
+	// 处理某些技能关键词
+	if s, has := util.WhatPrefixIn(skill, "炒光环", "烤光环", "煮光环", "蒸光环", "炸光环", "切光环", "光环"); has {
+		skill = "场上所有厨师" + strings.ReplaceAll(s, "光环", "") + "%" + strings.ReplaceAll(skill, s, "")
+	}
+	if s, has := util.WhatPrefixIn(skill, "贵客", "贵宾", "客人", "宾客", "稀客"); has {
+		skill = "稀有客人" + "%" + strings.ReplaceAll(skill, s, "")
+	}
+	if strings.HasPrefix(skill, "采集") {
+		skill = "探索" + "%" + strings.ReplaceAll(skill, "采集", "")
+	}
 	result := make([]database.Chef, 0)
 	skills := make(map[int]database.Skill)
 	err := database.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
