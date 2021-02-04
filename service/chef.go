@@ -362,7 +362,7 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 800          // 图鉴背景图片的高度
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
-	titleSize := 52    // 标题字体尺寸
+	titleSize := 50    // 标题字体尺寸
 	fontSize := 36     // 内容字体尺寸
 	fontDPI := 72.0    // dpi
 
@@ -408,7 +408,10 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 	}
 
 	// 放大厨师图鉴图像
-	galleryImg = resize.Resize(3600, 3600, galleryImg, resize.Bilinear)
+	galleryImg = resize.Resize(
+		uint(galleryImg.Bounds().Dx()*magnification/2.0),
+		uint(galleryImg.Bounds().Dy()*magnification/2.0),
+		galleryImg, resize.Bilinear)
 
 	for _, chef := range chefs {
 		condiment := 0
@@ -461,20 +464,20 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 			draw.Over)
 
 		// 输出图鉴ID与厨师名
-		pt := freetype.Pt(150, 20+titleSize)
+		pt := freetype.Pt(165, 22+titleSize)
 		_, err = c.DrawString(fmt.Sprintf("%s", chef.Name), pt)
 		if err != nil {
 			return err
 		}
 
-		pt = freetype.Pt(45, 15+titleSize)
+		pt = freetype.Pt(45, 18+titleSize)
 		_, err = c.DrawString(fmt.Sprintf("%03d", chef.ChefId), pt)
 		if err != nil {
 			return err
 		}
 		c.SetFontSize(float64(25))
 		pt = freetype.Pt(30, 70+25)
-		_, err = c.DrawString(fmt.Sprintf("(%03d, %03d)", chef.ChefId-2, chef.ChefId-1), pt)
+		_, err = c.DrawString(fmt.Sprintf("(%03d,%03d)", chef.ChefId-2, chef.ChefId-1), pt)
 		if err != nil {
 			return err
 		}
@@ -487,7 +490,7 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 		defer genderFile.Close()
 		genderImg, _ := png.Decode(genderFile)
 		draw.Draw(img,
-			image.Rect(480, 30, 480+44, 30+44),
+			image.Rect(490, 30, 490+44, 30+44),
 			genderImg,
 			image.ZP,
 			draw.Over)
