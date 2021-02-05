@@ -21,6 +21,7 @@ var tables = []interface{}{
 	&Skill{},
 	&Strategy{},
 	&Laboratory{},
+	&Exchange{},
 }
 
 var migrations = []*migrate.Migration{
