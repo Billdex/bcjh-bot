@@ -21,100 +21,288 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 func EquipmentQuery(c *onebot.Context, args []string) {
-	logger.Info("厨具查询，参数:", args)
+	logger.Info("厨具查询, 参数:", args)
+
 	if len(args) == 0 {
-		err := bot.SendMessage(c, equipmentHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
-		return
-	}
-	if args[0] == "%" {
-		err := bot.SendMessage(c, "参数有误!")
+		err := bot.SendMessage(c, recipeHelp())
 		if err != nil {
 			logger.Error("发送信息失败!", err)
 		}
 		return
 	}
 
+	order := "稀有度"
+	page := 1
+	var note string
 	equips := make([]database.Equip, 0)
-	err := database.DB.Where("gallery_id = ?", args[0]).Asc("gallery_id").Find(&equips)
+	err := database.DB.Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "查询数据失败!")
-		return
+		_ = bot.SendMessage(c, util.SystemErrorNote)
 	}
-	if len(equips) == 0 {
-		err = database.DB.Where("name like ?", "%"+args[0]+"%").Asc("gallery_id").Find(&equips)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			_ = bot.SendMessage(c, "查询数据失败!")
+	for _, arg := range args {
+		if arg == "" {
+			continue
+		}
+		switch arg {
+		case "图鉴序", "稀有度":
+			order = arg
+		default:
+			if util.HasPrefixIn(arg, "来源") {
+				origin := strings.Split(arg, util.ArgsConnectCharacter)
+				if len(origin) > 1 {
+					equips, note = filterEquipsByOrigin(equips, origin[1])
+				}
+			} else if util.HasPrefixIn(arg, "技能") {
+				skill := strings.Split(arg, util.ArgsConnectCharacter)
+				if len(skill) > 1 {
+					equips, note = filterEquipsBySkill(equips, strings.Join(skill[1:], util.ArgsConnectCharacter))
+				}
+			} else if util.HasPrefixIn(arg, "p", "P") {
+				pageNum, err := strconv.Atoi(arg[1:])
+				if err != nil {
+					note = "分页参数有误"
+				} else {
+					if pageNum > 0 {
+						page = pageNum
+					}
+				}
+			} else {
+				equips, note = filterEquipsByName(equips, arg)
+			}
+		}
+
+		if note != "" {
+			logger.Info("厨具查询失败:", note)
+			_ = bot.SendMessage(c, note)
 			return
 		}
 	}
 
-	var msg string
-	if len(equips) == 0 {
-		msg = "哎呀，好像找不到呢!"
-	} else if len(equips) == 1 {
-		resourceImageDir := config.AppConfig.Resource.Image + "/equip"
-		imagePath := fmt.Sprintf("%s/equip_%s.png", resourceImageDir, equips[0].GalleryId)
-		logger.Debug("imagePath:", imagePath)
-		if has, err := util.PathExists(imagePath); has {
-			logger.Debugf("存在厨具图片文件, 返回图片数据")
-			msg = bot.GetCQImage(imagePath, "file")
-		} else {
-			if err != nil {
-				logger.Debugf("无法确定文件是否存在, 返回文字数据", err)
-			}
-			equip := equips[0]
-			rarity := ""
-			for i := 0; i < equip.Rarity; i++ {
-				rarity += "🔥"
-			}
-			skills := ""
-			for p, skillId := range equip.Skills {
-				skill := new(database.Skill)
-				has, err := database.DB.Where("skill_id = ?", skillId).Get(skill)
-				if err != nil {
-					logger.Error("查询数据库出错!", err)
-					_ = bot.SendMessage(c, "查询数据失败!")
-					return
-				}
-				if has {
-					skills += skill.Description
-					if p != len(equip.Skills)-1 {
-						skills += ","
-					}
-				}
-			}
-			msg += fmt.Sprintf("%s %s\n", equip.GalleryId, equip.Name)
-			msg += fmt.Sprintf("%s\n", rarity)
-			msg += fmt.Sprintf("来源: %s\n", equip.Origin)
-			msg += fmt.Sprintf("效果: %s", skills)
-		}
-	} else {
-		msg = "查询到以下厨具:\n"
-		for p, equip := range equips {
-			msg += fmt.Sprintf("%s %s", equip.GalleryId, equip.Name)
-			if p != len(equips)-1 {
-				msg += "\n"
-				if p == util.MaxQueryListLength-1 {
-					msg += "......"
-					break
-				}
-			}
-		}
+	// 对厨具查询结果排序
+	equips, note = orderEquips(equips, order)
+	if note != "" {
+		logger.Info("厨具查询失败:", note)
+		_ = bot.SendMessage(c, note)
+		return
 	}
-
-	logger.Debug("msg:", msg)
+	// 根据结果翻页并发送消息
+	msg := echoEquipsMessage(equips, order, page, c.MessageType == util.OneBotMessagePrivate)
+	logger.Info("发送菜谱查询结果:", msg)
 	err = bot.SendMessage(c, msg)
 	if err != nil {
 		logger.Error("发送信息失败!", err)
 	}
+}
+
+// 根据厨具名或厨具ID筛选厨具
+func filterEquipsByName(equips []database.Equip, name string) ([]database.Equip, string) {
+	result := make([]database.Equip, 0)
+	numId, err := strconv.Atoi(name)
+	if err != nil {
+		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
+		for i, _ := range equips {
+			re := regexp.MustCompile(pattern)
+			if re.MatchString(equips[i].Name) {
+				result = append(result, equips[i])
+			}
+		}
+	} else {
+		if numId%3 != 0 {
+			numId = numId + (3 - numId%3)
+		}
+		galleryId := fmt.Sprintf("%03d", numId)
+		for i, _ := range equips {
+			if equips[i].GalleryId == galleryId {
+				result = append(result, equips[i])
+			}
+		}
+	}
+	return result, ""
+}
+
+// 根据来源筛选厨具
+func filterEquipsByOrigin(equips []database.Equip, origin string) ([]database.Equip, string) {
+	if len(equips) == 0 {
+		return equips, ""
+	}
+	result := make([]database.Equip, 0)
+	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
+	for i, _ := range equips {
+		re := regexp.MustCompile(pattern)
+		if re.MatchString(equips[i].Origin) {
+			result = append(result, equips[i])
+		}
+	}
+	return result, ""
+}
+
+// 根据厨具技能筛选厨具
+func filterEquipsBySkill(equips []database.Equip, skill string) ([]database.Equip, string) {
+	// 处理某些技能关键词
+	if s, has := util.WhatPrefixIn(skill, "贵客", "贵宾", "客人", "宾客", "稀客"); has {
+		skill = "稀有客人" + "%" + strings.ReplaceAll(skill, s, "")
+	}
+	result := make([]database.Equip, 0)
+	skills := make(map[int]database.Skill)
+	err := database.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		return result, util.SystemErrorNote
+	}
+	for i, _ := range equips {
+		for _, skillId := range equips[i].Skills {
+			if _, ok := skills[skillId]; ok {
+				result = append(result, equips[i])
+				break
+			}
+		}
+	}
+	return result, ""
+}
+
+type equipWrapper struct {
+	equip     []database.Equip
+	equipLess func(p *database.Equip, q *database.Equip) bool
+}
+
+func (w equipWrapper) Len() int {
+	return len(w.equip)
+}
+
+func (w equipWrapper) Swap(i int, j int) {
+	w.equip[i], w.equip[j] = w.equip[j], w.equip[i]
+}
+
+func (w equipWrapper) Less(i int, j int) bool {
+	return w.equipLess(&w.equip[i], &w.equip[j])
+}
+
+// 根据排序参数排序厨具
+func orderEquips(equips []database.Equip, order string) ([]database.Equip, string) {
+	if len(equips) == 0 {
+		return equips, ""
+	}
+	switch order {
+	case "图鉴序":
+		sort.Sort(equipWrapper{equips, func(m, n *database.Equip) bool {
+			return m.EquipId < n.EquipId
+		}})
+	case "稀有度":
+		sort.Sort(equipWrapper{equips, func(m, n *database.Equip) bool {
+			if m.Rarity == n.Rarity {
+				return m.EquipId < n.EquipId
+			} else {
+				return m.Rarity > n.Rarity
+			}
+		}})
+	default:
+		return nil, "排序参数有误"
+	}
+	return equips, ""
+}
+
+// 根据排序参数获取厨具需要输出的信息
+func getEquipInfoWithOrder(equip database.Equip, order string) string {
+	switch order {
+	case "图鉴序":
+		msg := ""
+		for i := 0; i < equip.Rarity; i++ {
+			msg += "🔥"
+		}
+		return msg
+	case "稀有度":
+		msg := ""
+		for i := 0; i < equip.Rarity; i++ {
+			msg += "🔥"
+		}
+		return msg
+	default:
+		return ""
+	}
+}
+
+// 根据来源和排序参数，输出厨具消息列表
+func echoEquipsMessage(equips []database.Equip, order string, page int, private bool) string {
+	if len(equips) == 0 {
+		return "哎呀，好像找不到呢!"
+	} else if len(equips) == 1 {
+		return echoEquipMessage(equips[0])
+	} else {
+		logger.Debug("查询到多个厨具")
+		var msg string
+		listLength := util.MaxQueryListLength
+		if private {
+			listLength = listLength * 2
+		}
+		maxPage := (len(equips)-1)/listLength + 1
+		if page > maxPage {
+			page = maxPage
+		}
+		if len(equips) > listLength {
+			msg += fmt.Sprintf("查询到以下厨具: (%d/%d)\n", page, maxPage)
+		} else {
+			msg += "查询到以下厨具:\n"
+		}
+		for i := (page - 1) * listLength; i < page*listLength && i < len(equips); i++ {
+			orderInfo := getEquipInfoWithOrder(equips[i], order)
+			msg += fmt.Sprintf("%s %s %s", equips[i].GalleryId, equips[i].Name, orderInfo)
+			if i < page*listLength-1 && i < len(equips)-1 {
+				msg += "\n"
+			}
+		}
+		if page < maxPage {
+			msg += "\n......"
+		}
+		return msg
+	}
+}
+
+// 输出单厨具消息数据
+func echoEquipMessage(equip database.Equip) string {
+	resourceImageDir := config.AppConfig.Resource.Image + "/equip"
+	imagePath := fmt.Sprintf("%s/equip_%s.png", resourceImageDir, equip.GalleryId)
+	logger.Debug("imagePath:", imagePath)
+	var msg string
+	if has, err := util.PathExists(imagePath); has {
+		logger.Debugf("存在厨具图片文件, 返回图片数据")
+		msg = bot.GetCQImage(imagePath, "file")
+	} else {
+		if err != nil {
+			logger.Debugf("无法确定文件是否存在, 返回文字数据", err)
+		}
+		rarity := ""
+		for i := 0; i < equip.Rarity; i++ {
+			rarity += "🔥"
+		}
+		skills := ""
+		for p, skillId := range equip.Skills {
+			skill := new(database.Skill)
+			has, err := database.DB.Where("skill_id = ?", skillId).Get(skill)
+			if err != nil {
+				logger.Error("查询数据库出错!", err)
+				return util.SystemErrorNote
+			}
+			if has {
+				skills += skill.Description
+				if p != len(equip.Skills)-1 {
+					skills += ","
+				}
+			}
+		}
+		msg += fmt.Sprintf("%s %s\n", equip.GalleryId, equip.Name)
+		msg += fmt.Sprintf("%s\n", rarity)
+		msg += fmt.Sprintf("来源: %s\n", equip.Origin)
+		msg += fmt.Sprintf("效果: %s", skills)
+	}
+	return msg
 }
 
 func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) error {
