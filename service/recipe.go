@@ -55,14 +55,24 @@ func RecipeQuery(c *onebot.Context, args []string) {
 		case "图鉴序", "时间", "单时间", "总时间", "单价", "售价", "金币效率", "耗材效率", "稀有度":
 			order = arg
 		case "1火", "1星", "一火", "一星":
-			recipes, note = filterRecipesByRarity(recipes, 1)
+			recipes, note = filterRecipesByLowerRarity(recipes, 1)
 		case "2火", "2星", "二火", "二星", "两火", "两星":
-			recipes, note = filterRecipesByRarity(recipes, 2)
+			recipes, note = filterRecipesByLowerRarity(recipes, 2)
 		case "3火", "3星", "三火", "三星":
-			recipes, note = filterRecipesByRarity(recipes, 3)
+			recipes, note = filterRecipesByLowerRarity(recipes, 3)
 		case "4火", "4星", "四火", "四星":
-			recipes, note = filterRecipesByRarity(recipes, 4)
+			recipes, note = filterRecipesByLowerRarity(recipes, 4)
 		case "5火", "5星", "五火", "五星":
+			recipes, note = filterRecipesByLowerRarity(recipes, 5)
+		case "仅1火", "仅1星", "仅一火", "仅一星":
+			recipes, note = filterRecipesByRarity(recipes, 1)
+		case "仅2火", "仅2星", "仅二火", "仅二星", "仅两火", "仅两星":
+			recipes, note = filterRecipesByRarity(recipes, 2)
+		case "仅3火", "仅3星", "仅三火", "仅三星":
+			recipes, note = filterRecipesByRarity(recipes, 3)
+		case "仅4火", "仅4星", "仅四火", "仅四星":
+			recipes, note = filterRecipesByRarity(recipes, 4)
+		case "仅5火", "仅5星", "仅五火", "仅五星":
 			recipes, note = filterRecipesByRarity(recipes, 5)
 		case "炒技法", "烤技法", "煮技法", "蒸技法", "炸技法", "切技法":
 			recipes, note = filterRecipesBySkill(recipes, strings.TrimSuffix(arg, "技法"))
@@ -142,14 +152,28 @@ func RecipeQuery(c *onebot.Context, args []string) {
 	}
 }
 
-// 根据稀有度筛选菜谱
-func filterRecipesByRarity(recipes []database.Recipe, rarity int) ([]database.Recipe, string) {
+// 根据稀有度下限筛选菜谱
+func filterRecipesByLowerRarity(recipes []database.Recipe, rarity int) ([]database.Recipe, string) {
 	if len(recipes) == 0 {
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
 	for i, _ := range recipes {
 		if recipes[i].Rarity >= rarity {
+			result = append(result, recipes[i])
+		}
+	}
+	return result, ""
+}
+
+// 根据具体稀有度筛选菜谱
+func filterRecipesByRarity(recipes []database.Recipe, rarity int) ([]database.Recipe, string) {
+	if len(recipes) == 0 {
+		return recipes, ""
+	}
+	result := make([]database.Recipe, 0)
+	for i, _ := range recipes {
+		if recipes[i].Rarity == rarity {
 			result = append(result, recipes[i])
 		}
 	}
