@@ -93,6 +93,11 @@ func RecipeQuery(c *onebot.Context, args []string) {
 				if len(antiques) > 1 {
 					recipes, note = filterRecipesByAntique(recipes, antiques[1])
 				}
+			} else if util.HasPrefixIn(arg, "神级符文", "神级奖励") {
+				antiques := strings.Split(arg, util.ArgsConnectCharacter)
+				if len(antiques) > 1 {
+					recipes, note = filterRecipesByUpgradeAntique(recipes, antiques[1])
+				}
 			} else if util.HasPrefixIn(arg, "来源") {
 				origins := strings.Split(arg, util.ArgsConnectCharacter)
 				if len(origins) > 1 {
@@ -432,6 +437,22 @@ func filterRecipesByAntique(recipes []database.Recipe, antique string) ([]databa
 	}
 	for k, _ := range newRecipeMap {
 		result = append(result, newRecipeMap[k])
+	}
+	return result, ""
+}
+
+// 根据菜谱神级符文查询菜谱
+func filterRecipesByUpgradeAntique(recipes []database.Recipe, antique string) ([]database.Recipe, string) {
+	if len(recipes) == 0 {
+		return recipes, ""
+	}
+	result := make([]database.Recipe, 0)
+	pattern := ".*" + strings.ReplaceAll(antique, "%", ".*") + ".*"
+	for i, _ := range recipes {
+		re := regexp.MustCompile(pattern)
+		if re.MatchString(recipes[i].Gift) {
+			result = append(result, recipes[i])
+		}
 	}
 	return result, ""
 }
