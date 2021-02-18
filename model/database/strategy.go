@@ -10,6 +10,6 @@ type Strategy struct {
 	UpdateTime time.Time `xorm:"'update_time' updated"`
 }
 
-func TableName() string {
+func (Strategy) TableName() string {
 	return "strategy"
 }

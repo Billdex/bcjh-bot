@@ -63,9 +63,14 @@ func ChefQuery(c *onebot.Context, args []string) {
 			chefs, note = filterChefsByRarity(chefs, 5)
 		default:
 			if util.HasPrefixIn(arg, "来源") {
-				origins := strings.Split(arg, util.ArgsConnectCharacter)
-				if len(origins) > 1 {
-					chefs, note = filterChefsByOrigin(chefs, origins[1])
+				origin := strings.Split(arg, util.ArgsConnectCharacter)
+				if len(origin) > 1 {
+					chefs, note = filterChefsByOrigin(chefs, origin[1])
+				}
+			} else if util.HasPrefixIn(arg, "技能") {
+				skill := strings.Split(arg, util.ArgsConnectCharacter)
+				if len(skill) > 1 {
+					chefs, note = filterChefsBySkill(chefs, strings.Join(skill[1:], util.ArgsConnectCharacter))
 				}
 			} else if util.HasPrefixIn(arg, "p", "P") {
 				pageNum, err := strconv.Atoi(arg[1:])
@@ -117,7 +122,7 @@ func filterChefsByRarity(chefs []database.Chef, rarity int) ([]database.Chef, st
 	}
 	result := make([]database.Chef, 0)
 	for i, _ := range chefs {
-		if chefs[i].Rarity >= rarity {
+		if chefs[i].Rarity == rarity {
 			result = append(result, chefs[i])
 		}
 	}
@@ -140,7 +145,38 @@ func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef,
 	return result, ""
 }
 
-// 根据厨师名或厨师ID筛选菜谱
+// 根据厨师技能筛选厨师
+func filterChefsBySkill(chefs []database.Chef, skill string) ([]database.Chef, string) {
+	// 处理某些技能关键词
+	if s, has := util.WhatPrefixIn(skill, "炒光环", "烤光环", "煮光环", "蒸光环", "炸光环", "切光环", "光环"); has {
+		skill = "场上所有厨师" + strings.ReplaceAll(s, "光环", "") + "%" + strings.ReplaceAll(skill, s, "")
+	}
+	if s, has := util.WhatPrefixIn(skill, "贵客", "贵宾", "客人", "宾客", "稀客"); has {
+		skill = "稀有客人" + "%" + strings.ReplaceAll(skill, s, "")
+	}
+	if strings.HasPrefix(skill, "采集") {
+		skill = "探索" + "%" + strings.ReplaceAll(skill, "采集", "")
+	}
+	result := make([]database.Chef, 0)
+	skills := make(map[int]database.Skill)
+	err := database.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
+	if err != nil {
+		logger.Error("查询数据库出错!", err)
+		return result, util.SystemErrorNote
+	}
+	for i, _ := range chefs {
+		if _, ok := skills[chefs[i].SkillId]; ok {
+			result = append(result, chefs[i])
+			continue
+		}
+		if _, ok := skills[chefs[i].UltimateSkill]; ok {
+			result = append(result, chefs[i])
+		}
+	}
+	return result, ""
+}
+
+// 根据厨师名或厨师ID筛选厨师
 func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, string) {
 	result := make([]database.Chef, 0)
 	numId, err := strconv.Atoi(name)
@@ -326,7 +362,7 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 800          // 图鉴背景图片的高度
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
-	titleSize := 52    // 标题字体尺寸
+	titleSize := 50    // 标题字体尺寸
 	fontSize := 36     // 内容字体尺寸
 	fontDPI := 72.0    // dpi
 
@@ -372,7 +408,10 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 	}
 
 	// 放大厨师图鉴图像
-	galleryImg = resize.Resize(3600, 3600, galleryImg, resize.Bilinear)
+	galleryImg = resize.Resize(
+		uint(galleryImg.Bounds().Dx()*magnification/2.0),
+		uint(galleryImg.Bounds().Dy()*magnification/2.0),
+		galleryImg, resize.Bilinear)
 
 	for _, chef := range chefs {
 		condiment := 0
@@ -425,20 +464,20 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 			draw.Over)
 
 		// 输出图鉴ID与厨师名
-		pt := freetype.Pt(150, 20+titleSize)
+		pt := freetype.Pt(165, 22+titleSize)
 		_, err = c.DrawString(fmt.Sprintf("%s", chef.Name), pt)
 		if err != nil {
 			return err
 		}
 
-		pt = freetype.Pt(45, 15+titleSize)
+		pt = freetype.Pt(45, 18+titleSize)
 		_, err = c.DrawString(fmt.Sprintf("%03d", chef.ChefId), pt)
 		if err != nil {
 			return err
 		}
 		c.SetFontSize(float64(25))
 		pt = freetype.Pt(30, 70+25)
-		_, err = c.DrawString(fmt.Sprintf("(%03d, %03d)", chef.ChefId-2, chef.ChefId-1), pt)
+		_, err = c.DrawString(fmt.Sprintf("(%03d,%03d)", chef.ChefId-2, chef.ChefId-1), pt)
 		if err != nil {
 			return err
 		}
@@ -451,7 +490,7 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 		defer genderFile.Close()
 		genderImg, _ := png.Decode(genderFile)
 		draw.Draw(img,
-			image.Rect(480, 30, 480+44, 30+44),
+			image.Rect(490, 30, 490+44, 30+44),
 			genderImg,
 			image.ZP,
 			draw.Over)

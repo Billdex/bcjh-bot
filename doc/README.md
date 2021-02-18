@@ -22,6 +22,7 @@
 - [查询调料](usage/condiment.md)，对应指令为 `#调料`
 - [查询后厨](usage/combo.md)，对应指令为 `#后厨`
 - [查询实验室](usage/laboratory.md)，对应指令为 `#实验室`
+- [查询兑换码](usage/exchange.md)，对应指令为 `#兑换码`
 - [查询游戏攻略](usage/strategy.md)，对应指令为 `#攻略`
 - [反馈建议](other/feedback.md)，对应指令为 `#反馈`
 - [图鉴网链接](other/convinient.md#图鉴网)，对应指令为 `#图鉴网`

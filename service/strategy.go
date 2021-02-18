@@ -113,7 +113,7 @@ func StrategyQuery(c *onebot.Context, args []string) {
 		}
 
 		params := strings.Split(args[0], util.ArgsConnectCharacter)
-		if len(params) < 3 {
+		if len(params) < 2 {
 			err := bot.SendMessage(c, "参数格式错误!")
 			if err != nil {
 				logger.Error("发送信息失败!", err)
