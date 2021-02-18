@@ -48,6 +48,7 @@ func RegisterInstructions() {
 	Ins.Bind(ComboQuery, "后厨", "合成")
 	Ins.Bind(LaboratoryQuery, "实验室", "研究")
 	Ins.Bind(StrategyQuery, "攻略")
+	Ins.Bind(ExchangeQuery, "兑换码", "玉璧")
 	Ins.Bind(PublicNotice, "公告")
 
 	// 辅助信息

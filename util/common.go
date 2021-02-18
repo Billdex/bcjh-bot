@@ -48,3 +48,12 @@ func HasPrefixIn(s string, prefix ...string) bool {
 	}
 	return false
 }
+
+func WhatPrefixIn(s string, prefix ...string) (string, bool) {
+	for _, p := range prefix {
+		if strings.HasPrefix(s, p) {
+			return p, true
+		}
+	}
+	return "", false
+}
