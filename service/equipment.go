@@ -60,7 +60,7 @@ func EquipmentQuery(c *onebot.Context, args []string) {
 				if len(origin) > 1 {
 					equips, note = filterEquipsByOrigin(equips, origin[1])
 				}
-			} else if util.HasPrefixIn(arg, "技能") {
+			} else if util.HasPrefixIn(arg, "技能", "效果", "功能") {
 				skill := strings.Split(arg, util.ArgsConnectCharacter)
 				if len(skill) > 1 {
 					equips, note = filterEquipsBySkill(equips, strings.Join(skill[1:], util.ArgsConnectCharacter))
