@@ -115,9 +115,6 @@ func filterEquipsByName(equips []database.Equip, name string) ([]database.Equip,
 			}
 		}
 	} else {
-		if numId%3 != 0 {
-			numId = numId + (3 - numId%3)
-		}
 		galleryId := fmt.Sprintf("%03d", numId)
 		for i, _ := range equips {
 			if equips[i].GalleryId == galleryId {
