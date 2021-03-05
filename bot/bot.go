@@ -91,7 +91,7 @@ func SendGroupMsg(msg onebot.GroupMsg) error {
 
 func SendMassGroupMsg(msg string, groups []int) {
 	for _, group := range groups {
-		_ = SendGroupMsg(onebot.GroupMsg{
+		go SendGroupMsg(onebot.GroupMsg{
 			GroupId:    group,
 			Message:    msg,
 			AutoEscape: false,
