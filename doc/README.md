@@ -47,3 +47,8 @@
 - QQ: 646792290 （汪汪泥）
 
 Github仓库地址：https://github.com/Billdex/bcjh-bot
+
+## Support
+[JetBrains](https://jb.gg/OpenSource.)
+
+![JetBrains](media/jetbrains.png ':size=200')
