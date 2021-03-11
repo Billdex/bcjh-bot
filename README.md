@@ -21,3 +21,8 @@
 - 感谢各位爆炒江湖游戏群管理员对查询机器人的理解与支持
 - 感谢爆炒江湖交流09群的小伙伴们在测试期间的支持与鼓励
 - 感谢每一位提供问题反馈和功能建议的玩家
+
+## Support
+[JetBrains](https://jb.gg/OpenSource.)
+
+![JetBrains](doc/media/jetbrains.png ':size=200')
