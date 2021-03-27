@@ -36,7 +36,7 @@ func TermInfo(c *onebot.Context, args []string) {
 }
 
 // 白菜菊花App下载
-func BcjhAppDownload(c *onebot.Context, args []string) {
+func BCJHAppDownload(c *onebot.Context, args []string) {
 	logger.Info("白菜菊花app下载")
 
 	imgPath := config.AppConfig.Resource.Image + "/白菜菊花.jpg"
@@ -44,6 +44,20 @@ func BcjhAppDownload(c *onebot.Context, args []string) {
 	msg += fmt.Sprintf("密码: bcjh\n")
 	msg += bot.GetCQImage(imgPath, "file")
 
+	err := bot.SendMessage(c, msg)
+	if err != nil {
+		logger.Error("发送信息失败!", err)
+	}
+}
+
+// 计算器，不用第二遍解释
+func Calculator(c *onebot.Context, args []string) {
+	logger.Info("计算器查询")
+	bcjh := "https://bcjh.gitee.io/"
+	imgPath := config.AppConfig.Resource.Image + "/白菜菊花.jpg"
+	var msg string
+	msg += fmt.Sprintf("网页版计算器在白菜菊花图鉴网:%s\n", bcjh)
+	msg += fmt.Sprintf("安卓用户支持使用白菜菊花app，扫描下图二维码下载，密码bcjh %s", bot.GetCQImage(imgPath, "file"))
 	err := bot.SendMessage(c, msg)
 	if err != nil {
 		logger.Error("发送信息失败!", err)
