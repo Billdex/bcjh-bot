@@ -136,10 +136,19 @@ func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef,
 	}
 	result := make([]database.Chef, 0)
 	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
-	for i, _ := range chefs {
-		re := regexp.MustCompile(pattern)
-		if re.MatchString(chefs[i].Origin) {
-			result = append(result, chefs[i])
+	// 单独增加在售礼包查询
+	if origin == "仅礼包" || origin == "在售礼包" {
+		for i, _ := range chefs {
+			if chefs[i].Origin == "限时礼包" {
+				result = append(result, chefs[i])
+			}
+		}
+	} else {
+		for i, _ := range chefs {
+			re := regexp.MustCompile(pattern)
+			if re.MatchString(chefs[i].Origin) {
+				result = append(result, chefs[i])
+			}
 		}
 	}
 	return result, ""
