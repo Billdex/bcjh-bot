@@ -232,3 +232,31 @@ func deleteStrategy(keyword string) string {
 	}
 	return ""
 }
+
+// 把限时任务单独拎出来做快捷查询
+func TimeLimitingQuestQuery(c *onebot.Context, args []string) {
+	logger.Info("限时任务攻略查询")
+
+	strategies := new(database.Strategy)
+	has, err := database.DB.Where("keyword = ?", "限时任务").Get(strategies)
+	if err != nil {
+		logger.Error("数据库查询出错!", err)
+		err := bot.SendMessage(c, util.SystemErrorNote)
+		if err != nil {
+			logger.Error("发送信息失败!", err)
+		}
+		return
+	}
+	if !has {
+		err := bot.SendMessage(c, "暂无限时任务攻略哦~")
+		if err != nil {
+			logger.Error("发送信息失败!", err)
+		}
+	} else {
+		logger.Debug("找到一个攻略:", strategies.Value)
+		err := bot.SendMessage(c, strategies.Value)
+		if err != nil {
+			logger.Error("发送信息失败!", err)
+		}
+	}
+}
