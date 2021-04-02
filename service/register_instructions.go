@@ -55,6 +55,7 @@ func RegisterInstructions() {
 	// 辅助信息
 	Ins.Bind(GalleryWebsite, "图鉴网", "图鉴")
 	Ins.Bind(TermInfo, "游戏术语", "术语", "黑话")
-	Ins.Bind(BcjhAppDownload, "白菜菊花")
+	Ins.Bind(BCJHAppDownload, "白菜菊花")
+	Ins.Bind(Calculator, "计算器", "计算机")
 	Ins.Bind(BanRandomGif, "涩图", "色图")
 }
