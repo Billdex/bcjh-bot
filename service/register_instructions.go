@@ -34,7 +34,7 @@ func RegisterInstructions() {
 	Ins = NewInstructions()
 	// 主功能
 	Ins.Bind(UpdateData, "更新数据", "更新")
-	Ins.Bind(HelpGuide, "帮助", "说明")
+	Ins.Bind(HelpGuide, "帮助", "说明", "功能", "说明")
 	Ins.Bind(Feedback, "反馈", "建议")
 	Ins.Bind(ChefQuery, "厨师", "厨子")
 	Ins.Bind(EquipmentQuery, "厨具", "装备")
@@ -58,4 +58,5 @@ func RegisterInstructions() {
 	Ins.Bind(BCJHAppDownload, "白菜菊花")
 	Ins.Bind(Calculator, "计算器", "计算机")
 	Ins.Bind(BanRandomGif, "涩图", "色图")
+	Ins.Bind(Tarot, "占卜", "抽签", "求签", "运势")
 }
