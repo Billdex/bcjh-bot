@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func Tarot(c *onebot.Context, args []string) {
+func Tarot(c *onebot.Context, _ []string) {
 	sender := c.Sender.UserId
 	now := time.Now()
 	timeSeed := now.Unix()
@@ -52,9 +52,9 @@ func Tarot(c *onebot.Context, args []string) {
 	default:
 		level = "?"
 	}
-	msg := fmt.Sprintf("[%s]抽出了一根签\n", c.Sender.Nickname)
-	msg += fmt.Sprintf("当前运势指数:%d [%s]\n", tarot.Score, level)
-	msg += fmt.Sprintf("签上说: %s", tarot.Description)
+	msg := fmt.Sprintf("[%s]抽了一根签\n", c.Sender.Nickname)
+	msg += fmt.Sprintf("运势指数:%d [%s]\n", tarot.Score, level)
+	msg += fmt.Sprintf("签上说:\n%s", tarot.Description)
 	_ = bot.SendMessage(c, msg)
 	return
 }
