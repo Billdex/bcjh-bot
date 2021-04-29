@@ -12,6 +12,16 @@ import (
 )
 
 func Tarot(c *onebot.Context, _ []string) {
+	if c.MessageType == util.OneBotMessageGroup {
+		has, err := database.DB.Where("plugin = ? and group_id = ?", "tarot", c.GroupId).Exist(&database.WhiteList{})
+		if err != nil {
+			logger.Error("查询数据库出错", err)
+			return
+		}
+		if !has {
+			return
+		}
+	}
 	sender := c.Sender.UserId
 	now := time.Now()
 	timeSeed := now.Unix()
