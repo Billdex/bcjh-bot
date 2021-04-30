@@ -503,12 +503,23 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 		session.Rollback()
 		return err
 	}
+	// 从guest表中获取预设的贵客编号
+	guestInfo := make([]database.Guest, 0)
+	err = database.DB.Find(&guestInfo)
+	if err != nil {
+		logger.Error("数据库查询出错", err)
+		session.Rollback()
+		return err
+	}
+	guestMap := make(map[string]string)
+	for _, guest := range guestInfo {
+		guestMap[guest.GuestName] = guest.GuestId
+	}
 	guests := make([]database.GuestGift, 0)
-	for p, guestData := range guestsData {
-		// 图鉴网未指明贵客id，只能按数据顺序排序，因此30后的图鉴编号有误!!!
+	for _, guestData := range guestsData {
 		for _, gift := range guestData.Gifts {
 			guest := database.GuestGift{
-				GuestId:   fmt.Sprintf("%03d", p+1),
+				GuestId:   guestMap[guestData.Name],
 				GuestName: guestData.Name,
 				Antique:   gift.Antique,
 				Recipe:    gift.Recipe,
