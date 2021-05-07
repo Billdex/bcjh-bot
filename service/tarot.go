@@ -35,7 +35,7 @@ func Tarot(c *onebot.Context, _ []string) {
 		_ = bot.SendMessage(c, util.SystemErrorNote)
 		return
 	}
-	tarotId := rand.Int63n(total + 1)
+	tarotId := rand.Int63n(total) + 1
 	tarot := new(database.Tarot)
 	_, err = database.DB.Where("id = ?", tarotId).Get(tarot)
 	if err != nil {
