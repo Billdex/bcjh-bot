@@ -159,7 +159,7 @@ func materialHelp() string {
 	prefix := util.PrefixCharacters[0]
 	sb := strings.Builder{}
 	sb.WriteString("【食材及食材效率查询】\n")
-	sb.WriteString(fmt.Sprintf("查询方式:『%s菜谱 菜谱名』\n", prefix))
+	sb.WriteString(fmt.Sprintf("查询方式:『%s食材 食材名』", prefix))
 	return sb.String()
 }
 
