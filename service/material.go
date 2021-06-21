@@ -50,22 +50,26 @@ func MaterialQuery(c *onebot.Context, args []string) {
 		}
 		return
 	}
+	// 匹配大于1个时，如果有完全匹配的则直接使用该食材
 	if len(materials) > 1 {
+		match := false
 		var msg string
-		msg += "找到以下多个食材\n"
+		msg += "找到以下多个食材"
 		for _, material := range materials {
+			if material.Name == args[0] {
+				match = true
+				break
+			}
 			msg += fmt.Sprintf("\n%s %s", material.Name, material.Origin)
 		}
-		_ = bot.SendMessage(c, msg)
-		return
+		if !match {
+			_ = bot.SendMessage(c, msg)
+			return
+		}
 	}
 
-	materialIds := make([]int, 0)
-	for _, material := range materials {
-		materialIds = append(materialIds, material.MaterialId)
-	}
 	recipeMaterials := make([]database.RecipeMaterial, 0)
-	err = database.DB.In("material_id", materialIds).Find(&recipeMaterials)
+	err = database.DB.Where("material_id = ?", materials[0].MaterialId).Find(&recipeMaterials)
 	if err != nil {
 		logger.Error("数据库查询出错!")
 		_ = bot.SendMessage(c, util.SystemErrorNote)
