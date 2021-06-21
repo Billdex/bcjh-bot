@@ -226,6 +226,14 @@ func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]data
 		if len(dbMaterials) == 0 {
 			return nil, fmt.Sprintf("厨师长说没有用%s做过菜", material)
 		}
+		if len(dbMaterials) > 1 {
+			for _, dbMaterial := range dbMaterials {
+				if dbMaterial.Name == material {
+					dbMaterials = []database.Material{dbMaterial}
+					break
+				}
+			}
+		}
 	}
 	// 找出符合食材要求的菜谱图鉴id
 	materialsId := make([]int, 0)
