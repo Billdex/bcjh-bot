@@ -1,4 +1,4 @@
-package pbbot_scheduler
+package scheduler
 
 import "strings"
 

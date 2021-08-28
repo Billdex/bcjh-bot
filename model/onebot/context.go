@@ -46,5 +46,4 @@ type Context struct {
 		Size  int    `json:"size"`  // 文件大小(字节数)
 		BusId int    `json:"busid"` // busid
 	} `json:"file"` // 通知事件，群文件信息
-
 }
