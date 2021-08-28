@@ -1,20 +1,18 @@
-package pbbot_scheduler
+package scheduler
 
 import (
-	"errors"
-	"github.com/ProtobufBot/go-pbbot"
-	"github.com/ProtobufBot/go-pbbot/proto_gen/onebot"
-	"net/http"
+	"bcjh-bot/scheduler/onebot"
 	"strings"
 )
 
 type Scheduler struct {
 	*CmdGroup
+	Engine *onebot.Server
 }
 
 type HandleFunc func(*Context)
 
-func New() *Scheduler {
+func New(port string, path string) *Scheduler {
 	scheduler := &Scheduler{
 		CmdGroup: &CmdGroup{
 			isHandleNode: false,
@@ -25,6 +23,8 @@ func New() *Scheduler {
 		},
 	}
 	scheduler.CmdGroup.scheduler = scheduler
+	scheduler.Engine = onebot.New(port, path)
+
 	return scheduler
 }
 
@@ -36,21 +36,22 @@ func (s *Scheduler) createContext() *Context {
 	}
 }
 
-func (s *Scheduler) Process(bot *pbbot.Bot, event interface{}) error {
+func (s *Scheduler) Process(bot *onebot.Bot, event interface{}) {
 	c := s.createContext()
-	var rawMessage string
-	if privateEvent, ok := event.(*onebot.PrivateMessageEvent); ok {
-		c.privateMessageEvent = privateEvent
-		rawMessage = privateEvent.RawMessage
-	} else if groupEvent, ok := event.(*onebot.GroupMessageEvent); ok {
-		c.groupMessageEvent = groupEvent
-		rawMessage = groupEvent.RawMessage
+	if privateEvent, ok := event.(*onebot.MessageEventPrivateReq); ok {
+		c.privateEvent = privateEvent
+		c.messageType = onebot.MessageTypePrivate
+		c.rawMessage = privateEvent.RawMessage
+	} else if groupEvent, ok := event.(*onebot.MessageEventGroupReq); ok {
+		c.groupEvent = groupEvent
+		c.messageType = onebot.MessageTypeGroup
+		c.rawMessage = groupEvent.RawMessage
 	} else {
-		return errors.New("event类型错误!必须为*onebot.PrivateMessageEvent或*onebot.GroupMessageEvent")
+		return
 	}
 	c.bot = bot
-	c.rawMessage = rawMessage
-	handlerChain, content, found := s.findHandler(rawMessage)
+	c.event = event
+	handlerChain, content, found := s.findHandler(c.rawMessage)
 	if found {
 		c.handlers = handlerChain
 		c.PretreatedMessage = content
@@ -59,22 +60,18 @@ func (s *Scheduler) Process(bot *pbbot.Bot, event interface{}) error {
 			c.index++
 		}
 	}
-	return nil
 }
 
 func (s *Scheduler) findHandler(message string) ([]HandleFunc, string, bool) {
 	return s.CmdGroup.SearchHandlerChain(strings.TrimSpace(message))
 }
 
-func (s *Scheduler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	c := s.createContext()
-	s.Process(c)
-}
-
-func (s *Scheduler) Run(port string) error {
-	if port == "" {
-		port = ":5800"
+func (s *Scheduler) Serve(handler onebot.Handler) error {
+	handler.HandlePrivateMessage = func(bot *onebot.Bot, req *onebot.MessageEventPrivateReq) {
+		s.Process(bot, req)
 	}
-	http.HandleFunc("/", s.ServeHTTP)
-	return http.ListenAndServe(port, nil)
+	handler.HandleGroupMessage = func(bot *onebot.Bot, req *onebot.MessageEventGroupReq) {
+		s.Process(bot, req)
+	}
+	return s.Engine.Serve(handler)
 }

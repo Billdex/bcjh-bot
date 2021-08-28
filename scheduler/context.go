@@ -1,9 +1,8 @@
-package pbbot_scheduler
+package scheduler
 
 import (
+	"bcjh-bot/scheduler/onebot"
 	"errors"
-	"github.com/ProtobufBot/go-pbbot"
-	"github.com/ProtobufBot/go-pbbot/proto_gen/onebot"
 )
 
 type Context struct {
@@ -11,59 +10,75 @@ type Context struct {
 	handlers  []HandleFunc
 	index     int
 
-	bot                 *pbbot.Bot
-	privateMessageEvent *onebot.PrivateMessageEvent
-	groupMessageEvent   *onebot.GroupMessageEvent
-	rawMessage          string
-	PretreatedMessage   string
-
-	replyMessage *pbbot.Msg
+	bot               *onebot.Bot
+	event             interface{}
+	privateEvent      *onebot.MessageEventPrivateReq
+	groupEvent        *onebot.MessageEventGroupReq
+	messageType       string
+	rawMessage        string
+	PretreatedMessage string
 }
 
-func (c *Context) GetBot() *pbbot.Bot {
+func (c *Context) GetBot() *onebot.Bot {
 	return c.bot
 }
 
-func (c *Context) GetPrivateMessageEvent() (*onebot.PrivateMessageEvent, bool) {
-	if c.privateMessageEvent == nil {
-		return nil, false
-	} else {
-		return c.privateMessageEvent, true
-	}
+func (c *Context) GetEvent() interface{} {
+	return c.event
 }
 
-func (c *Context) GetGroupMessageEvent() (*onebot.GroupMessageEvent, bool) {
-	if c.groupMessageEvent == nil {
-		return nil, false
-	} else {
-		return c.groupMessageEvent, true
-	}
+func (c *Context) GetMessageType() string {
+	return c.messageType
 }
 
 func (c *Context) GetRawMessage() string {
 	return c.rawMessage
 }
 
-func (c *Context) Reply(msg *pbbot.Msg, autoEscape bool) (int32, error) {
-	if c.bot == nil {
-		return -1, errors.New("context未记录Bot信息")
+func (c *Context) GetEventTime() int64 {
+	switch c.messageType {
+	case onebot.MessageTypePrivate:
+		return c.privateEvent.Time
+	case onebot.MessageTypeGroup:
+		return c.groupEvent.Time
+	default:
+		return 0
 	}
-	if c.privateMessageEvent != nil {
-		resp, err := c.bot.SendPrivateMessage(c.privateMessageEvent.UserId, msg, autoEscape)
-		if err != nil {
-			return -1, err
-		} else {
-			return resp.MessageId, nil
-		}
-	} else if c.groupMessageEvent != nil {
-		resp, err := c.bot.SendGroupMessage(c.groupMessageEvent.GroupId, msg, autoEscape)
-		if err != nil {
-			return -1, err
-		} else {
-			return resp.MessageId, nil
-		}
-	} else {
-		return -1, errors.New("messageEvent信息有误")
+}
+
+func (c *Context) GetSenderId() int64 {
+	switch c.messageType {
+	case onebot.MessageTypePrivate:
+		return c.privateEvent.Sender.UserId
+	case onebot.MessageTypeGroup:
+		return c.groupEvent.Sender.UserId
+	default:
+		return 0
+	}
+}
+
+func (c *Context) GetSenderNickname() string {
+	switch c.messageType {
+	case onebot.MessageTypePrivate:
+		return c.privateEvent.Sender.Nickname
+	case onebot.MessageTypeGroup:
+		return c.groupEvent.Sender.Nickname
+	default:
+		return ""
+	}
+}
+
+func (c *Context) Reply(msg string) (int32, error) {
+	if c.bot == nil {
+		return -1, errors.New("bot信息未记录或连接已断开")
+	}
+	switch c.messageType {
+	case onebot.MessageTypePrivate:
+		return c.bot.SendPrivateMessage(c.privateEvent.Sender.UserId, msg)
+	case onebot.MessageTypeGroup:
+		return c.bot.SendGroupMessage(c.groupEvent.GroupId, msg)
+	default:
+		return 0, nil
 	}
 }
 
@@ -81,14 +96,4 @@ func (c *Context) IsAborted() bool {
 
 func (c *Context) Abort() {
 	c.index = len(c.handlers)
-}
-
-func MustGroupAdmin(c *Context) {
-	if event, ok := c.GetGroupMessageEvent(); ok {
-		if event.Sender.Role != "owner" && event.Sender.Role != "admin" {
-			c.Abort()
-		}
-	} else {
-		c.Abort()
-	}
 }
