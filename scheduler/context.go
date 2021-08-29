@@ -3,10 +3,13 @@ package scheduler
 import (
 	"bcjh-bot/scheduler/onebot"
 	"errors"
+	"regexp"
+	"strconv"
 )
 
 type Context struct {
 	scheduler *Scheduler
+	keyword   string
 	handlers  []HandleFunc
 	index     int
 
@@ -19,12 +22,54 @@ type Context struct {
 	PretreatedMessage string
 }
 
+func (c *Context) Next() {
+	c.index++
+	for c.index < (len(c.handlers)) {
+		c.handlers[c.index](c)
+		c.index++
+	}
+}
+
+func (c *Context) IsAborted() bool {
+	return c.index >= len(c.handlers)
+}
+
+func (c *Context) Abort() {
+	c.index = len(c.handlers)
+}
+
+func (c *Context) Reply(msg string) (int32, error) {
+	if c.bot == nil {
+		return -1, errors.New("bot信息未记录或连接已断开")
+	}
+	switch c.messageType {
+	case onebot.MessageTypePrivate:
+		return c.bot.SendPrivateMessage(c.privateEvent.Sender.UserId, msg)
+	case onebot.MessageTypeGroup:
+		return c.bot.SendGroupMessage(c.groupEvent.GroupId, msg)
+	default:
+		return 0, nil
+	}
+}
+
 func (c *Context) GetBot() *onebot.Bot {
 	return c.bot
 }
 
+func (c *Context) GetKeyword() string {
+	return c.keyword
+}
+
 func (c *Context) GetEvent() interface{} {
 	return c.event
+}
+
+func (c *Context) GetPrivateEvent() *onebot.MessageEventPrivateReq {
+	return c.privateEvent
+}
+
+func (c *Context) GetGroupEvent() *onebot.MessageEventGroupReq {
+	return c.groupEvent
 }
 
 func (c *Context) GetMessageType() string {
@@ -68,32 +113,14 @@ func (c *Context) GetSenderNickname() string {
 	}
 }
 
-func (c *Context) Reply(msg string) (int32, error) {
-	if c.bot == nil {
-		return -1, errors.New("bot信息未记录或连接已断开")
+func (c *Context) GetAtList() []int64 {
+	atList := make([]int64, 0)
+	reg := `\[CQ:at,qq=(\d+)\]`
+	pattern := regexp.MustCompile(reg)
+	allIndexes := pattern.FindAllSubmatch([]byte(c.PretreatedMessage), -1)
+	for _, loc := range allIndexes {
+		qq, _ := strconv.ParseInt(string(loc[1]), 10, 64)
+		atList = append(atList, qq)
 	}
-	switch c.messageType {
-	case onebot.MessageTypePrivate:
-		return c.bot.SendPrivateMessage(c.privateEvent.Sender.UserId, msg)
-	case onebot.MessageTypeGroup:
-		return c.bot.SendGroupMessage(c.groupEvent.GroupId, msg)
-	default:
-		return 0, nil
-	}
-}
-
-func (c *Context) Next() {
-	c.index++
-	for c.index < (len(c.handlers)) {
-		c.handlers[c.index](c)
-		c.index++
-	}
-}
-
-func (c *Context) IsAborted() bool {
-	return c.index >= len(c.handlers)
-}
-
-func (c *Context) Abort() {
-	c.index = len(c.handlers)
+	return atList
 }

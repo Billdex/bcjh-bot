@@ -8,11 +8,13 @@ import (
 
 var tables = []interface{}{
 	&Admin{},
+	&BotState{},
 	&Chef{},
 	&Condiment{},
 	&Decoration{},
 	&Equip{},
 	&Feedback{},
+	&Guest{},
 	&GuestGift{},
 	&Material{},
 	&Quest{},
@@ -22,6 +24,7 @@ var tables = []interface{}{
 	&Strategy{},
 	&Laboratory{},
 	&Exchange{},
+	&Tarot{},
 }
 
 var migrations = []*migrate.Migration{

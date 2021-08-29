@@ -60,25 +60,25 @@ func (group *CmdGroup) dealIgnoreCase(s string) (string, []string) {
 	}
 }
 
-func (group *CmdGroup) SearchHandlerChain(message string) ([]HandleFunc, string, bool) {
+func (group *CmdGroup) SearchHandlerChain(message string) (string, []HandleFunc, string, bool) {
 	dealMessage, dealKeywords := group.dealIgnoreCase(message)
 	if prefix, has := whatPrefixIn(dealMessage, dealKeywords...); has {
+		var keyword string
 		var handlers []HandleFunc
 		var pretreatedMessage string
 		var inSubGroup bool
-		inSubGroup = false
 		for _, subGroup := range group.subCmdGroups {
-			handlers, pretreatedMessage, inSubGroup = subGroup.SearchHandlerChain(strings.TrimSpace(message[len(prefix):]))
+			keyword, handlers, pretreatedMessage, inSubGroup = subGroup.SearchHandlerChain(strings.TrimSpace(message[len(prefix):]))
 			if inSubGroup {
-				return handlers, pretreatedMessage, true
+				return keyword, handlers, pretreatedMessage, true
 			}
 		}
 		if group.isHandleNode {
-			return combineHandlers(group.BaseHandlers, group.SelfHandlers...), strings.TrimSpace(message[len(prefix):]), true
+			return prefix, combineHandlers(group.BaseHandlers, group.SelfHandlers...), strings.TrimSpace(message[len(prefix):]), true
 		} else {
-			return nil, "", false
+			return "", nil, "", false
 		}
 	} else {
-		return nil, "", false
+		return "", nil, "", false
 	}
 }

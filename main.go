@@ -2,8 +2,10 @@ package main
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/messageservice"
 	"bcjh-bot/model/database"
-	"bcjh-bot/server"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strconv"
@@ -43,11 +45,10 @@ func main() {
 	}
 	logger.Info("初始化数据库引擎完毕")
 
-	// 启动服务
+	// 注册插件与启动服务
+	handler := onebot.Handler{}
+	s := scheduler.New()
+	messageservice.Register(s)
 	port := strconv.Itoa(config.AppConfig.Server.Port)
-	err = server.Run(":" + port)
-	if err != nil {
-		logger.Error("服务启动出错!", err)
-		return
-	}
+	_ = s.Serve(":"+port, "/", handler)
 }

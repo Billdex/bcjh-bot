@@ -8,6 +8,10 @@ const (
 
 	MessageTypePrivate = "private"
 	MessageTypeGroup   = "group"
+
+	GroupSenderRoleOwner  = "owner"
+	GroupSenderRoleAdmin  = "admin"
+	GroupSenderRoleMember = "member"
 )
 
 // OneBot协议消息对象，详细说明请参考onebot文档
