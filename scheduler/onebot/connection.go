@@ -47,7 +47,7 @@ func NewWsConnection(conn *websocket.Conn, rh onRecvHandler, ch onCloseHandler) 
 				_ = wsc.Send([]byte("pong"))
 				continue
 			}
-			rh(data)
+			go rh(data)
 		}
 	}()
 

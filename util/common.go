@@ -40,6 +40,15 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
+func InKeywordList(s string, keywords ...string) bool {
+	for _, keyword := range keywords {
+		if s == keyword {
+			return true
+		}
+	}
+	return false
+}
+
 func HasPrefixIn(s string, prefix ...string) bool {
 	for _, p := range prefix {
 		if strings.HasPrefix(s, p) {

@@ -50,7 +50,7 @@ func (bot *Bot) handleRecv(data []byte) {
 func (bot *Bot) handleMessageEvent(data []byte) {
 	msgType := gjson.Get(string(data), "message_type").String()
 	if msgType == MessageTypePrivate {
-		req := new(MessageEventPrivateReq)
+		req := &MessageEventPrivateReq{}
 		if err := json.Unmarshal(data, req); err != nil {
 			log.Errorf("解析私聊消息出错: %v, 原始json数据: %s\n", err, string(data))
 			return
@@ -59,7 +59,7 @@ func (bot *Bot) handleMessageEvent(data []byte) {
 			bot.OnebotHandler.HandlePrivateMessage(bot, req)
 		}
 	} else if msgType == MessageTypeGroup {
-		req := new(MessageEventGroupReq)
+		req := &MessageEventGroupReq{}
 		if err := json.Unmarshal(data, req); err != nil {
 			log.Errorf("解析群消息出错: %v, 原始json数据: %s\n", err, string(data))
 			return

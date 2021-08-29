@@ -12,7 +12,7 @@ type Scheduler struct {
 
 type HandleFunc func(*Context)
 
-func New(port string, path string) *Scheduler {
+func New() *Scheduler {
 	scheduler := &Scheduler{
 		CmdGroup: &CmdGroup{
 			isHandleNode: false,
@@ -23,7 +23,6 @@ func New(port string, path string) *Scheduler {
 		},
 	}
 	scheduler.CmdGroup.scheduler = scheduler
-	scheduler.Engine = onebot.New(port, path)
 
 	return scheduler
 }
@@ -51,8 +50,9 @@ func (s *Scheduler) Process(bot *onebot.Bot, event interface{}) {
 	}
 	c.bot = bot
 	c.event = event
-	handlerChain, content, found := s.findHandler(c.rawMessage)
+	keyword, handlerChain, content, found := s.findHandler(c.rawMessage)
 	if found {
+		c.keyword = keyword
 		c.handlers = handlerChain
 		c.PretreatedMessage = content
 		for c.index < len(c.handlers) {
@@ -62,11 +62,12 @@ func (s *Scheduler) Process(bot *onebot.Bot, event interface{}) {
 	}
 }
 
-func (s *Scheduler) findHandler(message string) ([]HandleFunc, string, bool) {
+func (s *Scheduler) findHandler(message string) (string, []HandleFunc, string, bool) {
 	return s.CmdGroup.SearchHandlerChain(strings.TrimSpace(message))
 }
 
-func (s *Scheduler) Serve(handler onebot.Handler) error {
+func (s *Scheduler) Serve(port string, path string, handler onebot.Handler) error {
+	s.Engine = onebot.New(port, path)
 	handler.HandlePrivateMessage = func(bot *onebot.Bot, req *onebot.MessageEventPrivateReq) {
 		s.Process(bot, req)
 	}
