@@ -3,7 +3,7 @@ package database
 import "time"
 
 type Feedback struct {
-	Sender     int       `xorm:"sender BIGINT"`
+	Sender     int64     `xorm:"sender BIGINT"`
 	Nickname   string    `xorm:"nickname"`
 	Message    string    `xorm:"message"`
 	Status     int       `xorm:"status"`
