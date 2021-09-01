@@ -1,10 +1,7 @@
-package middleware
+package global
 
 import (
 	"bcjh-bot/model/database"
-	"bcjh-bot/scheduler"
-	"bcjh-bot/scheduler/onebot"
-	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"sync"
@@ -34,28 +31,6 @@ func deleteBotState(key string) {
 	botStateMux.Lock()
 	defer botStateMux.Unlock()
 	delete(botStateMap, key)
-}
-
-func CheckBotState(c *scheduler.Context) {
-	if c.GetMessageType() != onebot.MessageTypeGroup || c.GetGroupEvent() == nil {
-		c.Abort()
-		return
-	}
-	if util.InKeywordList(c.GetKeyword(), "开机", "关机") {
-		c.Next()
-	} else {
-		event := c.GetGroupEvent()
-		if botOn, err := GetBotState(event.SelfId, event.GroupId); err != nil {
-			c.Abort()
-			return
-		} else {
-			if botOn {
-				c.Next()
-			} else {
-				c.Abort()
-			}
-		}
-	}
 }
 
 func GetBotState(botId int64, groupId int64) (bool, error) {

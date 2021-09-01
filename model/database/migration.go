@@ -8,22 +8,24 @@ import (
 
 var tables = []interface{}{
 	&Admin{},
+	&BlackList{},
 	&BotState{},
 	&Chef{},
 	&Condiment{},
 	&Decoration{},
 	&Equip{},
+	&Exchange{},
 	&Feedback{},
 	&Guest{},
 	&GuestGift{},
+	&Laboratory{},
 	&Material{},
+	&PluginState{},
 	&Quest{},
 	&Recipe{},
 	&RecipeMaterial{},
 	&Skill{},
 	&Strategy{},
-	&Laboratory{},
-	&Exchange{},
 	&Tarot{},
 }
 
