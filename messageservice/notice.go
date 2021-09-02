@@ -15,8 +15,10 @@ func PublicNotice(c *scheduler.Context) {
 			_, _ = c.Reply(fmt.Sprintf("未获取[bot %d]到group列表, err:%v", bot.BotId, err))
 		}
 		for _, group := range groups {
-			if ok, _ := global.GetBotState(bot.BotId, group.GroupId); ok {
-				_, _ = bot.SendGroupMessage(group.GroupId, msg)
+			if botOk, _ := global.GetBotState(bot.BotId, group.GroupId); botOk {
+				if pluginOk, _ := global.GetPluginState(group.GroupId, "公告", true); pluginOk {
+					_, _ = bot.SendGroupMessage(group.GroupId, msg)
+				}
 			}
 		}
 	}
