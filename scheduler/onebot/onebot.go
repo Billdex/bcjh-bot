@@ -70,12 +70,14 @@ type MessageEventGroupReq struct {
 type actionApiReq struct {
 	Action string      `json:"action"`
 	Params interface{} `json:"params"`
+	Echo   string      `json:"echo"`
 }
 
 type actionApiResp struct {
 	Status  string      `json:"status"`
 	RetCode int64       `json:"retcode"`
 	Data    interface{} `json:"data"`
+	Echo    string      `json:"echo"`
 }
 
 type sendPrivateMsgParams struct {
@@ -105,4 +107,33 @@ type sendGroupMsgResp struct {
 	Data    struct {
 		MessageId int32 `json:"message_id"`
 	} `json:"data"`
+}
+
+type GroupInfo struct {
+	GroupId         int64  `json:"group_id"`
+	GroupName       string `json:"group_name"`
+	GroupMemo       string `json:"group_memo"`
+	GroupCreateTime uint32 `json:"group_create_time"`
+	GroupLevel      uint32 `json:"group_level"`
+	MemberCount     int32  `json:"member_count"`
+	MaxMemberCount  int32  `json:"max_member_count"`
+}
+
+type getGroupInfoParams struct {
+	GroupId int64 `json:"group_id"`
+	NoCache bool  `json:"no_cache"`
+}
+
+type getGroupInfoResp struct {
+	Status  string    `json:"status"`
+	RetCode int64     `json:"retcode"`
+	Data    GroupInfo `json:"data"`
+	Echo    string    `json:"echo"`
+}
+
+type getGroupListResp struct {
+	Status  string      `json:"status"`
+	RetCode int64       `json:"retcode"`
+	Data    []GroupInfo `json:"data"`
+	Echo    string      `json:"echo"`
 }

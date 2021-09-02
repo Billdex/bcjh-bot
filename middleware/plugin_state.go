@@ -6,6 +6,7 @@ import (
 	"bcjh-bot/scheduler/onebot"
 )
 
+// 使用该中间件需要在global.plugin_state中添加对应插件的名称与别名
 func CheckPluginState(defaultState bool) scheduler.HandleFunc {
 	return func(c *scheduler.Context) {
 		if c.GetMessageType() == onebot.MessageTypePrivate || c.GetPrivateEvent() != nil {

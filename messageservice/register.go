@@ -18,6 +18,7 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("停用", MustAdmin, DisablePluginInGroup)
 	g.Bind("ban", MustAdmin, BanUser)
 	g.Bind("allow", MustAdmin, AllowUser)
+	g.Bind("公告", MustSuperAdmin, CheckPluginState(true), PublicNotice)
 
 	// 其他查询功能
 	g.Bind("反馈", CheckPluginState(true), Feedback).Alias("建议")

@@ -1,10 +1,20 @@
 package onebot
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"math/rand"
+	"sync"
+	"time"
+)
+
+const (
+	apiResponseMapKey = "%s_%d%d"
 )
 
 type Bot struct {
@@ -12,6 +22,8 @@ type Bot struct {
 	Session       *WsConnection
 	AutoEscape    bool
 	OnebotHandler Handler
+	apiResponse   map[string]chan []byte
+	apiResMux     sync.Mutex
 }
 
 type Handler struct {
@@ -26,6 +38,7 @@ func NewBot(botId int64, conn *websocket.Conn, handler Handler, ch onCloseHandle
 		BotId:         botId,
 		AutoEscape:    autoEscape,
 		OnebotHandler: handler,
+		apiResponse:   make(map[string]chan []byte),
 	}
 	onRecvHandler := bot.handleRecv
 	bot.Session = NewWsConnection(conn, onRecvHandler, ch)
@@ -43,6 +56,13 @@ func (bot *Bot) handleRecv(data []byte) {
 	case PostTypeMetaEvent:
 		bot.handleMetaEvent(data)
 	default:
+		if echo := gjson.Get(string(data), "echo").String(); echo != "" {
+			bot.apiResMux.Lock()
+			if ch, ok := bot.apiResponse[echo]; ok {
+				ch <- data
+			}
+			bot.apiResMux.Unlock()
+		}
 		return
 	}
 }
@@ -80,6 +100,46 @@ func (bot *Bot) handleRequestEvent(data []byte) {
 
 func (bot *Bot) handleMetaEvent(data []byte) {
 
+}
+
+func (bot *Bot) GetGroupList() ([]GroupInfo, error) {
+	req := actionApiReq{
+		Action: "get_group_list",
+	}
+	key := fmt.Sprintf(apiResponseMapKey, req.Action, time.Now().UnixNano(), rand.Intn(100))
+	req.Echo = key
+	recvChan := make(chan []byte, 1)
+	bot.apiResMux.Lock()
+	bot.apiResponse[key] = recvChan
+	bot.apiResMux.Unlock()
+	defer func() {
+		bot.apiResMux.Lock()
+		delete(bot.apiResponse, key)
+		bot.apiResMux.Unlock()
+		close(recvChan)
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+	sendMsg, err := json.Marshal(&req)
+	if err != nil {
+		return nil, err
+	}
+	err = bot.Session.Send(sendMsg)
+	if err != nil {
+		return nil, err
+	}
+	select {
+	case data := <-recvChan:
+		var groups getGroupListResp
+		err := json.Unmarshal(data, &groups)
+		if err != nil {
+			return nil, err
+		} else {
+			return groups.Data, nil
+		}
+	case <-ctx.Done():
+		return nil, errors.New("超时未收到返回数据")
+	}
 }
 
 func (bot *Bot) SendPrivateMessage(userId int64, message string) (int32, error) {

@@ -15,6 +15,7 @@ var pluginStateMap = make(map[string]bool)
 var pluginStateMux sync.Mutex
 
 var pluginList = map[string][]string{
+	"公告": {},
 	"反馈": {"建议"},
 	"抽签": {"占卜", "求签", "运势", "卜卦"},
 }
