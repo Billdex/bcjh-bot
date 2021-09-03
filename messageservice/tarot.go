@@ -7,6 +7,7 @@ import (
 	"bcjh-bot/util/logger"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -62,4 +63,43 @@ func Tarot(c *scheduler.Context) {
 	msg += fmt.Sprintf("签上说:\n%s", tarot.Description)
 	_, _ = c.Reply(msg)
 	return
+}
+
+func ForceTarot(c *scheduler.Context) {
+	num, err := strconv.Atoi(c.PretreatedMessage)
+	if err != nil {
+		_, _ = c.Reply("请输入正确的数字")
+		return
+	}
+	tarotList := make([]database.Tarot, 0)
+	err = database.DB.Where("score = ?", num).Find(&tarotList)
+	if err != nil || len(tarotList) == 0 {
+		_, _ = c.Reply("改命失败")
+		return
+	}
+	tarot := tarotList[rand.Intn(len(tarotList))]
+	var level string
+	switch {
+	case tarot.Score == 0:
+		level = "不知道吉不吉"
+	case 0 < tarot.Score && tarot.Score < 15:
+		level = "小小吉"
+	case 15 <= tarot.Score && tarot.Score < 40:
+		level = "小吉"
+	case 40 <= tarot.Score && tarot.Score < 60:
+		level = "中吉"
+	case 60 <= tarot.Score && tarot.Score < 85:
+		level = "大吉"
+	case 85 <= tarot.Score && tarot.Score < 100:
+		level = "大大吉"
+	case tarot.Score == 100:
+		level = "超吉"
+	default:
+		level = "?"
+	}
+	msg := fmt.Sprintf("[%s]抽了一根签\n", c.GetSenderNickname())
+	msg += fmt.Sprintf("运势指数:%d [%s]\n", tarot.Score, level)
+	msg += fmt.Sprintf("签上说:\n%s", tarot.Description)
+	_, _ = c.Reply(msg)
+
 }
