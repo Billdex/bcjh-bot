@@ -19,6 +19,7 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("ban", MustAdmin, BanUser)
 	g.Bind("allow", MustAdmin, AllowUser)
 	g.Bind("公告", MustSuperAdmin, CheckPluginState(true), PublicNotice)
+	g.Bind("改命", MustSuperAdmin, ForceTarot).Alias("转运")
 
 	// 其他查询功能
 	g.Bind("反馈", CheckPluginState(true), Feedback).Alias("建议")
