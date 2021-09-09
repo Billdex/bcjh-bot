@@ -1,11 +1,12 @@
-package service
+package messageservice
 
 import (
 	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
-	"bcjh-bot/model/onebot"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"bytes"
@@ -27,15 +28,9 @@ import (
 	"strings"
 )
 
-func EquipmentQuery(c *onebot.Context, args []string) {
-	logger.Info("厨具查询, 参数:", args)
-
-	if len(args) == 0 {
-		err := bot.SendMessage(c, recipeHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
-		return
+func EquipmentQuery(c *scheduler.Context) {
+	if strings.TrimSpace(c.PretreatedMessage) == "" {
+		_, _ = c.Reply(recipeHelp())
 	}
 
 	order := "稀有度"
@@ -45,8 +40,9 @@ func EquipmentQuery(c *onebot.Context, args []string) {
 	err := database.DB.Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(util.SystemErrorNote)
 	}
+	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
 	for _, arg := range args {
 		if arg == "" {
 			continue
@@ -56,14 +52,14 @@ func EquipmentQuery(c *onebot.Context, args []string) {
 			order = arg
 		default:
 			if util.HasPrefixIn(arg, "来源") {
-				origin := strings.Split(arg, util.ArgsConnectCharacter)
+				origin := strings.Split(arg, "-")
 				if len(origin) > 1 {
 					equips, note = filterEquipsByOrigin(equips, origin[1])
 				}
 			} else if util.HasPrefixIn(arg, "技能", "效果", "功能") {
-				skill := strings.Split(arg, util.ArgsConnectCharacter)
+				skill := strings.Split(arg, "-")
 				if len(skill) > 1 {
-					equips, note = filterEquipsBySkill(equips, strings.Join(skill[1:], util.ArgsConnectCharacter))
+					equips, note = filterEquipsBySkill(equips, strings.Join(skill[1:], "-"))
 				}
 			} else if util.HasPrefixIn(arg, "p", "P") {
 				pageNum, err := strconv.Atoi(arg[1:])
@@ -81,7 +77,7 @@ func EquipmentQuery(c *onebot.Context, args []string) {
 
 		if note != "" {
 			logger.Info("厨具查询失败:", note)
-			_ = bot.SendMessage(c, note)
+			_, _ = c.Reply(note)
 			return
 		}
 	}
@@ -90,16 +86,13 @@ func EquipmentQuery(c *onebot.Context, args []string) {
 	equips, note = orderEquips(equips, order)
 	if note != "" {
 		logger.Info("厨具查询失败:", note)
-		_ = bot.SendMessage(c, note)
+		_, _ = c.Reply(note)
 		return
 	}
 	// 根据结果翻页并发送消息
-	msg := echoEquipsMessage(equips, order, page, c.MessageType == util.OneBotMessagePrivate)
+	msg := echoEquipsMessage(equips, order, page, c.GetMessageType() == onebot.MessageTypePrivate)
 	logger.Info("发送菜谱查询结果:", msg)
-	err = bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
+	_, _ = c.Reply(msg)
 }
 
 // 根据厨具名或厨具ID筛选厨具
@@ -108,7 +101,7 @@ func filterEquipsByName(equips []database.Equip, name string) ([]database.Equip,
 	numId, err := strconv.Atoi(name)
 	if err != nil {
 		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
-		for i, _ := range equips {
+		for i := range equips {
 			re := regexp.MustCompile(pattern)
 			if re.MatchString(equips[i].Name) {
 				result = append(result, equips[i])
@@ -116,7 +109,7 @@ func filterEquipsByName(equips []database.Equip, name string) ([]database.Equip,
 		}
 	} else {
 		galleryId := fmt.Sprintf("%03d", numId)
-		for i, _ := range equips {
+		for i := range equips {
 			if equips[i].GalleryId == galleryId {
 				result = append(result, equips[i])
 			}
@@ -132,7 +125,7 @@ func filterEquipsByOrigin(equips []database.Equip, origin string) ([]database.Eq
 	}
 	result := make([]database.Equip, 0)
 	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
-	for i, _ := range equips {
+	for i := range equips {
 		re := regexp.MustCompile(pattern)
 		if re.MatchString(equips[i].Origin) {
 			result = append(result, equips[i])
@@ -154,7 +147,7 @@ func filterEquipsBySkill(equips []database.Equip, skill string) ([]database.Equi
 		logger.Error("查询数据库出错!", err)
 		return result, util.SystemErrorNote
 	}
-	for i, _ := range equips {
+	for i := range equips {
 		for _, skillId := range equips[i].Skills {
 			if _, ok := skills[skillId]; ok {
 				result = append(result, equips[i])
@@ -235,9 +228,9 @@ func echoEquipsMessage(equips []database.Equip, order string, page int, private 
 	} else {
 		logger.Debug("查询到多个厨具")
 		var msg string
-		listLength := util.MaxQueryListLength
+		listLength := config.AppConfig.Bot.GroupMsgLen
 		if private {
-			listLength = listLength * 2
+			listLength = config.AppConfig.Bot.PrivateMsgLen
 		}
 		maxPage := (len(equips)-1)/listLength + 1
 		if page > maxPage {
@@ -302,7 +295,7 @@ func echoEquipMessage(equip database.Equip) string {
 	return msg
 }
 
-func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) error {
+func EquipmentInfoToImage(equips []database.Equip, imgURL string, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 300          // 图鉴背景图片的高度
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
@@ -328,7 +321,7 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 	commonImgPath := resourceImgDir + "/common"
 	equipImgPath := resourceImgDir + "/equip"
 	galleryImagePath := equipImgPath + "/equip_gallery.png"
-	r, err := http.Get(util.EquipImageRetinaURL)
+	r, err := http.Get(imgURL)
 	if err != nil {
 		return err
 	}
@@ -377,7 +370,7 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 		c.SetFont(font)
 		c.SetClip(img.Bounds())
 		c.SetDst(img)
-		fontColor := color.RGBA{0, 0, 0, 255}
+		fontColor := color.RGBA{A: 255}
 		c.SetSrc(image.NewUniform(fontColor))
 
 		//	绘制ID与厨具名
@@ -395,7 +388,7 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 		draw.Draw(img,
 			image.Rect(530, 16, 530+240, 16+44),
 			rarityImg,
-			image.ZP,
+			image.Point{},
 			draw.Over)
 
 		//	绘制厨具图鉴图片
@@ -437,7 +430,7 @@ func EquipmentInfoToImage(equips []database.Equip, imgCSS *gamedata.ImgCSS) erro
 			draw.Draw(img,
 				image.Rect(270, 136+i*50, 270+60, 136+i*50+40),
 				rarityImg,
-				image.ZP,
+				image.Point{},
 				draw.Over)
 			pt = freetype.Pt(320, 138+i*50+fontSize)
 			_, err = c.DrawString(fmt.Sprintf("%s", skill.Description), pt)

@@ -14,10 +14,10 @@ func ComboQuery(c *onebot.Context, args []string) {
 	logger.Info("后厨合成菜前置菜谱查询，参数:", args)
 
 	if len(args) == 0 {
-		err := bot.SendMessage(c, comboHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
+		//err := bot.SendMessage(c, comboHelp())
+		//if err != nil {
+		//	logger.Error("发送信息失败!", err)
+		//}
 		return
 	}
 

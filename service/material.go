@@ -15,10 +15,10 @@ func MaterialQuery(c *onebot.Context, args []string) {
 	logger.Info("食材及效率查询:", args)
 
 	if len(args) == 0 {
-		err := bot.SendMessage(c, materialHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
+		//err := bot.SendMessage(c, materialHelp())
+		//if err != nil {
+		//	logger.Error("发送信息失败!", err)
+		//}
 		return
 	}
 	page := 1

@@ -18,15 +18,23 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("停用", MustAdmin, DisablePluginInGroup)
 	g.Bind("ban", MustAdmin, BanUser)
 	g.Bind("allow", MustAdmin, AllowUser)
+	g.Bind("更新", MustSuperAdmin, UpdateData)
 	g.Bind("公告", MustSuperAdmin, CheckPluginState(true), PublicNotice)
 	g.Bind("改命", MustSuperAdmin, ForceTarot).Alias("转运")
 
-	// 其他查询功能
+	// 查询功能
+	g.Bind("帮助", CheckPluginState(true), HelpGuide).Alias("功能", "说明", "指引", "使用说明")
 	g.Bind("反馈", CheckPluginState(true), Feedback).Alias("建议")
-	g.Bind("抽签", CheckPluginState(false), Tarot).Alias("占卜", "求签", "运势", "卜卦")
+	g.Bind("厨师", CheckPluginState(true), ChefQuery).Alias("厨子")
+	g.Bind("菜谱", CheckPluginState(true), RecipeQuery).Alias("食谱")
+	g.Bind("厨具", CheckPluginState(true), EquipmentQuery).Alias("装备", "道具")
+
+	// 娱乐功能
+	g.Bind("抽签", CheckPluginState(false), Tarot).Alias("占卜", "求签", "运势", "卜卦", "占卦")
 	g.Bind("reply", replyMessage)
 }
 
+// 测试用, 后续会删掉
 func replyMessage(c *scheduler.Context) {
 	msg := fmt.Sprintf("[消息类型]: %s\n", c.GetMessageType())
 	msg += fmt.Sprintf("[发送人]: %s\n", c.GetSenderNickname())

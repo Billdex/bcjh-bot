@@ -14,10 +14,10 @@ func StrategyQuery(c *onebot.Context, args []string) {
 	logger.Info("攻略查询, 参数:", args)
 
 	if len(args) == 0 {
-		err := bot.SendMessage(c, strategyHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
+		//err := bot.SendMessage(c, strategyHelp())
+		//if err != nil {
+		//	logger.Error("发送信息失败!", err)
+		//}
 		return
 	}
 

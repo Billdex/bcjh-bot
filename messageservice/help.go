@@ -1,22 +1,20 @@
-package service
+package messageservice
 
 import (
-	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
-	"bcjh-bot/model/onebot"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
-	"bcjh-bot/util/logger"
 	"fmt"
 	"strings"
 )
 
-func HelpGuide(c *onebot.Context, args []string) {
-	logger.Info("帮助查询, 参数:", args)
-
+func HelpGuide(c *scheduler.Context) {
 	var msg string
-	if len(args) >= 1 {
-		switch args[0] {
+	arg := strings.TrimSpace(c.PretreatedMessage)
+	if arg != "" {
+		switch arg {
 		case "帮助":
 			msg = introHelp()
 		case "反馈":
@@ -46,16 +44,12 @@ func HelpGuide(c *onebot.Context, args []string) {
 		case "攻略":
 			msg = strategyHelp()
 		default:
-			msg = "似乎还没有开发这个功能呢~"
+			msg = introHelp()
 		}
 	} else {
 		msg = introHelp()
 	}
-
-	err := bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
+	_, _ = c.Reply(msg)
 }
 
 // 功能指引
@@ -99,15 +93,8 @@ func galleryWebsiteHelp() string {
 // 游戏术语
 func termHelp() string {
 	var msg string
-	//msg += fmt.Sprintf("[爆炒江湖游戏术语]\n")
-	//msg += fmt.Sprintf("[技法]: 游戏内有炒、烤、煮、蒸、炸、切共6种技法，每道菜有1或2种技法属性，厨师技法达到菜谱所有要求即可做这道菜。\n")
-	//msg += fmt.Sprintf("[菜谱品阶]: 菜谱有可、优、特、神、传5个品阶, 当做菜的厨师达到菜谱所有技法要求的1、2、3、4、5倍时可达成对应品阶。" +
-	//	"不同品阶的金币收益不同，分别为100%%(可),110%%(优),130%%(特),150%%(神),200%%(传)\n")
-	//msg += fmt.Sprintf("[熟练/专精]: 营业制作的菜会增加菜谱熟练度, 品阶越高增加越多, 熟练度满后会提高一定售价。\n")
-	//msg += fmt.Sprintf("[碰瓷/升阶贵客]: 当一道菜首次提升至优、特、神时必来贵客(不需要做完整一组, 只需做一份即可), " +
-	//	"注意, 碰瓷过高品阶贵客后无法再碰瓷低品阶贵客, 如直接做到神级后, 便无法再碰瓷优和特品阶的贵客。")
 	termImagePath := config.AppConfig.Resource.Image + "/游戏术语.jpg"
-	CQImage := bot.GetCQImage(termImagePath, "file")
+	CQImage := onebot.GetCQImage(termImagePath, "file")
 	msg += fmt.Sprintf("%s", CQImage)
 	return msg
 }
@@ -141,16 +128,6 @@ func recipeHelp() string {
 	msg += fmt.Sprintf("示例:「%s菜谱 荷包蛋」\n", preChar)
 	msg += fmt.Sprintf("复合信息查询说明请看文档:\n")
 	msg += "http://bcjhbot.billdex.cn/#/usage/recipe"
-	//msg += fmt.Sprintf("『%s菜谱 查询条件-参数-筛选条件』\n", preChar)
-	//msg += fmt.Sprintf("示例:「%s菜谱 食材-茄子-3火-单时间-p2」\n", preChar)
-	//msg += fmt.Sprintf("即查询使用茄子的三火以上菜谱,按单时间排序,并显示第二页内容\n")
-	//msg += fmt.Sprintf("目前提供以下查询条件(可不填):\n")
-	//msg += fmt.Sprintf("食材, 技法, 贵客, 符文, 来源\n")
-	//msg += fmt.Sprintf("目前提供以下筛选条件(可不填或叠加):\n")
-	//msg += fmt.Sprintf("单价下限($100), 稀有度下限(3火/星), 页数(p5)\n")
-	//msg += fmt.Sprintf("目前提供以下排序方式\n")
-	//msg += fmt.Sprintf("单时间, 总时间, 单价, 金币效率, ")
-	//msg += fmt.Sprintf("耗材效率, 食材效率")
 	return msg
 }
 

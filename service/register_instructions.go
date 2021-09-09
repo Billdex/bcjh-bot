@@ -33,11 +33,6 @@ var Ins Instructions
 func RegisterInstructions() {
 	Ins = NewInstructions()
 	// 主功能
-	Ins.Bind(UpdateData, "更新数据", "更新")
-	Ins.Bind(HelpGuide, "帮助", "说明", "功能", "说明")
-	Ins.Bind(ChefQuery, "厨师", "厨子")
-	Ins.Bind(EquipmentQuery, "厨具", "装备")
-	Ins.Bind(RecipeQuery, "菜谱", "食谱")
 	Ins.Bind(MaterialQuery, "食材", "材料")
 	Ins.Bind(GuestQuery, "贵客", "稀有客人", "贵宾", "客人", "宾客", "稀客")
 	Ins.Bind(AntiqueQuery, "符文")

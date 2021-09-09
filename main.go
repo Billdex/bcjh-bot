@@ -4,6 +4,7 @@ import (
 	"bcjh-bot/config"
 	"bcjh-bot/messageservice"
 	"bcjh-bot/model/database"
+	"bcjh-bot/noticeservice"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/logger"
@@ -21,7 +22,7 @@ func main() {
 	fmt.Println("配置文件加载完毕")
 
 	// 初始化logger
-	err = logger.InitLog(config.AppConfig.Log.Style, config.AppConfig.Log.File, config.AppConfig.Log.Level)
+	err = logger.InitLog(config.AppConfig.Log.Style, config.AppConfig.Log.OutPath, config.AppConfig.Log.Level)
 	if err != nil {
 		fmt.Println("初始化logger出错！", err)
 		return
@@ -30,11 +31,10 @@ func main() {
 	logger.Info("初始化logger完毕")
 
 	// 初始化数据库引擎
-	connStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&loc=Local",
+	connStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&loc=Local",
 		config.AppConfig.DB.User,
 		config.AppConfig.DB.Password,
 		config.AppConfig.DB.Host,
-		config.AppConfig.DB.Port,
 		config.AppConfig.DB.Database,
 	)
 
@@ -46,9 +46,10 @@ func main() {
 	logger.Info("初始化数据库引擎完毕")
 
 	// 注册插件与启动服务
-	handler := onebot.Handler{}
+	handler := &onebot.Handler{}
 	s := scheduler.New()
 	messageservice.Register(s)
+	noticeservice.Register(handler)
 	port := strconv.Itoa(config.AppConfig.Server.Port)
 	_ = s.Serve(":"+port, "/", handler)
 }

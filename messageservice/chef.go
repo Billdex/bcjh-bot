@@ -1,11 +1,12 @@
-package service
+package messageservice
 
 import (
 	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
-	"bcjh-bot/model/onebot"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"bytes"
@@ -26,15 +27,9 @@ import (
 	"strings"
 )
 
-func ChefQuery(c *onebot.Context, args []string) {
-	logger.Info("厨师查询, 参数:", args)
-
-	if len(args) == 0 {
-		err := bot.SendMessage(c, chefHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
-		return
+func ChefQuery(c *scheduler.Context) {
+	if strings.TrimSpace(c.PretreatedMessage) == "" {
+		_, _ = c.Reply(chefHelp())
 	}
 
 	order := "稀有度"
@@ -44,8 +39,9 @@ func ChefQuery(c *onebot.Context, args []string) {
 	err := database.DB.Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(util.SystemErrorNote)
 	}
+	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
 	argCount := 0
 	for _, arg := range args {
 		switch arg {
@@ -63,14 +59,14 @@ func ChefQuery(c *onebot.Context, args []string) {
 			chefs, note = filterChefsByRarity(chefs, 5)
 		default:
 			if util.HasPrefixIn(arg, "来源") {
-				origin := strings.Split(arg, util.ArgsConnectCharacter)
+				origin := strings.Split(arg, "-")
 				if len(origin) > 1 {
 					chefs, note = filterChefsByOrigin(chefs, origin[1])
 				}
 			} else if util.HasPrefixIn(arg, "技能") {
-				skill := strings.Split(arg, util.ArgsConnectCharacter)
+				skill := strings.Split(arg, "-")
 				if len(skill) > 1 {
-					chefs, note = filterChefsBySkill(chefs, strings.Join(skill[1:], util.ArgsConnectCharacter))
+					chefs, note = filterChefsBySkill(chefs, strings.Join(skill[1:], "-"))
 				}
 			} else if util.HasPrefixIn(arg, "p", "P") {
 				pageNum, err := strconv.Atoi(arg[1:])
@@ -87,14 +83,14 @@ func ChefQuery(c *onebot.Context, args []string) {
 		}
 		if note != "" {
 			logger.Info("厨师查询失败:", note)
-			_ = bot.SendMessage(c, note)
+			_, _ = c.Reply(note)
 			return
 		}
 		argCount++
 	}
 
 	if argCount == 0 {
-		_ = bot.SendMessage(c, recipeHelp())
+		_, _ = c.Reply(recipeHelp())
 		return
 	}
 
@@ -102,17 +98,13 @@ func ChefQuery(c *onebot.Context, args []string) {
 	chefs, note = orderChefs(chefs, order)
 	if note != "" {
 		logger.Info("厨师查询失败:", note)
-		_ = bot.SendMessage(c, note)
+		_, _ = c.Reply(note)
 		return
 	}
 	// 根据查询结果分页并发送消息
-	msg := echoChefsMessage(chefs, order, page, c.MessageType == util.OneBotMessagePrivate)
+	msg := echoChefsMessage(chefs, order, page, c.GetMessageType() == onebot.MessageTypePrivate)
 	logger.Info("发送厨师查询结果:", msg)
-	err = bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
-
+	_, _ = c.Reply(msg)
 }
 
 // 根据厨师稀有度筛选厨师
@@ -121,7 +113,7 @@ func filterChefsByRarity(chefs []database.Chef, rarity int) ([]database.Chef, st
 		return chefs, ""
 	}
 	result := make([]database.Chef, 0)
-	for i, _ := range chefs {
+	for i := range chefs {
 		if chefs[i].Rarity == rarity {
 			result = append(result, chefs[i])
 		}
@@ -138,13 +130,13 @@ func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef,
 	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
 	// 单独增加在售礼包查询
 	if origin == "仅礼包" || origin == "在售礼包" {
-		for i, _ := range chefs {
+		for i := range chefs {
 			if chefs[i].Origin == "限时礼包" {
 				result = append(result, chefs[i])
 			}
 		}
 	} else {
-		for i, _ := range chefs {
+		for i := range chefs {
 			re := regexp.MustCompile(pattern)
 			if re.MatchString(chefs[i].Origin) {
 				result = append(result, chefs[i])
@@ -173,7 +165,7 @@ func filterChefsBySkill(chefs []database.Chef, skill string) ([]database.Chef, s
 		logger.Error("查询数据库出错!", err)
 		return result, util.SystemErrorNote
 	}
-	for i, _ := range chefs {
+	for i := range chefs {
 		if _, ok := skills[chefs[i].SkillId]; ok {
 			result = append(result, chefs[i])
 			continue
@@ -191,7 +183,7 @@ func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, str
 	numId, err := strconv.Atoi(name)
 	if err != nil {
 		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
-		for i, _ := range chefs {
+		for i := range chefs {
 			re := regexp.MustCompile(pattern)
 			if re.MatchString(chefs[i].Name) {
 				result = append(result, chefs[i])
@@ -202,7 +194,7 @@ func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, str
 			numId = numId + (3 - numId%3)
 		}
 		galleryId := fmt.Sprintf("%03d", numId)
-		for i, _ := range chefs {
+		for i := range chefs {
 			if chefs[i].GalleryId == galleryId {
 				result = append(result, chefs[i])
 			}
@@ -320,9 +312,9 @@ func echoChefsMessage(chefs []database.Chef, order string, page int, private boo
 	} else {
 		logger.Debug("查询到多个厨师")
 		var msg string
-		listLength := util.MaxQueryListLength
+		listLength := config.AppConfig.Bot.GroupMsgLen
 		if private {
-			listLength = listLength * 2
+			listLength = config.AppConfig.Bot.PrivateMsgLen
 		}
 		maxPage := (len(chefs)-1)/listLength + 1
 		if page > maxPage {
@@ -367,7 +359,7 @@ func getChefInfoWithOrder(chef database.Chef, order string) string {
 	}
 }
 
-func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
+func ChefInfoToImage(chefs []database.Chef, imgURL string, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 800          // 图鉴背景图片的高度
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
@@ -387,12 +379,12 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 	if err != nil {
 		return err
 	}
-	fontColor := color.RGBA{0, 0, 0, 255}
+	fontColor := color.RGBA{A: 255}
 	// 从图鉴网下载头像图鉴总图
 	resourceImgDir := config.AppConfig.Resource.Image
 	chefImgPath := resourceImgDir + "/chef"
 	galleryImagePath := chefImgPath + "/chef_gallery.png"
-	r, err := http.Get(util.ChefImageRetinaURL)
+	r, err := http.Get(imgURL)
 	if err != nil {
 		return err
 	}
@@ -448,9 +440,9 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 		if err != nil {
 			return err
 		}
-		defer bgFile.Close()
 		img := image.NewRGBA(image.Rect(0, 0, dx, dy))
 		bg, _ := png.Decode(bgFile)
+		bgFile.Close()
 
 		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Src)
 
@@ -496,12 +488,12 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 		if err != nil {
 			return err
 		}
-		defer genderFile.Close()
 		genderImg, _ := png.Decode(genderFile)
+		genderFile.Close()
 		draw.Draw(img,
 			image.Rect(490, 30, 490+44, 30+44),
 			genderImg,
-			image.ZP,
+			image.Point{},
 			draw.Over)
 
 		// 输出稀有度
@@ -509,12 +501,12 @@ func ChefInfoToImage(chefs []database.Chef, imgCSS *gamedata.ImgCSS) error {
 		if err != nil {
 			return err
 		}
-		defer rarityFile.Close()
 		rarityImg, _ := png.Decode(rarityFile)
+		rarityFile.Close()
 		draw.Draw(img,
 			image.Rect(545, 30, 545+240, 30+44),
 			rarityImg,
-			image.ZP,
+			image.Point{},
 			draw.Over)
 
 		c.SetFontSize(float64(fontSize))

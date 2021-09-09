@@ -16,9 +16,9 @@ func CondimentQuery(c *onebot.Context, args []string) {
 
 	// 无参数的情况
 	if len(args) == 0 {
-		if err := bot.SendMessage(c, condimentHelp()); err != nil {
-			logger.Error("发送信息失败!", err)
-		}
+		//if err := bot.SendMessage(c, condimentHelp()); err != nil {
+		//	logger.Error("发送信息失败!", err)
+		//}
 		return
 	}
 
