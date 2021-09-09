@@ -1,12 +1,9 @@
-package service
+package messageservice
 
 import (
-	"bcjh-bot/bot"
-	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
-	"bcjh-bot/model/onebot"
-	"bcjh-bot/util"
+	"bcjh-bot/scheduler"
 	"bcjh-bot/util/logger"
 	"encoding/json"
 	"errors"
@@ -19,44 +16,42 @@ import (
 	"time"
 )
 
-// 更新数据
-// 导出数据库数据->删库->插入新数据
-func UpdateData(c *onebot.Context, args []string) {
-	logger.Info("更新数据, 参数:", args)
+const (
+	foodGameGithubURLBase = "https://foodgame.github.io"
+	foodGameGiteeURLBase  = "https://foodgame.gitee.io"
+	bcjhURLBase           = "https://bcjh.gitee.io"
 
-	has, err := database.DB.Where("qq = ?", c.Sender.UserId).Exist(&database.Admin{})
-	if err != nil {
-		logger.Error("查询数据库出错", err)
-		return
+	dataURI        = "/data/data.min.json"
+	imageCSSURI    = "/css/image.css"
+	chefImageURI   = "/images/chef_retina.png"
+	recipeImageURI = "/images/recipe_retina.png"
+	equipImageURI  = "/images/equip_retina.png"
+)
+
+func UpdateData(c *scheduler.Context) {
+	var baseURL string
+	switch strings.TrimSpace(c.PretreatedMessage) {
+	case "github":
+		baseURL = foodGameGithubURLBase
+	case "gitee":
+		baseURL = foodGameGiteeURLBase
+	case "白菜菊花":
+		baseURL = bcjhURLBase
+	default:
+		baseURL = foodGameGiteeURLBase
 	}
-	if !has {
-		_ = bot.SendMessage(c, util.PermissionDeniedNote)
-		return
-	}
-	_ = bot.SendMessage(c, "开始更新数据")
+	_, _ = c.Reply(fmt.Sprintf("开始导入数据,数据源:\n%s", baseURL))
 	updateStart := time.Now().UnixNano()
-	start := time.Now().UnixNano()
-	dumpTime := time.Now().Format("200601021504")
-	DumpFilePath := config.AppConfig.DB.ExportDir + "/DBDataDump" + dumpTime + ".sql"
-	err = database.DB.DumpAllToFile(DumpFilePath)
-	if err != nil {
-		logger.Error("导出旧数据失败!", err)
-		_ = bot.SendMessage(c, "导出旧数据失败!")
-		return
-	}
-	dumpConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("导出旧数据完毕, 耗时%s", dumpConsume)
 
-	start = time.Now().UnixNano()
-	gameData, err := requestData()
+	start := time.Now().UnixNano()
+	gameData, err := requestData(baseURL + dataURI)
 	if err != nil {
 		logger.Error("获取图鉴网数据失败!", err)
-		_ = bot.SendMessage(c, "获取图鉴网数据失败!")
+		_, _ = c.Reply("获取图鉴网数据失败!")
 		return
 	}
 	requestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("获取图鉴网数据完毕, 耗时%s", requestConsume)
-	logger.Debug("数据内容为:%+v", gameData)
 
 	// 更新数据
 	// 更新厨师数据
@@ -64,7 +59,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateChefs(gameData.Chefs)
 	if err != nil {
 		logger.Error("更新厨师数据出错!", err)
-		_ = bot.SendMessage(c, "更新厨师数据出错!")
+		_, _ = c.Reply("更新厨师数据出错!")
 		return
 	}
 	chefConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -75,7 +70,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateEquips(gameData.Equips)
 	if err != nil {
 		logger.Error("更新厨具数据出错!", err)
-		_ = bot.SendMessage(c, "更新厨具数据出错!")
+		_, _ = c.Reply("更新厨具数据出错!")
 		return
 	}
 	equipConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -86,7 +81,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateRecipes(gameData.Recipes)
 	if err != nil {
 		logger.Error("更新菜谱数据出错!", err)
-		_ = bot.SendMessage(c, "更新菜谱数据出错!")
+		_, _ = c.Reply("更新菜谱数据出错!")
 		return
 	}
 	recipeConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -97,7 +92,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateCombos(gameData.Combos)
 	if err != nil {
 		logger.Error("更新后厨合成菜谱数据出错!", err)
-		_ = bot.SendMessage(c, "更新后厨合成菜谱数据出错!")
+		_, _ = c.Reply("更新后厨合成菜谱数据出错!")
 		return
 	}
 	comboConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -108,7 +103,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateGuests(gameData.Guests)
 	if err != nil {
 		logger.Error("更新贵客数据出错!", err)
-		_ = bot.SendMessage(c, "更新贵客数据出错!")
+		_, _ = c.Reply("更新贵客数据出错!")
 		return
 	}
 	guestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -119,7 +114,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateMaterials(gameData.Materials)
 	if err != nil {
 		logger.Error("更新食材数据出错!", err)
-		_ = bot.SendMessage(c, "更新食材数据出错!")
+		_, _ = c.Reply("更新食材数据出错!")
 		return
 	}
 	materialConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -130,7 +125,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateSkills(gameData.Skills)
 	if err != nil {
 		logger.Error("更新技能数据出错!", err)
-		_ = bot.SendMessage(c, "更新技能数据出错!")
+		_, _ = c.Reply("更新技能数据出错!")
 		return
 	}
 	skillConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -141,7 +136,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateDecorations(gameData.Decorations)
 	if err != nil {
 		logger.Error("更新装修家具数据出错!", err)
-		_ = bot.SendMessage(c, "更新装修家具数据出错!")
+		_, _ = c.Reply("更新装修家具数据出错!")
 		return
 	}
 	DecorationConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -152,7 +147,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateCondiments(gameData.Condiments)
 	if err != nil {
 		logger.Error("更新调料数据出错!", err)
-		_ = bot.SendMessage(c, "更新调料数据出错!")
+		_, _ = c.Reply("更新调料数据出错!")
 		return
 	}
 	CondimentConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -163,7 +158,7 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = updateQuests(gameData.Quests)
 	if err != nil {
 		logger.Error("更新任务数据出错!", err)
-		_ = bot.SendMessage(c, "更新任务数据出错!")
+		_, _ = c.Reply("更新任务数据出错!")
 		return
 	}
 	QuestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -171,10 +166,10 @@ func UpdateData(c *onebot.Context, args []string) {
 
 	// 解析ImgCSS数据
 	start = time.Now().UnixNano()
-	imgCSS, err := ResolvingImgCSS()
+	imgCSS, err := ResolvingImgCSS(baseURL + imageCSSURI)
 	if err != nil {
 		logger.Error("解析ImgCSS出错!", err)
-		_ = bot.SendMessage(c, "解析ImgCSS出错!")
+		_, _ = c.Reply("解析ImgCSS出错!")
 		return
 	}
 	imgCSSConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -186,13 +181,13 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = database.DB.Asc("gallery_id").Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "更新厨师图鉴图片数据出错!")
+		_, _ = c.Reply("更新厨师图鉴图片数据出错!")
 		return
 	}
-	err = ChefInfoToImage(chefs, imgCSS)
+	err = ChefInfoToImage(chefs, baseURL+chefImageURI, imgCSS)
 	if err != nil {
 		logger.Error("更新厨师图鉴图片数据出错!", err)
-		_ = bot.SendMessage(c, "更新厨师图鉴图片数据出错!")
+		_, _ = c.Reply("更新厨师图鉴图片数据出错!")
 		return
 	}
 	chefImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -204,13 +199,13 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = database.DB.Asc("gallery_id").Find(&recipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "更新菜谱图鉴图片数据出错!")
+		_, _ = c.Reply("更新菜谱图鉴图片数据出错!")
 		return
 	}
-	err = RecipeInfoToImage(recipes, imgCSS)
+	err = RecipeInfoToImage(recipes, baseURL+recipeImageURI, imgCSS)
 	if err != nil {
 		logger.Error("更新菜谱图鉴图片数据出错!", err)
-		_ = bot.SendMessage(c, "更新菜谱图鉴图片数据出错!")
+		_, _ = c.Reply("更新菜谱图鉴图片数据出错!")
 		return
 	}
 	recipeImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -222,13 +217,13 @@ func UpdateData(c *onebot.Context, args []string) {
 	err = database.DB.Asc("gallery_id").Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "更新厨具图鉴图片数据出错!")
+		_, _ = c.Reply("更新厨具图鉴图片数据出错!")
 		return
 	}
-	err = EquipmentInfoToImage(equips, imgCSS)
+	err = EquipmentInfoToImage(equips, baseURL+equipImageURI, imgCSS)
 	if err != nil {
 		logger.Error("更新厨具图鉴图片数据出错!", err)
-		_ = bot.SendMessage(c, "更新厨具图鉴图片数据出错!")
+		_, _ = c.Reply("更新厨具图鉴图片数据出错!")
 		return
 	}
 	equipImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
@@ -239,7 +234,6 @@ func UpdateData(c *onebot.Context, args []string) {
 	var strBdr = strings.Builder{}
 	updateConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-updateStart)/1e9)
 	strBdr.WriteString(fmt.Sprintf("更新数据完毕, 累计耗时%s\n", updateConsume))
-	strBdr.WriteString(fmt.Sprintf("导出旧数据耗时%s\n", dumpConsume))
 	strBdr.WriteString(fmt.Sprintf("抓取图鉴网数据耗时%s\n", requestConsume))
 	strBdr.WriteString(fmt.Sprintf("更新厨师数据耗时%s\n", chefConsume))
 	strBdr.WriteString(fmt.Sprintf("更新厨具数据耗时%s\n", equipConsume))
@@ -255,16 +249,13 @@ func UpdateData(c *onebot.Context, args []string) {
 	strBdr.WriteString(fmt.Sprintf("更新厨师图鉴图片数据耗时%s\n", chefImgConsume))
 	strBdr.WriteString(fmt.Sprintf("更新菜谱图鉴图片数据耗时%s\n", recipeImgConsume))
 	strBdr.WriteString(fmt.Sprintf("更新厨具图鉴图片数据耗时%s", equipImgConsume))
-	err = bot.SendMessage(c, strBdr.String())
-	if err != nil {
-		logger.Error("发送消息失败!", err)
-	}
+	_, _ = c.Reply(strBdr.String())
 }
 
 // 从图鉴网爬取数据
-func requestData() (gamedata.GameData, error) {
+func requestData(url string) (gamedata.GameData, error) {
 	var gameData gamedata.GameData
-	r, err := http.Get(util.FoodGameDataURL)
+	r, err := http.Get(url)
 	if err != nil {
 		return gameData, err
 	}
@@ -288,7 +279,7 @@ func updateChefs(chefsData []gamedata.ChefData) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Chef).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	chefs := make([]database.Chef, 0)
@@ -326,7 +317,7 @@ func updateChefs(chefsData []gamedata.ChefData) error {
 	}
 	_, err = session.Insert(&chefs)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -344,7 +335,7 @@ func updateEquips(equipsData []gamedata.EquipData) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Equip).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	equips := make([]database.Equip, 0)
@@ -360,7 +351,7 @@ func updateEquips(equipsData []gamedata.EquipData) error {
 	}
 	_, err = session.Insert(&equips)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -379,14 +370,14 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Recipe).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	// 删除菜谱-食材关系
 	sql = fmt.Sprintf("DELETE FROM `%s`", new(database.RecipeMaterial).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	recipes := make([]database.Recipe, 0)
@@ -437,12 +428,12 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 	}
 	_, err = session.Insert(&materials)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	_, err = session.Insert(&recipes)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -461,18 +452,18 @@ func updateCombos(combosData []gamedata.ComboData) error {
 	recipes.Combo = "-"
 	_, err = session.Where("combo <> ?", "-").Update(recipes)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	for _, combo := range combosData {
 		comboRecipe := new(database.Recipe)
 		has, err := session.Where("recipe_id = ?", combo.RecipeId).Get(comboRecipe)
 		if err != nil {
-			session.Rollback()
+			_ = session.Rollback()
 			return err
 		}
 		if !has {
-			session.Rollback()
+			_ = session.Rollback()
 			return errors.New(fmt.Sprintf("未查询到后厨合成菜谱%d信息", combo.RecipeId))
 		}
 		for _, recipeId := range combo.Recipes {
@@ -480,7 +471,7 @@ func updateCombos(combosData []gamedata.ComboData) error {
 			recipe.Combo = comboRecipe.Name
 			_, err = session.Where("recipe_id = ?", recipeId).Update(recipe)
 			if err != nil {
-				session.Rollback()
+				_ = session.Rollback()
 				return err
 			}
 		}
@@ -500,7 +491,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.GuestGift).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	// 从guest表中获取预设的贵客编号
@@ -508,7 +499,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	err = database.DB.Find(&guestInfo)
 	if err != nil {
 		logger.Error("数据库查询出错", err)
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	guestMap := make(map[string]string)
@@ -529,7 +520,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	}
 	_, err = session.Insert(&guests)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -546,7 +537,7 @@ func updateMaterials(materialsData []gamedata.MaterialData) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Material).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	materials := make([]database.Material, 0)
@@ -559,7 +550,7 @@ func updateMaterials(materialsData []gamedata.MaterialData) error {
 	}
 	_, err = session.Insert(&materials)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -576,7 +567,7 @@ func updateSkills(skillsData []gamedata.SkillData) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Skill).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	skills := make([]database.Skill, 0)
@@ -600,7 +591,7 @@ func updateSkills(skillsData []gamedata.SkillData) error {
 	}
 	_, err = session.Insert(&skills)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -618,7 +609,7 @@ func updateDecorations(decorationsData []gamedata.Decoration) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Decoration).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	decorations := make([]database.Decoration, 0)
@@ -640,7 +631,7 @@ func updateDecorations(decorationsData []gamedata.Decoration) error {
 	}
 	_, err = session.Insert(&decorations)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -658,7 +649,7 @@ func updateCondiments(condimentsData []gamedata.Condiment) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Condiment).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	condiments := make([]database.Condiment, 0)
@@ -674,7 +665,7 @@ func updateCondiments(condimentsData []gamedata.Condiment) error {
 	}
 	_, err = session.Insert(&condiments)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -692,7 +683,7 @@ func updateQuests(questsData []gamedata.QuestData) error {
 	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Quest).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	quests := make([]database.Quest, 0)
@@ -715,7 +706,7 @@ func updateQuests(questsData []gamedata.QuestData) error {
 	}
 	_, err = session.Insert(&quests)
 	if err != nil {
-		session.Rollback()
+		_ = session.Rollback()
 		return err
 	}
 	err = session.Commit()
@@ -723,13 +714,13 @@ func updateQuests(questsData []gamedata.QuestData) error {
 }
 
 // 解析ImgCSS数据
-func ResolvingImgCSS() (*gamedata.ImgCSS, error) {
+func ResolvingImgCSS(cssURL string) (*gamedata.ImgCSS, error) {
 	imgCSS := new(gamedata.ImgCSS)
 	imgCSS.ChefImg = make(map[int]gamedata.ObjImgInfo)
 	imgCSS.RecipeImg = make(map[int]gamedata.ObjImgInfo)
 	imgCSS.EquipImg = make(map[int]gamedata.ObjImgInfo)
 
-	r, err := http.Get(util.FoodGameImageCSSURL)
+	r, err := http.Get(cssURL)
 	if err != nil {
 		return imgCSS, err
 	}

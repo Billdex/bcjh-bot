@@ -66,7 +66,7 @@ func (s *Scheduler) findHandler(message string) (string, []HandleFunc, string, b
 	return s.CmdGroup.SearchHandlerChain(strings.TrimSpace(message))
 }
 
-func (s *Scheduler) Serve(port string, path string, handler onebot.Handler) error {
+func (s *Scheduler) Serve(port string, path string, handler *onebot.Handler) error {
 	s.Engine = onebot.New(port, path)
 	handler.HandlePrivateMessage = func(bot *onebot.Bot, req *onebot.MessageEventPrivateReq) {
 		s.Process(bot, req)
@@ -74,5 +74,5 @@ func (s *Scheduler) Serve(port string, path string, handler onebot.Handler) erro
 	handler.HandleGroupMessage = func(bot *onebot.Bot, req *onebot.MessageEventGroupReq) {
 		s.Process(bot, req)
 	}
-	return s.Engine.Serve(handler)
+	return s.Engine.Serve(*handler)
 }

@@ -13,10 +13,10 @@ func GuestQuery(c *onebot.Context, args []string) {
 	logger.Info("贵客查询，参数:", args)
 
 	if len(args) == 0 {
-		err := bot.SendMessage(c, guestHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
+		//err := bot.SendMessage(c, guestHelp())
+		//if err != nil {
+		//	logger.Error("发送信息失败!", err)
+		//}
 		return
 	}
 	if args[0] == "%" {

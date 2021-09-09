@@ -1,11 +1,12 @@
-package service
+package messageservice
 
 import (
 	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
-	"bcjh-bot/model/onebot"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"bytes"
@@ -26,15 +27,10 @@ import (
 	"strings"
 )
 
-func RecipeQuery(c *onebot.Context, args []string) {
-	logger.Info("菜谱查询, 参数:", args)
+func RecipeQuery(c *scheduler.Context) {
 
-	if len(args) == 0 {
-		err := bot.SendMessage(c, recipeHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
-		return
+	if strings.TrimSpace(c.PretreatedMessage) == "" {
+		_, _ = c.Reply(chefHelp())
 	}
 
 	order := "稀有度"
@@ -44,8 +40,9 @@ func RecipeQuery(c *onebot.Context, args []string) {
 	err := database.DB.Find(&recipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(util.SystemErrorNote)
 	}
+	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
 	argCount := 0
 	for _, arg := range args {
 		if arg == "" {
@@ -80,31 +77,31 @@ func RecipeQuery(c *onebot.Context, args []string) {
 			recipes, note = filterRecipesByCondiment(recipes, strings.TrimSuffix(arg, "味"))
 		default:
 			if util.HasPrefixIn(arg, "食材", "材料") {
-				materials := strings.Split(arg, util.ArgsConnectCharacter)
+				materials := strings.Split(arg, "-")
 				recipes, note = filterRecipesByMaterials(recipes, materials[1:])
 			} else if util.HasPrefixIn(arg, "技法") {
-				skills := strings.Split(arg, util.ArgsConnectCharacter)
+				skills := strings.Split(arg, "-")
 				recipes, note = filterRecipesBySkills(recipes, skills[1:])
 			} else if util.HasPrefixIn(arg, "贵客", "稀有客人", "客人", "贵宾", "宾客", "稀客") {
-				guests := strings.Split(arg, util.ArgsConnectCharacter)
+				guests := strings.Split(arg, "-")
 				recipes, note = filterRecipesByGuests(recipes, guests[1:])
 			} else if util.HasPrefixIn(arg, "符文", "礼物") {
-				antiques := strings.Split(arg, util.ArgsConnectCharacter)
+				antiques := strings.Split(arg, "-")
 				if len(antiques) > 1 {
 					recipes, note = filterRecipesByAntique(recipes, antiques[1])
 				}
 			} else if util.HasPrefixIn(arg, "神级符文", "神级奖励") {
-				antiques := strings.Split(arg, util.ArgsConnectCharacter)
+				antiques := strings.Split(arg, "-")
 				if len(antiques) > 1 {
 					recipes, note = filterRecipesByUpgradeAntique(recipes, antiques[1])
 				}
 			} else if util.HasPrefixIn(arg, "来源") {
-				origins := strings.Split(arg, util.ArgsConnectCharacter)
+				origins := strings.Split(arg, "-")
 				if len(origins) > 1 {
 					recipes, note = filterRecipesByOrigin(recipes, origins[1])
 				}
 			} else if util.HasPrefixIn(arg, "调料", "调味", "味道") {
-				condiments := strings.Split(arg, util.ArgsConnectCharacter)
+				condiments := strings.Split(arg, "-")
 				if len(condiments) > 1 {
 					recipes, note = filterRecipesByCondiment(recipes, condiments[1])
 				}
@@ -131,30 +128,27 @@ func RecipeQuery(c *onebot.Context, args []string) {
 
 		if note != "" {
 			logger.Info("菜谱查询失败:", note)
-			_ = bot.SendMessage(c, note)
+			_, _ = c.Reply(note)
 			return
 		}
 		argCount++
 	}
 
 	if argCount == 0 {
-		_ = bot.SendMessage(c, recipeHelp())
+		_, _ = c.Reply(recipeHelp())
 		return
 	}
 	// 对菜谱查询结果排序
 	recipes, note = orderRecipes(recipes, order)
 	if note != "" {
 		logger.Info("菜谱查询失败:", note)
-		_ = bot.SendMessage(c, note)
+		_, _ = c.Reply(note)
 		return
 	}
 	// 根据结果翻页并发送消息
-	msg := echoRecipesMessage(recipes, order, page, c.MessageType == util.OneBotMessagePrivate)
+	msg := echoRecipesMessage(recipes, order, page, c.GetMessageType() == onebot.MessageTypePrivate)
 	logger.Info("发送菜谱查询结果:", msg)
-	err = bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
+	_, _ = c.Reply(msg)
 }
 
 // 根据稀有度下限筛选菜谱
@@ -163,7 +157,7 @@ func filterRecipesByLowerRarity(recipes []database.Recipe, rarity int) ([]databa
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
-	for i, _ := range recipes {
+	for i := range recipes {
 		if recipes[i].Rarity >= rarity {
 			result = append(result, recipes[i])
 		}
@@ -177,7 +171,7 @@ func filterRecipesByRarity(recipes []database.Recipe, rarity int) ([]database.Re
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
-	for i, _ := range recipes {
+	for i := range recipes {
 		if recipes[i].Rarity == rarity {
 			result = append(result, recipes[i])
 		}
@@ -253,7 +247,7 @@ func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]data
 			newRecipeMap[recipeMaterial.RecipeGalleryId] = recipeMap[recipeMaterial.RecipeGalleryId]
 		}
 	}
-	for k, _ := range newRecipeMap {
+	for k := range newRecipeMap {
 		result = append(result, newRecipeMap[k])
 	}
 	return result, ""
@@ -383,7 +377,7 @@ func filterRecipeByGuest(recipes []database.Recipe, guest string) ([]database.Re
 			newRecipeMap[guestGift.Recipe] = recipeMap[guestGift.Recipe]
 		}
 	}
-	for k, _ := range newRecipeMap {
+	for k := range newRecipeMap {
 		result = append(result, newRecipeMap[k])
 	}
 	return result, ""
@@ -443,7 +437,7 @@ func filterRecipesByAntique(recipes []database.Recipe, antique string) ([]databa
 			newRecipeMap[guestGift.Recipe] = recipeMap[guestGift.Recipe]
 		}
 	}
-	for k, _ := range newRecipeMap {
+	for k := range newRecipeMap {
 		result = append(result, newRecipeMap[k])
 	}
 	return result, ""
@@ -456,7 +450,7 @@ func filterRecipesByUpgradeAntique(recipes []database.Recipe, antique string) ([
 	}
 	result := make([]database.Recipe, 0)
 	pattern := ".*" + strings.ReplaceAll(antique, "%", ".*") + ".*"
-	for i, _ := range recipes {
+	for i := range recipes {
 		re := regexp.MustCompile(pattern)
 		if re.MatchString(recipes[i].Gift) {
 			result = append(result, recipes[i])
@@ -472,7 +466,7 @@ func filterRecipesByOrigin(recipes []database.Recipe, origin string) ([]database
 	}
 	result := make([]database.Recipe, 0)
 	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
-	for i, _ := range recipes {
+	for i := range recipes {
 		re := regexp.MustCompile(pattern)
 		if re.MatchString(recipes[i].Origin) {
 			result = append(result, recipes[i])
@@ -503,7 +497,7 @@ func filterRecipesByCondiment(recipes []database.Recipe, condiment string) ([]da
 	default:
 		return nil, fmt.Sprintf("%s是啥味道呀", condiment)
 	}
-	for i, _ := range recipes {
+	for i := range recipes {
 		if recipes[i].Condiment == condiment {
 			result = append(result, recipes[i])
 		}
@@ -517,7 +511,7 @@ func filterRecipesByName(recipes []database.Recipe, name string) ([]database.Rec
 	numId, err := strconv.Atoi(name)
 	if err != nil {
 		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
-		for i, _ := range recipes {
+		for i := range recipes {
 			re := regexp.MustCompile(pattern)
 			if re.MatchString(recipes[i].Name) {
 				result = append(result, recipes[i])
@@ -525,7 +519,7 @@ func filterRecipesByName(recipes []database.Recipe, name string) ([]database.Rec
 		}
 	} else {
 		galleryId := fmt.Sprintf("%03d", numId)
-		for i, _ := range recipes {
+		for i := range recipes {
 			if recipes[i].GalleryId == galleryId {
 				result = append(result, recipes[i])
 			}
@@ -537,7 +531,7 @@ func filterRecipesByName(recipes []database.Recipe, name string) ([]database.Rec
 // 根据菜谱单价筛选菜谱
 func filterRecipesByPrice(recipes []database.Recipe, price int) ([]database.Recipe, string) {
 	result := make([]database.Recipe, 0)
-	for i, _ := range recipes {
+	for i := range recipes {
 		if recipes[i].Price >= price {
 			result = append(result, recipes[i])
 		}
@@ -745,9 +739,9 @@ func echoRecipesMessage(recipes []database.Recipe, order string, page int, priva
 	} else {
 		logger.Debug("查询到多个菜谱")
 		var msg string
-		listLength := util.MaxQueryListLength
+		listLength := config.AppConfig.Bot.GroupMsgLen
 		if private {
-			listLength = listLength * 2
+			listLength = config.AppConfig.Bot.PrivateMsgLen
 		}
 		maxPage := (len(recipes)-1)/listLength + 1
 		if page > maxPage {
@@ -796,7 +790,7 @@ func getRecipeInfoWithOrder(recipe database.Recipe, order string) string {
 	}
 }
 
-func RecipeInfoToImage(recipes []database.Recipe, imgCSS *gamedata.ImgCSS) error {
+func RecipeInfoToImage(recipes []database.Recipe, imgURL string, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 800          // 图鉴背景图片的高度
 	magnification := 5 // 截取的图像相比图鉴网原始图片的放大倍数
@@ -822,7 +816,7 @@ func RecipeInfoToImage(recipes []database.Recipe, imgCSS *gamedata.ImgCSS) error
 	commonImgPath := resourceImgDir + "/common"
 	recipeImgPath := resourceImgDir + "/recipe"
 	galleryImagePath := recipeImgPath + "/recipe_gallery.png"
-	r, err := http.Get(util.RecipeImageRetinaURL)
+	r, err := http.Get(imgURL)
 	if err != nil {
 		return err
 	}
@@ -869,7 +863,7 @@ func RecipeInfoToImage(recipes []database.Recipe, imgCSS *gamedata.ImgCSS) error
 		c.SetFont(font)
 		c.SetClip(img.Bounds())
 		c.SetDst(img)
-		fontColor := color.RGBA{0, 0, 0, 255}
+		fontColor := color.RGBA{A: 255}
 		c.SetSrc(image.NewUniform(fontColor))
 
 		// 输出图鉴ID与菜谱名
@@ -902,11 +896,11 @@ func RecipeInfoToImage(recipes []database.Recipe, imgCSS *gamedata.ImgCSS) error
 		draw.Draw(img,
 			image.Rect(50, 310, 50+240, 310+44),
 			rarityImg,
-			image.ZP,
+			image.Point{},
 			draw.Over)
 
 		// 输出单价信息
-		fontColor = color.RGBA{45, 45, 45, 255}
+		fontColor = color.RGBA{R: 45, G: 45, B: 45, A: 255}
 		c.SetSrc(image.NewUniform(fontColor))
 		c.SetFontSize(float64(fontSize))
 		pt = freetype.Pt(435, 105+fontSize)
@@ -914,14 +908,14 @@ func RecipeInfoToImage(recipes []database.Recipe, imgCSS *gamedata.ImgCSS) error
 		if err != nil {
 			return err
 		}
-		fontColor = color.RGBA{120, 120, 120, 255}
+		fontColor = color.RGBA{R: 120, G: 120, B: 120, A: 255}
 		c.SetSrc(image.NewUniform(fontColor))
 		pt = freetype.Pt(515, 105+fontSize)
 		_, err = c.DrawString(fmt.Sprintf("+%d", recipe.ExPrice), pt)
 		if err != nil {
 			return err
 		}
-		fontColor = color.RGBA{45, 45, 45, 255}
+		fontColor = color.RGBA{R: 45, G: 45, B: 45, A: 255}
 		c.SetSrc(image.NewUniform(fontColor))
 		// 输出金币效率
 		pt = freetype.Pt(626, 105+fontSize)
@@ -957,7 +951,7 @@ func RecipeInfoToImage(recipes []database.Recipe, imgCSS *gamedata.ImgCSS) error
 		draw.Draw(img,
 			image.Rect(370, 310, 370+61, 310+53),
 			condimentImg,
-			image.ZP,
+			image.Point{},
 			draw.Over)
 
 		// 输出技法
@@ -1012,7 +1006,7 @@ func RecipeInfoToImage(recipes []database.Recipe, imgCSS *gamedata.ImgCSS) error
 			draw.Draw(img,
 				image.Rect(460+i*170, 310, 460+i*170+140, 310+53),
 				skillImg,
-				image.ZP,
+				image.Point{},
 				draw.Over)
 			pt = freetype.Pt(525+i*170, 315+fontSize)
 			_, err = c.DrawString(fmt.Sprintf("%d", skill.Value), pt)

@@ -29,6 +29,8 @@ type Bot struct {
 type Handler struct {
 	HandlePrivateMessage func(bot *Bot, req *MessageEventPrivateReq)
 	HandleGroupMessage   func(bot *Bot, req *MessageEventGroupReq)
+
+	HandleGroupRecallNotice func(bot *Bot, req *NoticeEventGroupRecall)
 }
 
 type MessageHandler func(bot *Bot, data []byte)
@@ -91,7 +93,19 @@ func (bot *Bot) handleMessageEvent(data []byte) {
 }
 
 func (bot *Bot) handleNoticeEvent(data []byte) {
+	noticeType := gjson.Get(string(data), "notice_type").String()
+	switch noticeType {
+	case NoticeTypeGroupRecall:
+		if bot.OnebotHandler.HandleGroupRecallNotice != nil {
+			req := &NoticeEventGroupRecall{}
+			if err := json.Unmarshal(data, req); err != nil {
+				log.Errorf("解析群撤回消息出错: %v, 原始json数据: %s\n", err, string(data))
+				return
+			}
+			bot.OnebotHandler.HandleGroupRecallNotice(bot, req)
+		}
 
+	}
 }
 
 func (bot *Bot) handleRequestEvent(data []byte) {
@@ -100,6 +114,57 @@ func (bot *Bot) handleRequestEvent(data []byte) {
 
 func (bot *Bot) handleMetaEvent(data []byte) {
 
+}
+
+func (bot *Bot) ActionRequestAPI(action string, params interface{}) ([]byte, error) {
+	req := actionApiReq{
+		Action: action,
+		Params: params,
+	}
+	key := fmt.Sprintf(apiResponseMapKey, action, time.Now().UnixNano(), rand.Intn(100))
+	req.Echo = key
+	recvChan := make(chan []byte, 1)
+	bot.apiResMux.Lock()
+	bot.apiResponse[key] = recvChan
+	bot.apiResMux.Unlock()
+	defer func() {
+		bot.apiResMux.Lock()
+		delete(bot.apiResponse, key)
+		bot.apiResMux.Unlock()
+		close(recvChan)
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+	sendMsg, err := json.Marshal(&req)
+	if err != nil {
+		return nil, err
+	}
+	err = bot.Session.Send(sendMsg)
+	if err != nil {
+		return nil, err
+	}
+	select {
+	case data := <-recvChan:
+		return []byte(gjson.Get(string(data), "data").String()), nil
+	case <-ctx.Done():
+		return nil, errors.New("超时未收到返回数据")
+	}
+}
+
+func (bot *Bot) GetMsgInfo(messageId int32) (MsgInfo, error) {
+	reqData := getMsgInfoParams{
+		MessageId: messageId,
+	}
+	data, err := bot.ActionRequestAPI("get_msg", reqData)
+	if err != nil {
+		return MsgInfo{}, err
+	}
+	resp := MsgInfo{}
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return MsgInfo{}, err
+	}
+	return resp, nil
 }
 
 func (bot *Bot) GetGroupList() ([]GroupInfo, error) {

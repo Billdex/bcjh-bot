@@ -15,9 +15,19 @@ var pluginStateMap = make(map[string]bool)
 var pluginStateMux sync.Mutex
 
 var pluginList = map[string][]string{
-	"公告": {},
+	// 管理功能
+	"公告":  {},
+	"防撤回": {},
+
+	// 查询功能
+	"帮助": {"功能", "说明", "指引", "使用说明"},
 	"反馈": {"建议"},
-	"抽签": {"占卜", "求签", "运势", "卜卦"},
+	"厨师": {"厨子"},
+	"菜谱": {"食谱", "菜单"},
+	"厨具": {"装备", "道具"},
+
+	// 娱乐功能
+	"抽签": {"占卜", "求签", "运势", "卜卦", "占卦"},
 }
 
 var pluginAliasComparison = make(map[string]string)
