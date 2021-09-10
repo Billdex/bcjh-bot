@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -65,4 +66,26 @@ func WhatPrefixIn(s string, prefix ...string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func GetDirAllSqlFile(dir string) ([]string, error) {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	sqlFiles := make([]string, 0)
+	for _, file := range files {
+		if file.IsDir() {
+			fileList, err := GetDirAllSqlFile(fmt.Sprintf("%s/%s", dir, file.Name()))
+			if err != nil {
+				return nil, err
+			}
+			sqlFiles = append(sqlFiles, fileList...)
+		} else {
+			if strings.HasSuffix(file.Name(), ".sql") {
+				sqlFiles = append(sqlFiles, file.Name())
+			}
+		}
+	}
+	return sqlFiles, nil
 }

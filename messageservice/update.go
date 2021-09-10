@@ -1,9 +1,11 @@
 package messageservice
 
 import (
+	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
+	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"encoding/json"
 	"errors"
@@ -13,7 +15,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+	"xorm.io/xorm"
 )
 
 const (
@@ -28,7 +32,29 @@ const (
 	equipImageURI  = "/images/equip_retina.png"
 )
 
+var updateState = false
+var updateMux sync.Mutex
+
+func setUpdateState(state bool) {
+	updateMux.Lock()
+	defer updateMux.Unlock()
+	updateState = state
+}
+
+func getUpdateState() bool {
+	updateMux.Lock()
+	defer updateMux.Unlock()
+	return updateState
+}
+
 func UpdateData(c *scheduler.Context) {
+	// 防止在未更新完毕的情况下调用更新
+	if getUpdateState() {
+		_, _ = c.Reply("数据正在更新中")
+		return
+	}
+	setUpdateState(true)
+	defer setUpdateState(false)
 	var baseURL string
 	switch strings.TrimSpace(c.PretreatedMessage) {
 	case "github":
@@ -40,7 +66,7 @@ func UpdateData(c *scheduler.Context) {
 	default:
 		baseURL = foodGameGiteeURLBase
 	}
-	_, _ = c.Reply(fmt.Sprintf("开始导入数据,数据源:\n%s", baseURL))
+	_, _ = c.Reply(fmt.Sprintf("开始导入数据, 数据源:\n%s", baseURL))
 	updateStart := time.Now().UnixNano()
 
 	start := time.Now().UnixNano()
@@ -52,6 +78,17 @@ func UpdateData(c *scheduler.Context) {
 	}
 	requestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
 	logger.Infof("获取图鉴网数据完毕, 耗时%s", requestConsume)
+
+	// 导入sql数据
+	start = time.Now().UnixNano()
+	err = importDirAllSqlFile(database.DB, config.AppConfig.Resource.Sql)
+	if err != nil {
+		logger.Error("导入预配置sql数据出错!", err)
+		_, _ = c.Reply("导入预配置sql数据出错!")
+		return
+	}
+	importSqlConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
+	logger.Infof("导入预配置sql数据完毕, 耗时%s", importSqlConsume)
 
 	// 更新数据
 	// 更新厨师数据
@@ -235,6 +272,7 @@ func UpdateData(c *scheduler.Context) {
 	updateConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-updateStart)/1e9)
 	strBdr.WriteString(fmt.Sprintf("更新数据完毕, 累计耗时%s\n", updateConsume))
 	strBdr.WriteString(fmt.Sprintf("抓取图鉴网数据耗时%s\n", requestConsume))
+	strBdr.WriteString(fmt.Sprintf("导入预配置sql数据耗时%s\n", importSqlConsume))
 	strBdr.WriteString(fmt.Sprintf("更新厨师数据耗时%s\n", chefConsume))
 	strBdr.WriteString(fmt.Sprintf("更新厨具数据耗时%s\n", equipConsume))
 	strBdr.WriteString(fmt.Sprintf("更新菜谱数据耗时%s\n", recipeConsume))
@@ -266,6 +304,21 @@ func requestData(url string) (gamedata.GameData, error) {
 	}
 	err = json.Unmarshal(body, &gameData)
 	return gameData, err
+}
+
+// 导入预配置sql
+func importDirAllSqlFile(engine *xorm.Engine, dir string) error {
+	files, err := util.GetDirAllSqlFile(dir)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		_, err = engine.ImportFile(file)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // 更新厨师信息
