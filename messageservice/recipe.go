@@ -31,6 +31,7 @@ func RecipeQuery(c *scheduler.Context) {
 
 	if strings.TrimSpace(c.PretreatedMessage) == "" {
 		_, _ = c.Reply(chefHelp())
+		return
 	}
 
 	order := "稀有度"
