@@ -33,7 +33,6 @@ var Ins Instructions
 func RegisterInstructions() {
 	Ins = NewInstructions()
 	// 主功能
-	Ins.Bind(MaterialQuery, "食材", "材料")
 	Ins.Bind(GuestQuery, "贵客", "稀有客人", "贵宾", "客人", "宾客", "稀客")
 	Ins.Bind(AntiqueQuery, "符文")
 	Ins.Bind(CondimentQuery, "调料")
@@ -45,11 +44,4 @@ func RegisterInstructions() {
 	Ins.Bind(StrategyQuery, "攻略")
 	Ins.Bind(ExchangeQuery, "兑换码", "玉璧")
 
-	// 辅助信息
-	Ins.Bind(GalleryWebsite, "图鉴网", "图鉴")
-	Ins.Bind(TermInfo, "游戏术语", "术语", "黑话")
-	Ins.Bind(BCJHAppDownload, "白菜菊花")
-	Ins.Bind(Calculator, "计算器", "计算机")
-	Ins.Bind(BanRandomGif, "涩图", "色图")
-	Ins.Bind(Tarot, "占卜", "抽签", "求签", "运势")
 }

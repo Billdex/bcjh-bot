@@ -152,59 +152,33 @@ func (bot *Bot) ActionRequestAPI(action string, params interface{}) ([]byte, err
 }
 
 func (bot *Bot) GetMsgInfo(messageId int32) (MsgInfo, error) {
-	reqData := getMsgInfoParams{
+	params := getMsgInfoParams{
 		MessageId: messageId,
 	}
-	data, err := bot.ActionRequestAPI("get_msg", reqData)
+	data, err := bot.ActionRequestAPI("get_msg", params)
 	if err != nil {
 		return MsgInfo{}, err
 	}
-	resp := MsgInfo{}
-	err = json.Unmarshal(data, &resp)
+	msg := MsgInfo{}
+	err = json.Unmarshal(data, &msg)
 	if err != nil {
 		return MsgInfo{}, err
 	}
-	return resp, nil
+	return msg, nil
 }
 
 func (bot *Bot) GetGroupList() ([]GroupInfo, error) {
-	req := actionApiReq{
-		Action: "get_group_list",
-	}
-	key := fmt.Sprintf(apiResponseMapKey, req.Action, time.Now().UnixNano(), rand.Intn(100))
-	req.Echo = key
-	recvChan := make(chan []byte, 1)
-	bot.apiResMux.Lock()
-	bot.apiResponse[key] = recvChan
-	bot.apiResMux.Unlock()
-	defer func() {
-		bot.apiResMux.Lock()
-		delete(bot.apiResponse, key)
-		bot.apiResMux.Unlock()
-		close(recvChan)
-	}()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	sendMsg, err := json.Marshal(&req)
+	var params interface{}
+	data, err := bot.ActionRequestAPI("get_group_list", params)
 	if err != nil {
 		return nil, err
 	}
-	err = bot.Session.Send(sendMsg)
+	groups := make([]GroupInfo, 0)
+	err = json.Unmarshal(data, &groups)
 	if err != nil {
 		return nil, err
 	}
-	select {
-	case data := <-recvChan:
-		var groups getGroupListResp
-		err := json.Unmarshal(data, &groups)
-		if err != nil {
-			return nil, err
-		} else {
-			return groups.Data, nil
-		}
-	case <-ctx.Done():
-		return nil, errors.New("超时未收到返回数据")
-	}
+	return groups, nil
 }
 
 func (bot *Bot) SendPrivateMessage(userId int64, message string) (int32, error) {

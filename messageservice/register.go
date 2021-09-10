@@ -22,12 +22,19 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("公告", MustSuperAdmin, CheckPluginState(true), PublicNotice)
 	g.Bind("改命", MustSuperAdmin, ForceTarot).Alias("转运")
 
-	// 查询功能
+	// 常规查询
 	g.Bind("帮助", CheckPluginState(true), HelpGuide).Alias("功能", "说明", "指引", "使用说明")
 	g.Bind("反馈", CheckPluginState(true), Feedback).Alias("建议")
 	g.Bind("厨师", CheckPluginState(true), ChefQuery).Alias("厨子")
 	g.Bind("菜谱", CheckPluginState(true), RecipeQuery).Alias("食谱")
 	g.Bind("厨具", CheckPluginState(true), EquipmentQuery).Alias("装备", "道具")
+	g.Bind("食材", CheckPluginState(true), MaterialQuery).Alias("材料")
+
+	// 快捷查询
+	g.Bind("图鉴网", GalleryWebsite).Alias("图鉴")
+	g.Bind("白菜菊花", BCJHAppDownload)
+	g.Bind("计算器", Calculator).Alias("计算机")
+	g.Bind("游戏术语", TermInfo).Alias("黑话", "术语")
 
 	// 娱乐功能
 	g.Bind("抽签", CheckPluginState(false), Tarot).Alias("占卜", "求签", "运势", "卜卦", "占卦")

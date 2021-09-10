@@ -93,7 +93,7 @@ func galleryWebsiteHelp() string {
 // 游戏术语
 func termHelp() string {
 	var msg string
-	termImagePath := config.AppConfig.Resource.Image + "/游戏术语.jpg"
+	termImagePath := config.AppConfig.Resource.Shortcut + "/游戏术语.jpg"
 	CQImage := onebot.GetCQImage(termImagePath, "file")
 	msg += fmt.Sprintf("%s", CQImage)
 	return msg

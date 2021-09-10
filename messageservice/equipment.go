@@ -31,6 +31,7 @@ import (
 func EquipmentQuery(c *scheduler.Context) {
 	if strings.TrimSpace(c.PretreatedMessage) == "" {
 		_, _ = c.Reply(recipeHelp())
+		return
 	}
 
 	order := "稀有度"

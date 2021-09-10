@@ -1,9 +1,10 @@
-package service
+package messageservice
 
 import (
-	"bcjh-bot/bot"
+	"bcjh-bot/config"
 	"bcjh-bot/model/database"
-	"bcjh-bot/model/onebot"
+	"bcjh-bot/scheduler"
+	onebot2 "bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"fmt"
@@ -11,16 +12,12 @@ import (
 	"strings"
 )
 
-func MaterialQuery(c *onebot.Context, args []string) {
-	logger.Info("食材及效率查询:", args)
-
-	if len(args) == 0 {
-		//err := bot.SendMessage(c, materialHelp())
-		//if err != nil {
-		//	logger.Error("发送信息失败!", err)
-		//}
+func MaterialQuery(c *scheduler.Context) {
+	if strings.TrimSpace(c.PretreatedMessage) == "" {
+		_, _ = c.Reply(materialHelp())
 		return
 	}
+	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
 	page := 1
 	if len(args) > 1 {
 		if strings.HasPrefix(args[1], "p") || strings.HasPrefix(args[1], "P") {
@@ -40,14 +37,11 @@ func MaterialQuery(c *onebot.Context, args []string) {
 	err := database.DB.Where("name like ?", "%"+args[0]+"%").Find(&materials)
 	if err != nil {
 		logger.Error("数据库查询出错!")
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(util.SystemErrorNote)
 		return
 	}
 	if len(materials) == 0 {
-		err := bot.SendMessage(c, fmt.Sprintf("没有找到叫%s的食材", args[0]))
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
+		_, _ = c.Reply(fmt.Sprintf("没有找到叫%s的食材", args[0]))
 		return
 	}
 	// 匹配大于1个时，如果有完全匹配的则直接使用该食材
@@ -63,7 +57,7 @@ func MaterialQuery(c *onebot.Context, args []string) {
 			msg += fmt.Sprintf("\n%s %s", material.Name, material.Origin)
 		}
 		if !match {
-			_ = bot.SendMessage(c, msg)
+			_, _ = c.Reply(msg)
 			return
 		}
 	}
@@ -72,14 +66,11 @@ func MaterialQuery(c *onebot.Context, args []string) {
 	err = database.DB.Where("material_id = ?", materials[0].MaterialId).Find(&recipeMaterials)
 	if err != nil {
 		logger.Error("数据库查询出错!")
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(util.SystemErrorNote)
 		return
 	}
 	if len(recipeMaterials) == 0 {
-		err := bot.SendMessage(c, fmt.Sprintf("没有使用%s的菜谱哦~", args[0]))
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
+		_, _ = c.Reply(fmt.Sprintf("没有使用%s的菜谱哦~", args[0]))
 		return
 	}
 
@@ -95,26 +86,26 @@ func MaterialQuery(c *onebot.Context, args []string) {
 	err = database.DB.In("gallery_id", recipeGalleryIds).Find(&recipes)
 	if err != nil {
 		logger.Error("数据库查询出错!")
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(util.SystemErrorNote)
 		return
 	}
 
-	for i, _ := range recipes {
+	for i := range recipes {
 		recipes[i].MaterialEfficiency = recipeMaterialMap[recipes[i].GalleryId]
 	}
 
 	var note string
 	recipes, note = orderRecipes(recipes, "耗材效率")
 	if note != "" {
-		_ = bot.SendMessage(c, note)
+		_, _ = c.Reply(note)
 		return
 	}
 
 	// 处理消息
 	var msg string
-	listLength := util.MaxQueryListLength
-	if c.MessageType == util.OneBotMessagePrivate {
-		listLength = listLength * 2
+	listLength := config.AppConfig.Bot.GroupMsgLen
+	if c.GetMessageType() == onebot2.MessageTypePrivate {
+		listLength = config.AppConfig.Bot.PrivateMsgLen
 	}
 	maxPage := (len(recipes)-1)/listLength + 1
 	if page > maxPage {
@@ -136,8 +127,5 @@ func MaterialQuery(c *onebot.Context, args []string) {
 		msg += "\n......"
 	}
 	logger.Info("发送食材效率查询结果:", msg)
-	err = bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
+	_, _ = c.Reply(msg)
 }
