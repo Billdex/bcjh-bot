@@ -52,8 +52,9 @@ func InitConfig() error {
 			Port: 5800,
 		},
 		Bot: botConfig{
-			PrivateMsgMaxLen: 20,
-			GroupMsgMaxLen:   10,
+			PrivateMsgMaxLen:  20,
+			GroupMsgMaxLen:    10,
+			ExchangeMsgMaxLen: 3,
 		},
 		DB: dbConfig{
 			Host:     "127.0.0.1:3306",
