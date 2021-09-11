@@ -1,6 +1,8 @@
 package config
 
 import (
+	"bcjh-bot/util"
+	"fmt"
 	"gopkg.in/ini.v1"
 )
 
@@ -44,11 +46,6 @@ type appConfig struct {
 var AppConfig *appConfig
 
 func InitConfig() error {
-	cfg, err := ini.Load("./config/app.ini")
-	if nil != err {
-		return err
-	}
-
 	AppConfig = &appConfig{
 		Server: serverConfig{
 			Port: 5800,
@@ -73,10 +70,61 @@ func InitConfig() error {
 			OutPath: "./logs/bcjh-bot.log",
 		},
 	}
+	path := "./config/app.ini"
+	has, err := util.PathExists(path)
+	if !has {
+		err := initDefaultConfig(path)
+		if err != nil {
+			return fmt.Errorf("未找到配置文件, 生成默认配置文件出错! %s", err)
+		}
+		return fmt.Errorf("未找到配置文件, 已生成默认配置文件")
+	}
+	cfg, err := ini.Load(path)
+	if nil != err {
+		return fmt.Errorf("加载配置文件出错! %s", err)
+	}
+
 	err = cfg.MapTo(AppConfig)
 	if nil != err {
 		return err
 	}
 
+	return nil
+}
+
+func initDefaultConfig(path string) error {
+	defaultConfig := &appConfig{
+		Server: serverConfig{
+			Port: 5800,
+		},
+		Bot: botConfig{
+			PrivateMsgLen: 20,
+			GroupMsgLen:   10,
+		},
+		DB: dbConfig{
+			Host:     "127.0.0.1:3306",
+			Database: "bcjh",
+			User:     "root",
+			Password: "",
+		},
+		Resource: resourceConfig{
+			Image: "/home/bcjh-bot/resource/image/",
+			Font:  "/home/bcjh-bot/resource/font",
+		},
+		Log: logConfig{
+			Style:   "CONSOLE",
+			Level:   "INFO",
+			OutPath: "./logs/bcjh-bot.log",
+		},
+	}
+	cfg := ini.Empty()
+	err := ini.ReflectFrom(cfg, defaultConfig)
+	if err != nil {
+		return err
+	}
+	err = cfg.SaveTo(path)
+	if err != nil {
+		return err
+	}
 	return nil
 }
