@@ -313,9 +313,9 @@ func echoChefsMessage(chefs []database.Chef, order string, page int, private boo
 	} else {
 		logger.Debug("查询到多个厨师")
 		var msg string
-		listLength := config.AppConfig.Bot.GroupMsgLen
+		listLength := config.AppConfig.Bot.GroupMsgMaxLen
 		if private {
-			listLength = config.AppConfig.Bot.PrivateMsgLen
+			listLength = config.AppConfig.Bot.PrivateMsgMaxLen
 		}
 		maxPage := (len(chefs)-1)/listLength + 1
 		if page > maxPage {

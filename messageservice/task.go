@@ -1,9 +1,8 @@
-package service
+package messageservice
 
 import (
-	"bcjh-bot/bot"
 	"bcjh-bot/model/database"
-	"bcjh-bot/model/onebot"
+	"bcjh-bot/scheduler"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"fmt"
@@ -13,11 +12,11 @@ import (
 )
 
 // 任务查询
-func QuestQuery(c *onebot.Context, args []string) {
+func TaskQuery(c *scheduler.Context) {
 	var str string
 	for _, prefix := range util.PrefixCharacters {
-		if strings.HasPrefix(c.RawMessage, prefix) {
-			str = c.RawMessage[len(prefix):]
+		if strings.HasPrefix(c.GetRawMessage(), prefix) {
+			str = c.GetRawMessage()[len(prefix):]
 			break
 		}
 	}
@@ -27,7 +26,7 @@ func QuestQuery(c *onebot.Context, args []string) {
 
 	// 不满足匹配条件
 	if len(allIndexes) == 0 {
-		_ = bot.SendMessage(c, "输入格式有误")
+		_, _ = c.Reply("输入格式有误")
 		return
 	}
 	pos := allIndexes[0]
@@ -94,7 +93,7 @@ func QuestQuery(c *onebot.Context, args []string) {
 	if questType == "主线" {
 		id, _ := strconv.Atoi(idStr)
 		if id > 700 {
-			_ = bot.SendMessage(c, prefixMsg+"主线任务目前只有 700 个哦")
+			_, _ = c.Reply(prefixMsg + "主线任务目前只有 700 个哦")
 			return
 		}
 		if length == 1 {
@@ -111,11 +110,11 @@ func QuestQuery(c *onebot.Context, args []string) {
 	// 处理查询失败的错误
 	if err != nil {
 		logger.Errorf("查找出错：%v", err)
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(util.SystemErrorNote)
 		return
 	}
 	// 构造返回语句
-	_ = bot.SendMessage(c, prefixMsg+echoQuestsMessage(quests))
+	_, _ = c.Reply(prefixMsg + echoQuestsMessage(quests))
 }
 
 // 主线查询（单条）

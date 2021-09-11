@@ -740,9 +740,9 @@ func echoRecipesMessage(recipes []database.Recipe, order string, page int, priva
 	} else {
 		logger.Debug("查询到多个菜谱")
 		var msg string
-		listLength := config.AppConfig.Bot.GroupMsgLen
+		listLength := config.AppConfig.Bot.GroupMsgMaxLen
 		if private {
-			listLength = config.AppConfig.Bot.PrivateMsgLen
+			listLength = config.AppConfig.Bot.PrivateMsgMaxLen
 		}
 		maxPage := (len(recipes)-1)/listLength + 1
 		if page > maxPage {
