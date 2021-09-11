@@ -307,11 +307,11 @@ func requestData(url string) (gamedata.GameData, error) {
 
 // 导入预配置sql
 func importDirAllSqlFile(engine *xorm.Engine, dir string) error {
-	tableMap := map[interface{}]string{
-		database.Guest{}:      "guest.sql",
-		database.Laboratory{}: "laboratory.sql",
+	tableMap := map[string]interface{}{
+		"guest.sql":      database.Guest{},
+		"laboratory.sql": database.Laboratory{},
 	}
-	for table, file := range tableMap {
+	for file, table := range tableMap {
 		if exist, err := engine.IsTableExist(table); err != nil {
 			return err
 		} else if exist {

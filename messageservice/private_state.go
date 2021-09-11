@@ -9,8 +9,7 @@ import (
 
 func AllowPrivate(c *scheduler.Context) {
 	if c.GetMessageType() == onebot.MessageTypePrivate {
-		event := c.GetGroupEvent()
-		if err := global.SetBotState(event.SelfId, 0, true); err != nil {
+		if err := global.SetBotState(c.GetBot().BotId, 0, true); err != nil {
 			logger.Error("启用机器人私聊出错:", err)
 			return
 		}
@@ -19,8 +18,7 @@ func AllowPrivate(c *scheduler.Context) {
 		atList := c.GetAtList()
 		for _, at := range atList {
 			if at == c.GetBot().BotId {
-				event := c.GetGroupEvent()
-				if err := global.SetBotState(event.SelfId, 0, true); err != nil {
+				if err := global.SetBotState(c.GetBot().BotId, 0, true); err != nil {
 					logger.Error("启用机器人私聊出错:", err)
 					return
 				}
@@ -33,8 +31,7 @@ func AllowPrivate(c *scheduler.Context) {
 
 func DisablePrivate(c *scheduler.Context) {
 	if c.GetMessageType() == onebot.MessageTypePrivate {
-		event := c.GetGroupEvent()
-		if err := global.SetBotState(event.SelfId, 0, false); err != nil {
+		if err := global.SetBotState(c.GetBot().BotId, 0, false); err != nil {
 			logger.Error("禁用机器人私聊出错:", err)
 			_, _ = c.Reply("禁用失败")
 			return
@@ -44,8 +41,7 @@ func DisablePrivate(c *scheduler.Context) {
 		atList := c.GetAtList()
 		for _, at := range atList {
 			if at == c.GetBot().BotId {
-				event := c.GetGroupEvent()
-				if err := global.SetBotState(event.SelfId, 0, false); err != nil {
+				if err := global.SetBotState(c.GetBot().BotId, 0, false); err != nil {
 					logger.Error("禁用机器人私聊出错:", err)
 					_, _ = c.Reply("禁用失败")
 					return

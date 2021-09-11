@@ -30,7 +30,7 @@ func CheckBotState(c *scheduler.Context) {
 			}
 		}
 	}
-	if c.GetMessageType() == onebot.MessageTypePrivate {
+	if c.GetMessageType() == onebot.MessageTypeGroup || c.GetGroupEvent() != nil {
 		if util.InKeywordList(c.GetKeyword(), "开机", "关机") {
 			c.Next()
 			return
