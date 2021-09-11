@@ -8,6 +8,7 @@ import (
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -20,11 +21,15 @@ func GuestQuery(c *scheduler.Context) {
 
 	argType := "guest_id"
 	guests := make([]database.Guest, 0)
-	err := database.DB.Where("guest_id = ?", arg).Find(guests)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply(e.SystemErrorNote)
-		return
+	numId, err := strconv.Atoi(arg)
+	if err == nil {
+		guestId := fmt.Sprintf("%03d", numId)
+		err := database.DB.Where("guest_id = ?", guestId).Find(&guests)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			_, _ = c.Reply(e.SystemErrorNote)
+			return
+		}
 	}
 	if len(guests) == 0 {
 		err = database.DB.Where("guest_name like ?", "%"+arg+"%").Find(&guests)
@@ -73,7 +78,7 @@ func GuestQuery(c *scheduler.Context) {
 	}
 	msg := fmt.Sprintf("%s %s", guests[0].GuestId, guests[0].GuestName)
 	for _, guestInfo := range guestsInfo {
-		msg += fmt.Sprintf("%s-%s %s", guestInfo.GuestName, guestInfo.Antique, util.FormatSecondToString(guestInfo.TotalTime))
+		msg += fmt.Sprintf("\n%s-%s %s", guestInfo.GuestName, guestInfo.Antique, util.FormatSecondToString(guestInfo.TotalTime))
 	}
 	_, _ = c.Reply(msg)
 }
