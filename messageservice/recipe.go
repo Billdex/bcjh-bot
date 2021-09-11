@@ -369,7 +369,7 @@ func filterRecipeByGuest(recipes []database.Recipe, guest string) ([]database.Re
 		return nil, util.SystemErrorNote
 	}
 	if len(guestGifts) == 0 {
-		return nil, fmt.Sprintf("%s是什么神秘符文呀", guest)
+		return nil, fmt.Sprintf("%s是什么神秘贵客呀", guest)
 	}
 	// 将符合条件的菜谱存入新map
 	newRecipeMap := make(map[string]database.Recipe)

@@ -5,7 +5,6 @@ import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
-	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"encoding/json"
 	"errors"
@@ -308,14 +307,20 @@ func requestData(url string) (gamedata.GameData, error) {
 
 // 导入预配置sql
 func importDirAllSqlFile(engine *xorm.Engine, dir string) error {
-	files, err := util.GetDirAllSqlFile(dir)
-	if err != nil {
-		return err
+	tableMap := map[interface{}]string{
+		database.Guest{}:      "guest.sql",
+		database.Laboratory{}: "laboratory.sql",
 	}
-	for _, file := range files {
-		_, err = engine.ImportFile(file)
-		if err != nil {
+	for table, file := range tableMap {
+		if exist, err := engine.IsTableExist(table); err != nil {
 			return err
+		} else if exist {
+			continue
+		} else {
+			_, err = engine.ImportFile(fmt.Sprintf("%s/%s", dir, file))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -559,6 +564,19 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	for _, guest := range guestInfo {
 		guestMap[guest.GuestName] = guest.GuestId
 	}
+	// 从菜谱表中获取菜谱相关信息
+	recipeInfo := make([]database.Recipe, 0)
+	err = database.DB.Find(&recipeInfo)
+	if err != nil {
+		logger.Error("数据库查询出错", err)
+		_ = session.Rollback()
+		return err
+	}
+	recipeMap := make(map[string]database.Recipe)
+	for _, recipe := range recipeInfo {
+		recipeMap[recipe.Name] = recipe
+	}
+
 	guests := make([]database.GuestGift, 0)
 	for _, guestData := range guestsData {
 		for _, gift := range guestData.Gifts {
@@ -567,6 +585,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 				GuestName: guestData.Name,
 				Antique:   gift.Antique,
 				Recipe:    gift.Recipe,
+				TotalTime: recipeMap[gift.Recipe].TotalTime,
 			}
 			guests = append(guests, guest)
 		}

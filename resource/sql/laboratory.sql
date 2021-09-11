@@ -1,5 +1,3 @@
-drop table if exists laboratory;
-
 create table laboratory
 (
     target_name    varchar(255) null,
