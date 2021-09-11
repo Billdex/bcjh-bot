@@ -1,13 +1,13 @@
 package messageservice
 
 import (
-	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"bytes"
 	"errors"
@@ -41,7 +41,7 @@ func EquipmentQuery(c *scheduler.Context) {
 	err := database.DB.Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 	}
 	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
 	for _, arg := range args {
@@ -146,7 +146,7 @@ func filterEquipsBySkill(equips []database.Equip, skill string) ([]database.Equi
 	err := database.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		return result, util.SystemErrorNote
+		return result, e.SystemErrorNote
 	}
 	for i := range equips {
 		for _, skillId := range equips[i].Skills {
@@ -264,7 +264,7 @@ func echoEquipMessage(equip database.Equip) string {
 	var msg string
 	if has, err := util.PathExists(imagePath); has {
 		logger.Debugf("存在厨具图片文件, 返回图片数据")
-		msg = bot.GetCQImage(imagePath, "file")
+		msg = onebot.GetCQImage(imagePath, "file")
 	} else {
 		if err != nil {
 			logger.Debugf("无法确定文件是否存在, 返回文字数据", err)
@@ -279,7 +279,7 @@ func echoEquipMessage(equip database.Equip) string {
 			has, err := database.DB.Where("skill_id = ?", skillId).Get(skill)
 			if err != nil {
 				logger.Error("查询数据库出错!", err)
-				return util.SystemErrorNote
+				return e.SystemErrorNote
 			}
 			if has {
 				skills += skill.Description

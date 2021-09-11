@@ -6,6 +6,7 @@ import (
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strconv"
@@ -25,7 +26,7 @@ func AntiqueQuery(c *scheduler.Context) {
 	err := database.DB.Where("antique like ?", "%"+antique+"%").Asc("total_time").Find(&guests)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	if len(guests) == 0 {

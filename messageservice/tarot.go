@@ -3,7 +3,7 @@ package messageservice
 import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
-	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"math/rand"
@@ -21,7 +21,7 @@ func Tarot(c *scheduler.Context) {
 	total, err := database.DB.Count(&database.Tarot{})
 	if err != nil {
 		logger.Error("查询数据库出错", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	tarotId := rand.Int63n(total) + 1
@@ -36,7 +36,7 @@ func Tarot(c *scheduler.Context) {
 	_, err = database.DB.Where("id = ?", tarotId).Get(tarot)
 	if err != nil {
 		logger.Error("查询数据库出错", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	var level string

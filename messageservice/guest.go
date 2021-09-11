@@ -5,6 +5,7 @@ import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strings"
@@ -22,14 +23,14 @@ func GuestQuery(c *scheduler.Context) {
 	err := database.DB.Where("guest_id = ?", arg).Find(guests)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	if len(guests) == 0 {
 		err = database.DB.Where("guest_name like ?", "%"+arg+"%").Find(&guests)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			_, _ = c.Reply(util.SystemErrorNote)
+			_, _ = c.Reply(e.SystemErrorNote)
 			return
 		}
 		argType = "guest_name"
@@ -63,7 +64,7 @@ func GuestQuery(c *scheduler.Context) {
 	}
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	if len(guestsInfo) == 0 {

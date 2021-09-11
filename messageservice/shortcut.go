@@ -1,7 +1,6 @@
 package messageservice
 
 import (
-	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
@@ -32,7 +31,7 @@ func BCJHAppDownload(c *scheduler.Context) {
 	imgPath := config.AppConfig.Resource.Shortcut + "/白菜菊花.jpg"
 	var msg string
 	msg += fmt.Sprintf("密码: bcjh\n")
-	msg += bot.GetCQImage(imgPath, "file")
+	msg += onebot.GetCQImage(imgPath, "file")
 
 	_, _ = c.Reply(msg)
 }
@@ -43,6 +42,6 @@ func Calculator(c *scheduler.Context) {
 	imgPath := config.AppConfig.Resource.Shortcut + "/白菜菊花.jpg"
 	var msg string
 	msg += fmt.Sprintf("网页版计算器在白菜菊花图鉴网:%s\n", bcjh)
-	msg += fmt.Sprintf("安卓用户支持使用白菜菊花app，扫描下图二维码下载，密码bcjh %s", bot.GetCQImage(imgPath, "file"))
+	msg += fmt.Sprintf("安卓用户支持使用白菜菊花app，扫描下图二维码下载，密码bcjh %s", onebot.GetCQImage(imgPath, "file"))
 	_, _ = c.Reply(msg)
 }

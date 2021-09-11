@@ -4,7 +4,7 @@ import (
 	"bcjh-bot/global"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
-	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"regexp"
@@ -40,7 +40,7 @@ func BanUser(c *scheduler.Context) {
 	failList := make([]int64, 0)
 	for _, qq := range atList {
 		if global.IsSuperAdmin(qq) {
-			_, _ = c.Reply(fmt.Sprintf(util.PermissionDeniedNote))
+			_, _ = c.Reply(fmt.Sprintf(e.PermissionDeniedNote))
 		} else {
 			err := global.PullUserBlackList(qq, c.GetGroupEvent().GroupId, endTime)
 			if err != nil {
