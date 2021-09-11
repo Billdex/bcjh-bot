@@ -8,20 +8,23 @@ import (
 
 var tables = []interface{}{
 	&Admin{},
+	&BlackList{},
+	&BotState{},
 	&Chef{},
 	&Condiment{},
 	&Decoration{},
 	&Equip{},
+	&Exchange{},
 	&Feedback{},
 	&GuestGift{},
 	&Material{},
+	&PluginState{},
 	&Quest{},
 	&Recipe{},
 	&RecipeMaterial{},
 	&Skill{},
 	&Strategy{},
-	&Laboratory{},
-	&Exchange{},
+	&Tarot{},
 }
 
 var migrations = []*migrate.Migration{

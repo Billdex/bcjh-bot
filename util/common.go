@@ -2,7 +2,9 @@ package util
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -40,6 +42,15 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
+func InKeywordList(s string, keywords ...string) bool {
+	for _, keyword := range keywords {
+		if s == keyword {
+			return true
+		}
+	}
+	return false
+}
+
 func HasPrefixIn(s string, prefix ...string) bool {
 	for _, p := range prefix {
 		if strings.HasPrefix(s, p) {
@@ -56,4 +67,32 @@ func WhatPrefixIn(s string, prefix ...string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func GetDirAllSqlFile(dir string) ([]string, error) {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	sqlFiles := make([]string, 0)
+	for _, file := range files {
+		if file.IsDir() {
+			fileList, err := GetDirAllSqlFile(fmt.Sprintf("%s/%s", dir, file.Name()))
+			if err != nil {
+				return nil, err
+			}
+			sqlFiles = append(sqlFiles, fileList...)
+		} else {
+			if strings.HasSuffix(file.Name(), ".sql") {
+				sqlFiles = append(sqlFiles, file.Name())
+			}
+		}
+	}
+	return sqlFiles, nil
+}
+
+func MergeRepeatSpace(s string) string {
+	reg := regexp.MustCompile("\\s+")
+	return reg.ReplaceAllString(s, " ")
+
 }
