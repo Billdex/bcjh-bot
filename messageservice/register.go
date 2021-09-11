@@ -29,6 +29,7 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("菜谱", CheckPluginState(true), RecipeQuery).Alias("食谱")
 	g.Bind("厨具", CheckPluginState(true), EquipmentQuery).Alias("装备", "道具")
 	g.Bind("食材", CheckPluginState(true), MaterialQuery).Alias("材料")
+	g.Bind("贵客", CheckPluginState(true), GuestQuery).Alias("稀有客人", "贵宾", "客人", "宾客", "稀客")
 
 	// 快捷查询
 	g.Bind("图鉴网", GalleryWebsite).Alias("图鉴")

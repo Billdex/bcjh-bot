@@ -33,7 +33,6 @@ var Ins Instructions
 func RegisterInstructions() {
 	Ins = NewInstructions()
 	// 主功能
-	Ins.Bind(GuestQuery, "贵客", "稀有客人", "贵宾", "客人", "宾客", "稀客")
 	Ins.Bind(AntiqueQuery, "符文")
 	Ins.Bind(CondimentQuery, "调料")
 	Ins.Bind(QuestQuery, "任务", "主线", "支线")
