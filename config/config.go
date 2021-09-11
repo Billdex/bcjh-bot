@@ -63,8 +63,10 @@ func InitConfig() error {
 			Password: "",
 		},
 		Resource: resourceConfig{
-			Image: "/home/bcjh-bot/resource/image/",
-			Font:  "/home/bcjh-bot/resource/font",
+			Image:    "/home/bcjh-bot/resource/image/",
+			Font:     "/home/bcjh-bot/resource/font/",
+			Shortcut: "/home/bcjh-bot/resource/shortcut/",
+			Sql:      "/home/bcjh-bot/resource/sql/",
 		},
 		Log: logConfig{
 			Style:   "CONSOLE",
@@ -111,8 +113,10 @@ func initDefaultConfig(path string) error {
 			Password: "",
 		},
 		Resource: resourceConfig{
-			Image: "/home/bcjh-bot/resource/image/",
-			Font:  "/home/bcjh-bot/resource/font",
+			Image:    "/home/bcjh-bot/resource/image/",
+			Font:     "/home/bcjh-bot/resource/font/",
+			Shortcut: "/home/bcjh-bot/resource/shortcut/",
+			Sql:      "/home/bcjh-bot/resource/sql/",
 		},
 		Log: logConfig{
 			Style:   "CONSOLE",
