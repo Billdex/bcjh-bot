@@ -103,9 +103,9 @@ func MaterialQuery(c *scheduler.Context) {
 
 	// 处理消息
 	var msg string
-	listLength := config.AppConfig.Bot.GroupMsgLen
+	listLength := config.AppConfig.Bot.GroupMsgMaxLen
 	if c.GetMessageType() == onebot2.MessageTypePrivate {
-		listLength = config.AppConfig.Bot.PrivateMsgLen
+		listLength = config.AppConfig.Bot.PrivateMsgMaxLen
 	}
 	maxPage := (len(recipes)-1)/listLength + 1
 	if page > maxPage {

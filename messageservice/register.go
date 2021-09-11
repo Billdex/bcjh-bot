@@ -30,6 +30,11 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("厨具", CheckPluginState(true), EquipmentQuery).Alias("装备", "道具")
 	g.Bind("食材", CheckPluginState(true), MaterialQuery).Alias("材料")
 	g.Bind("贵客", CheckPluginState(true), GuestQuery).Alias("稀有客人", "贵宾", "客人", "宾客", "稀客")
+	g.Bind("符文", CheckPluginState(true), AntiqueQuery).Alias("礼物")
+	g.Bind("调料", CheckPluginState(true), CondimentQuery)
+	g.Bind("任务", CheckPluginState(true), TaskQuery).Alias("主线", "支线")
+	g.Bind("限时任务", CheckPluginState(true), TimeLimitingTaskQuery).Alias("限时攻略", "限时支线")
+	g.Bind("攻略", CheckPluginState(true), StrategyQuery)
 
 	// 快捷查询
 	g.Bind("图鉴网", GalleryWebsite).Alias("图鉴")

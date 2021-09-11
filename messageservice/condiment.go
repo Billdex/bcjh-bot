@@ -1,9 +1,9 @@
-package service
+package messageservice
 
 import (
-	"bcjh-bot/bot"
+	"bcjh-bot/config"
 	"bcjh-bot/model/database"
-	"bcjh-bot/model/onebot"
+	"bcjh-bot/scheduler"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"fmt"
@@ -11,14 +11,10 @@ import (
 )
 
 // 调料查询
-func CondimentQuery(c *onebot.Context, args []string) {
-	logger.Info("调料查询，参数:", args)
-
-	// 无参数的情况
-	if len(args) == 0 {
-		//if err := bot.SendMessage(c, condimentHelp()); err != nil {
-		//	logger.Error("发送信息失败!", err)
-		//}
+func CondimentQuery(c *scheduler.Context) {
+	args := strings.Split(util.MergeRepeatSpace(strings.TrimSpace(c.PretreatedMessage)), " ")
+	if args[0] == "" {
+		_, _ = c.Reply(antiqueHelp())
 		return
 	}
 
@@ -58,7 +54,7 @@ func CondimentQuery(c *onebot.Context, args []string) {
 
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "查询数据失败!")
+		_, _ = c.Reply("查询数据失败!")
 		return
 	}
 
@@ -97,14 +93,14 @@ func CondimentQuery(c *onebot.Context, args []string) {
 				condiment.Origin,
 				switchSkillAndOrigin(condiment.Origin),
 			))
-			if p != len(condiments)-1 && p == util.MaxQueryListLength {
+			if p != len(condiments)-1 && p == config.AppConfig.Bot.GroupMsgMaxLen {
 				sb.WriteString("\n......")
 				break
 			}
 		}
 		msg = sb.String()
 	}
-	_ = bot.SendMessage(c, msg)
+	_, _ = c.Reply(msg)
 }
 
 // 查询字符串中是否包含字符串切片中的任意一项

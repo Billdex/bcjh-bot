@@ -33,14 +33,9 @@ var Ins Instructions
 func RegisterInstructions() {
 	Ins = NewInstructions()
 	// 主功能
-	Ins.Bind(AntiqueQuery, "符文")
-	Ins.Bind(CondimentQuery, "调料")
-	Ins.Bind(QuestQuery, "任务", "主线", "支线")
-	Ins.Bind(TimeLimitingQuestQuery, "限时任务", "限时攻略", "限时支线", "限时任务攻略")
 	Ins.Bind(UpgradeGuestQuery, "碰瓷", "升阶贵客")
 	Ins.Bind(ComboQuery, "后厨", "合成")
 	Ins.Bind(LaboratoryQuery, "实验室", "研究")
-	Ins.Bind(StrategyQuery, "攻略")
 	Ins.Bind(ExchangeQuery, "兑换码", "玉璧")
 
 }

@@ -39,7 +39,7 @@ func GuestQuery(c *scheduler.Context) {
 	if len(guests) > 1 {
 		msg := "查询到以下贵客"
 		for i, guest := range guests {
-			if i > config.AppConfig.Bot.GroupMsgLen-1 {
+			if i > config.AppConfig.Bot.GroupMsgMaxLen-1 {
 				msg += "\n..."
 				break
 			}
