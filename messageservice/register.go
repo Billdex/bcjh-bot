@@ -3,8 +3,6 @@ package messageservice
 import (
 	. "bcjh-bot/middleware"
 	"bcjh-bot/scheduler"
-	"fmt"
-	"time"
 )
 
 func Register(s *scheduler.Scheduler) {
@@ -48,14 +46,4 @@ func Register(s *scheduler.Scheduler) {
 
 	// 娱乐功能
 	g.Bind("抽签", CheckPluginState(false), Tarot).Alias("占卜", "求签", "运势", "卜卦", "占卦")
-	g.Bind("reply", replyMessage)
-}
-
-// 测试用, 后续会删掉
-func replyMessage(c *scheduler.Context) {
-	msg := fmt.Sprintf("[消息类型]: %s\n", c.GetMessageType())
-	msg += fmt.Sprintf("[发送人]: %s\n", c.GetSenderNickname())
-	msg += fmt.Sprintf("[消息内容]: %s\n", c.PretreatedMessage)
-	msg += fmt.Sprintf("[发送时间]: %s", time.Unix(c.GetEventTime(), 0).Format("2006-01-02 15:04:05"))
-	_, _ = c.Reply(msg)
 }
