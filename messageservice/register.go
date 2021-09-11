@@ -16,6 +16,8 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("停用", MustAdmin, DisablePluginInGroup)
 	g.Bind("ban", MustAdmin, BanUser)
 	g.Bind("allow", MustAdmin, AllowUser)
+	g.Bind("允许私聊", MustSuperAdmin, AllowPrivate).Alias("开启私聊")
+	g.Bind("禁用私聊", MustSuperAdmin, DisablePrivate).Alias("关闭私聊", "禁止私聊")
 	g.Bind("更新", MustSuperAdmin, UpdateData)
 	g.Bind("公告", MustSuperAdmin, CheckPluginState(true), PublicNotice)
 	g.Bind("改命", MustSuperAdmin, ForceTarot).Alias("转运")
