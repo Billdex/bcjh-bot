@@ -1,9 +1,10 @@
-package service
+package messageservice
 
 import (
-	"bcjh-bot/bot"
+	"bcjh-bot/config"
 	"bcjh-bot/model/database"
-	"bcjh-bot/model/onebot"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"fmt"
@@ -11,29 +12,24 @@ import (
 	"strings"
 )
 
-func UpgradeGuestQuery(c *onebot.Context, args []string) {
-	logger.Info("碰瓷数据查询，参数:", args)
-
-	if len(args) == 0 {
-		//err := bot.SendMessage(c, upgradeGuestHelp())
-		//if err != nil {
-		//	logger.Error("发送信息失败!", err)
-		//}
+func UpgradeGuestQuery(c *scheduler.Context) {
+	args := strings.Split(util.MergeRepeatSpace(strings.TrimSpace(c.PretreatedMessage)), " ")
+	if args[0] == "" {
+		_, _ = c.Reply(upgradeGuestHelp())
 		return
 	}
 	page := 1
 	if len(args) == 2 {
-		if strings.HasPrefix(args[1], "p") || strings.HasPrefix(args[1], "P") {
+		if util.HasPrefixIn(args[1], "p", "P") {
 			num, err := strconv.Atoi(args[1][1:])
 			if err != nil {
 				logger.Error("分页参数转数字出错!", err)
-				_ = bot.SendMessage(c, "查询参数出错!")
+				_, _ = c.Reply("查询参数出错!")
 				return
 			} else {
-				if num < 1 {
-					num = 1
+				if num > 0 {
+					page = num
 				}
-				page = num
 			}
 		}
 	}
@@ -42,7 +38,7 @@ func UpgradeGuestQuery(c *onebot.Context, args []string) {
 	err := database.DB.Where("guest_id = ?", args[0]).Find(&guests)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, "查询数据失败!")
+		_, _ = c.Reply("查询数据失败!")
 		return
 	}
 
@@ -50,7 +46,7 @@ func UpgradeGuestQuery(c *onebot.Context, args []string) {
 		err = database.DB.Where("guest_name like ?", "%"+args[0]+"%").Find(&guests)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			_ = bot.SendMessage(c, "查询数据失败!")
+			_, _ = c.Reply("查询数据失败!")
 			return
 		}
 	}
@@ -72,7 +68,7 @@ func UpgradeGuestQuery(c *onebot.Context, args []string) {
 		err = database.DB.Where("guests like ?", "%\""+guestName+"\"%").Asc("Time").Find(&recipes)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			_ = bot.SendMessage(c, "查询数据失败!")
+			_, _ = c.Reply("查询数据失败!")
 			return
 		}
 		if len(recipes) == 0 {
@@ -81,7 +77,7 @@ func UpgradeGuestQuery(c *onebot.Context, args []string) {
 			results := make([]string, 0)
 			for _, recipe := range recipes {
 				var upgrade string
-				for p, _ := range recipe.Guests {
+				for p := range recipe.Guests {
 					if recipe.Guests[p] == guestName {
 						switch p {
 						case 0:
@@ -96,7 +92,10 @@ func UpgradeGuestQuery(c *onebot.Context, args []string) {
 				results = append(results, fmt.Sprintf("%s: %s", upgrade, recipe.Name))
 			}
 
-			listLength := util.MaxQueryListLength
+			listLength := config.AppConfig.Bot.GroupMsgMaxLen
+			if c.GetRawMessage() == onebot.MessageTypePrivate {
+				listLength = config.AppConfig.Bot.PrivateMsgMaxLen
+			}
 			maxPage := (len(results)-1)/listLength + 1
 			if len(results) > listLength {
 				if page > maxPage {
@@ -116,9 +115,9 @@ func UpgradeGuestQuery(c *onebot.Context, args []string) {
 	} else {
 		msg = "想查哪个升阶贵客数据呢:"
 		p := 0
-		for k, _ := range guestInfo {
+		for k := range guestInfo {
 			msg += fmt.Sprintf("\n%s %s", k, guestInfo[k])
-			if p == util.MaxQueryListLength-1 {
+			if p == config.AppConfig.Bot.GroupMsgMaxLen-1 {
 				msg += "\n......"
 				break
 			}
@@ -126,8 +125,5 @@ func UpgradeGuestQuery(c *onebot.Context, args []string) {
 		}
 	}
 
-	err = bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
+	_, _ = c.Reply(msg)
 }

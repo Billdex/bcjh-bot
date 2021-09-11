@@ -1,13 +1,13 @@
 package messageservice
 
 import (
-	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"bytes"
 	"fmt"
@@ -40,7 +40,7 @@ func ChefQuery(c *scheduler.Context) {
 	err := database.DB.Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 	}
 	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
 	argCount := 0
@@ -164,7 +164,7 @@ func filterChefsBySkill(chefs []database.Chef, skill string) ([]database.Chef, s
 	err := database.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		return result, util.SystemErrorNote
+		return result, e.SystemErrorNote
 	}
 	for i := range chefs {
 		if _, ok := skills[chefs[i].SkillId]; ok {
@@ -253,7 +253,7 @@ func echoChefMessage(chef database.Chef) string {
 	logger.Debug("imagePath:", imagePath)
 	var msg string
 	if has, err := util.PathExists(imagePath); has {
-		msg = bot.GetCQImage(imagePath, "file")
+		msg = onebot.GetCQImage(imagePath, "file")
 	} else {
 		if err != nil {
 			logger.Debugf("无法确定文件是否存在!", err)
@@ -273,19 +273,19 @@ func echoChefMessage(chef database.Chef) string {
 		_, err = database.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			return util.SystemErrorNote
+			return e.SystemErrorNote
 		}
 		ultimateSkill := new(database.Skill)
 		_, err = database.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			return util.SystemErrorNote
+			return e.SystemErrorNote
 		}
 		ultimateGoals := make([]database.Quest, 0)
 		err = database.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			return util.SystemErrorNote
+			return e.SystemErrorNote
 		}
 		goals := ""
 		for p, ultimateGoal := range ultimateGoals {

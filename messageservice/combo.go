@@ -1,27 +1,24 @@
-package service
+package messageservice
 
 import (
-	"bcjh-bot/bot"
 	"bcjh-bot/model/database"
-	"bcjh-bot/model/onebot"
-	"bcjh-bot/util"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
-func ComboQuery(c *onebot.Context, args []string) {
-	logger.Info("后厨合成菜前置菜谱查询，参数:", args)
+func ComboQuery(c *scheduler.Context) {
+	arg := strings.TrimSpace(c.PretreatedMessage)
 
-	if len(args) == 0 {
-		//err := bot.SendMessage(c, comboHelp())
-		//if err != nil {
-		//	logger.Error("发送信息失败!", err)
-		//}
+	if arg == "" {
+		_, _ = c.Reply(comboHelp())
 		return
 	}
 
-	comboRecipeName := args[0]
+	comboRecipeName := arg
 
 	// 判断菜名是否唯一
 	recipes := make([]database.Recipe, 0)
@@ -30,19 +27,19 @@ func ComboQuery(c *onebot.Context, args []string) {
 		err = database.DB.Where("gallery_id = ?", fmt.Sprintf("%03d", recipeId)).Find(&recipes)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			_ = bot.SendMessage(c, util.SystemErrorNote)
+			_, _ = c.Reply(e.SystemErrorNote)
 			return
 		}
 	} else {
 		err = database.DB.Where("name like ?", "%"+comboRecipeName+"%").Find(&recipes)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			_ = bot.SendMessage(c, util.SystemErrorNote)
+			_, _ = c.Reply(e.SystemErrorNote)
 			return
 		}
 	}
 	if len(recipes) == 0 {
-		_ = bot.SendMessage(c, "没有查询到相关餐谱呢")
+		_, _ = c.Reply("没有查询到相关餐谱呢")
 		return
 	}
 	if len(recipes) > 1 {
@@ -50,7 +47,7 @@ func ComboQuery(c *onebot.Context, args []string) {
 		for _, recipe := range recipes {
 			msg += fmt.Sprintf("\n%s", recipe.Name)
 		}
-		_ = bot.SendMessage(c, msg)
+		_, _ = c.Reply(msg)
 		return
 	}
 
@@ -60,7 +57,7 @@ func ComboQuery(c *onebot.Context, args []string) {
 	err = database.DB.Where("combo = ?", comboRecipeName).Find(&preRecipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	var msg string
@@ -73,8 +70,5 @@ func ComboQuery(c *onebot.Context, args []string) {
 		}
 	}
 
-	err = bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
+	_, _ = c.Reply(msg)
 }

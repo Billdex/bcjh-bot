@@ -5,6 +5,7 @@ import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strings"
@@ -20,7 +21,7 @@ func StrategyQuery(c *scheduler.Context) {
 
 	if util.HasPrefixIn(arg, "新增", "添加") {
 		if !global.IsSuperAdmin(c.GetSenderId()) {
-			_, _ = c.Reply(util.PermissionDeniedNote)
+			_, _ = c.Reply(e.PermissionDeniedNote)
 			return
 		}
 
@@ -45,7 +46,7 @@ func StrategyQuery(c *scheduler.Context) {
 
 	if util.HasPrefixIn(arg, "更新", "修改") {
 		if !global.IsSuperAdmin(c.GetSenderId()) {
-			_, _ = c.Reply(util.PermissionDeniedNote)
+			_, _ = c.Reply(e.PermissionDeniedNote)
 			return
 		}
 
@@ -69,7 +70,7 @@ func StrategyQuery(c *scheduler.Context) {
 
 	if util.HasPrefixIn(arg, "删除", "移除") {
 		if !global.IsSuperAdmin(c.GetSenderId()) {
-			_, _ = c.Reply(util.PermissionDeniedNote)
+			_, _ = c.Reply(e.PermissionDeniedNote)
 			return
 		}
 
@@ -94,7 +95,7 @@ func StrategyQuery(c *scheduler.Context) {
 	err := database.DB.Where("keyword like ?", "%"+arg+"%").Find(&strategies)
 	if err != nil {
 		logger.Error("数据库查询出错!", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	if len(strategies) == 0 {
@@ -121,7 +122,7 @@ func createStrategy(keyword string, value string) string {
 	strategy := new(database.Strategy)
 	has, err := database.DB.Where("keyword = ?", keyword).Get(strategy)
 	if err != nil {
-		return util.SystemErrorNote
+		return e.SystemErrorNote
 	}
 	if has {
 		return "与已有关键词重复了哦"
@@ -132,7 +133,7 @@ func createStrategy(keyword string, value string) string {
 	strategy.Value = value
 	_, err = database.DB.Insert(strategy)
 	if err != nil {
-		return util.SystemErrorNote
+		return e.SystemErrorNote
 	}
 	return ""
 }
@@ -145,7 +146,7 @@ func updateStrategy(keyword string, value string) string {
 	strategy := new(database.Strategy)
 	has, err := database.DB.Where("keyword = ?", keyword).Get(strategy)
 	if err != nil {
-		return util.SystemErrorNote
+		return e.SystemErrorNote
 	}
 	if !has {
 		return "关键词不存在!"
@@ -153,7 +154,7 @@ func updateStrategy(keyword string, value string) string {
 	strategy.Value = value
 	_, err = database.DB.Where("id = ?", strategy.Id).Cols("value").Update(strategy)
 	if err != nil {
-		return util.SystemErrorNote
+		return e.SystemErrorNote
 	}
 	return ""
 }
@@ -166,7 +167,7 @@ func deleteStrategy(keyword string) string {
 	strategy := new(database.Strategy)
 	affected, err := database.DB.Where("keyword = ?", keyword).Delete(strategy)
 	if err != nil {
-		return util.SystemErrorNote
+		return e.SystemErrorNote
 	}
 	if affected == 0 {
 		return "删除失败！未找到符合要求的关键词"
@@ -182,7 +183,7 @@ func TimeLimitingTaskQuery(c *scheduler.Context) {
 	has, err := database.DB.Where("keyword = ?", "限时任务").Get(strategies)
 	if err != nil {
 		logger.Error("数据库查询出错!", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	if !has {

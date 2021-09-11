@@ -1,13 +1,13 @@
 package messageservice
 
 import (
-	"bcjh-bot/bot"
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"bytes"
 	"fmt"
@@ -41,7 +41,7 @@ func RecipeQuery(c *scheduler.Context) {
 	err := database.DB.Find(&recipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 	}
 	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
 	argCount := 0
@@ -210,13 +210,13 @@ func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]data
 		err := database.DB.In("origin", materialOrigin).Find(&dbMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			return nil, util.SystemErrorNote
+			return nil, e.SystemErrorNote
 		}
 	} else {
 		err := database.DB.Where("name like ?", "%"+material+"%").Find(&dbMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			return nil, util.SystemErrorNote
+			return nil, e.SystemErrorNote
 		}
 		if len(dbMaterials) == 0 {
 			return nil, fmt.Sprintf("厨师长说没有用%s做过菜", material)
@@ -239,7 +239,7 @@ func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]data
 	err := database.DB.In("material_id", materialsId).Find(&recipeMaterials)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		return nil, util.SystemErrorNote
+		return nil, e.SystemErrorNote
 	}
 	// 从recipeMap中选出符合要求的菜
 	newRecipeMap := make(map[string]database.Recipe)
@@ -366,7 +366,7 @@ func filterRecipeByGuest(recipes []database.Recipe, guest string) ([]database.Re
 	err := database.DB.Where("guest_name like ?", "%"+guest+"%").Find(&guestGifts)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		return nil, util.SystemErrorNote
+		return nil, e.SystemErrorNote
 	}
 	if len(guestGifts) == 0 {
 		return nil, fmt.Sprintf("%s是什么神秘贵客呀", guest)
@@ -426,7 +426,7 @@ func filterRecipesByAntique(recipes []database.Recipe, antique string) ([]databa
 	err := database.DB.Where("antique like ?", "%"+antique+"%").Find(&guestGifts)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		return nil, util.SystemErrorNote
+		return nil, e.SystemErrorNote
 	}
 	if len(guestGifts) == 0 {
 		return nil, fmt.Sprintf("%s是什么神秘符文呀", antique)
@@ -629,7 +629,7 @@ func echoRecipeMessage(recipe database.Recipe) string {
 	logger.Debug("imagePath:", imagePath)
 	var msg string
 	if has, err := util.PathExists(imagePath); has {
-		msg = bot.GetCQImage(imagePath, "file")
+		msg = onebot.GetCQImage(imagePath, "file")
 	} else {
 		if err != nil {
 			logger.Debugf("无法确定文件是否存在!", err)
@@ -666,14 +666,14 @@ func echoRecipeMessage(recipe database.Recipe) string {
 		err := database.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			return util.SystemErrorNote
+			return e.SystemErrorNote
 		}
 		for _, recipeMaterial := range recipeMaterials {
 			material := new(database.Material)
 			has, err := database.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
 			if err != nil {
 				logger.Error("查询数据库出错!", err)
-				return util.SystemErrorNote
+				return e.SystemErrorNote
 			}
 			if !has {
 				logger.Warnf("菜谱%d数据缺失", recipeMaterial.MaterialId)
@@ -687,7 +687,7 @@ func echoRecipeMessage(recipe database.Recipe) string {
 		err = database.DB.Where("recipe = ?", recipe.Name).Find(&guestGifts)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
-			return util.SystemErrorNote
+			return e.SystemErrorNote
 		}
 		for _, gift := range guestGifts {
 			if giftInfo != "" {

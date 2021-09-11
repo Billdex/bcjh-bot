@@ -3,7 +3,7 @@ package messageservice
 import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
-	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"regexp"
@@ -14,7 +14,7 @@ import (
 // 任务查询
 func TaskQuery(c *scheduler.Context) {
 	var str string
-	for _, prefix := range util.PrefixCharacters {
+	for _, prefix := range []string{"#", "＃"} {
 		if strings.HasPrefix(c.GetRawMessage(), prefix) {
 			str = c.GetRawMessage()[len(prefix):]
 			break
@@ -110,7 +110,7 @@ func TaskQuery(c *scheduler.Context) {
 	// 处理查询失败的错误
 	if err != nil {
 		logger.Errorf("查找出错：%v", err)
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	// 构造返回语句

@@ -1,36 +1,33 @@
-package service
+package messageservice
 
 import (
-	"bcjh-bot/bot"
 	"bcjh-bot/model/database"
-	"bcjh-bot/model/onebot"
-	"bcjh-bot/util"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
+	"strings"
 )
 
-func LaboratoryQuery(c *onebot.Context, args []string) {
-	logger.Info("实验室研究查询:", args)
+func LaboratoryQuery(c *scheduler.Context) {
+	arg := strings.TrimSpace(c.PretreatedMessage)
 
-	if len(args) == 0 {
-		err := bot.SendMessage(c, LaboratoryHelp())
-		if err != nil {
-			logger.Error("发送信息失败!", err)
-		}
+	if arg == "" {
+		_, _ = c.Reply(LaboratoryHelp())
 		return
 	}
 
 	targets := make([]database.Laboratory, 0)
-	err := database.DB.Where("target_name like ?", "%"+args[0]+"%").Find(&targets)
+	err := database.DB.Where("target_name like ?", "%"+arg+"%").Find(&targets)
 	if err != nil {
 		logger.Error("数据库查询出错!")
-		_ = bot.SendMessage(c, util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 
 	var msg string
 	if len(targets) == 0 {
-		msg = fmt.Sprintf("%s似乎不是实验室菜谱", args[0])
+		msg = fmt.Sprintf("%s似乎不是实验室菜谱", arg)
 	} else if len(targets) == 1 {
 		rarity := ""
 		for i := 0; i < targets[0].Rarity; i++ {
@@ -64,8 +61,5 @@ func LaboratoryQuery(c *onebot.Context, args []string) {
 		}
 	}
 
-	err = bot.SendMessage(c, msg)
-	if err != nil {
-		logger.Error("发送信息失败!", err)
-	}
+	_, _ = c.Reply(msg)
 }

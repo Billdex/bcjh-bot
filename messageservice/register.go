@@ -8,7 +8,7 @@ import (
 )
 
 func Register(s *scheduler.Scheduler) {
-	g := s.Group("*")
+	g := s.Group("#").Alias("＃")
 	g.Use(CheckBotState)
 	g.Use(CheckBlackList)
 	// 管理功能
@@ -35,6 +35,10 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("任务", CheckPluginState(true), TaskQuery).Alias("主线", "支线")
 	g.Bind("限时任务", CheckPluginState(true), TimeLimitingTaskQuery).Alias("限时攻略", "限时支线")
 	g.Bind("攻略", CheckPluginState(true), StrategyQuery)
+	g.Bind("碰瓷", CheckPluginState(false), UpgradeGuestQuery).Alias("升阶贵客", "升级贵客")
+	g.Bind("后厨", CheckPluginState(true), ComboQuery).Alias("合成")
+	g.Bind("兑换码", CheckPluginState(true), ExchangeQuery).Alias("玉璧")
+	g.Bind("实验室", CheckPluginState(true), LaboratoryQuery).Alias("研究")
 
 	// 快捷查询
 	g.Bind("图鉴网", GalleryWebsite).Alias("图鉴")

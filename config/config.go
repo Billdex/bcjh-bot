@@ -11,8 +11,9 @@ type serverConfig struct {
 }
 
 type botConfig struct {
-	PrivateMsgMaxLen int `ini:"private_msg_max_len"`
-	GroupMsgMaxLen   int `ini:"group_msg_max_len"`
+	PrivateMsgMaxLen  int `ini:"private_msg_max_len"`
+	GroupMsgMaxLen    int `ini:"group_msg_max_len"`
+	ExchangeMsgMaxLen int `ini:"exchange_msg_max_len"`
 }
 
 type dbConfig struct {
@@ -98,8 +99,9 @@ func initDefaultConfig(path string) error {
 			Port: 5800,
 		},
 		Bot: botConfig{
-			PrivateMsgMaxLen: 20,
-			GroupMsgMaxLen:   10,
+			PrivateMsgMaxLen:  20,
+			GroupMsgMaxLen:    10,
+			ExchangeMsgMaxLen: 3,
 		},
 		DB: dbConfig{
 			Host:     "127.0.0.1:3306",

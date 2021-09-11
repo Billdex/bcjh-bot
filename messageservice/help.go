@@ -5,10 +5,12 @@ import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
-	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"fmt"
 	"strings"
 )
+
+var prefixCharacters = []string{"#", "＃"}
 
 func HelpGuide(c *scheduler.Context) {
 	var msg string
@@ -54,7 +56,7 @@ func HelpGuide(c *scheduler.Context) {
 
 // 功能指引
 func introHelp() string {
-	preChar := util.PrefixCharacters[0]
+	preChar := prefixCharacters
 	sb := strings.Builder{}
 	sb.WriteString("【爆炒江湖查询机器人】\n")
 	sb.WriteString(fmt.Sprintf("使用方式『%s功能名 参数』\n", preChar))
@@ -76,7 +78,7 @@ func feedbackHelp() string {
 	msg += fmt.Sprintf("【问题反馈与建议】\n")
 	msg += fmt.Sprintf("在使用过程中如果遇到了什么bug或者有什么好的建议，可以通过该功能反馈给我\n")
 	msg += fmt.Sprintf("反馈方式:\n")
-	msg += fmt.Sprintf("「%s反馈 问题描述或建议」\n", util.PrefixCharacters[0])
+	msg += fmt.Sprintf("「%s反馈 问题描述或建议」\n", prefixCharacters)
 	msg += fmt.Sprintf("如果比较紧急可以私聊我们:\n")
 	msg += fmt.Sprintf("QQ:591404144(罗觉觉)或646792290(汪汪泥)")
 	return msg
@@ -101,7 +103,7 @@ func termHelp() string {
 
 // 厨师功能指引
 func chefHelp() string {
-	preChar := util.PrefixCharacters[0]
+	preChar := prefixCharacters
 	var msg string
 	msg += fmt.Sprintf("【厨师信息查询】\n")
 	msg += fmt.Sprintf("基础信息查询:『%s厨师 厨师名』\n", preChar)
@@ -111,7 +113,7 @@ func chefHelp() string {
 
 // 厨具功能指引
 func equipmentHelp() string {
-	preChar := util.PrefixCharacters[0]
+	preChar := prefixCharacters
 	var msg string
 	msg += fmt.Sprintf("【厨具信息查询】\n")
 	msg += fmt.Sprintf("基础信息查询:『%s厨具 厨具名』\n", preChar)
@@ -121,7 +123,7 @@ func equipmentHelp() string {
 
 // 菜谱功能指引
 func recipeHelp() string {
-	preChar := util.PrefixCharacters[0]
+	preChar := prefixCharacters
 	var msg string
 	msg += fmt.Sprintf("【菜谱信息查询】\n")
 	msg += fmt.Sprintf("基础信息查询:『%s菜谱 菜谱名』\n", preChar)
@@ -133,7 +135,7 @@ func recipeHelp() string {
 
 // 食材及效率查询
 func materialHelp() string {
-	prefix := util.PrefixCharacters[0]
+	prefix := prefixCharacters
 	sb := strings.Builder{}
 	sb.WriteString("【食材及食材效率查询】\n")
 	sb.WriteString(fmt.Sprintf("查询方式:『%s食材 食材名』", prefix))
@@ -142,8 +144,7 @@ func materialHelp() string {
 
 // 调料查询功能指引
 func condimentHelp() string {
-	prefix := util.PrefixCharacters[0]
-	split := util.ArgsSplitCharacter
+	prefix := prefixCharacters[0]
 	sb := strings.Builder{}
 	sb.WriteString("【调料信息查询】\n")
 	sb.WriteString("1. 简单查询，接名称或ID:\n")
@@ -151,8 +152,8 @@ func condimentHelp() string {
 	sb.WriteString("2. 限制稀有度，和菜名写在一起:\n")
 	sb.WriteString(fmt.Sprintf("『%s调料 三火』『%s调料 三星香菜』『%s调料 3星香菜』\n", prefix, prefix, prefix))
 	sb.WriteString("3. 限制来源，或对应阁楼的技法:\n")
-	sb.WriteString(fmt.Sprintf("『%s调料 %%%s切』『%s调料 三火%s切』『%s调料 1星%s梵正』",
-		prefix, split, prefix, split, prefix, split))
+	sb.WriteString(fmt.Sprintf("『%s调料 %%切』『%s调料 三火 切』『%s调料 1星 梵正』",
+		prefix, prefix, prefix))
 	// sb.WriteString("4. 限制技能:\n")
 	// sb.WriteString(fmt.Sprintf("『%s调料 三火%s炒技法+15』『%s调料 三火%s采集』『%s调料 三火%s售价』\n",
 	// 	prefix, split, prefix, split, prefix, split))
@@ -161,7 +162,7 @@ func condimentHelp() string {
 
 // 贵客功能指引
 func guestHelp() string {
-	preChar := util.PrefixCharacters[0]
+	preChar := prefixCharacters
 	var msg string
 	msg += fmt.Sprintf("【贵客信息查询】\n")
 	msg += fmt.Sprintf("基础信息查询:『%s贵客 贵客名』\n", preChar)
@@ -171,7 +172,7 @@ func guestHelp() string {
 
 // 符文功能指引
 func antiqueHelp() string {
-	preChar := util.PrefixCharacters[0]
+	preChar := prefixCharacters
 	var msg string
 	msg += fmt.Sprintf("【符文信息查询】\n")
 	msg += fmt.Sprintf("提供根据符文名查询对应菜谱的功能, 并按照一组时间升序排序\n")
@@ -182,22 +183,21 @@ func antiqueHelp() string {
 
 // 任务功能指引
 func questHelp() string {
-	prefix := util.PrefixCharacters[0]
-	split := util.ArgsSplitCharacter
+	prefix := prefixCharacters
 	maxLen := 5
 	sb := strings.Builder{}
 	sb.WriteString("【任务信息查询】\n")
 	sb.WriteString(fmt.Sprintf("1. 主线，接ID（可以指定长度，最多%d条）:\n", maxLen))
-	sb.WriteString(fmt.Sprintf("『%s主线%v1』『%s主线%v1%v5』\n", prefix, split, prefix, split, split))
+	sb.WriteString(fmt.Sprintf("『%s主线 1』『%s主线 1 5』\n", prefix, prefix))
 	sb.WriteString("2. 支线，接ID:\n")
-	sb.WriteString(fmt.Sprintf("『%s支线%v9.1』\n", prefix, split))
+	sb.WriteString(fmt.Sprintf("『%s支线 9.1』\n", prefix))
 	sb.WriteString("3. 限时，使用#攻略 限时 查看限时任务攻略")
 	return sb.String()
 }
 
 // 碰瓷功能指引
 func upgradeGuestHelp() string {
-	prefix := util.PrefixCharacters[0]
+	prefix := prefixCharacters
 	sb := strings.Builder{}
 	sb.WriteString("【升阶贵客查询】\n")
 	sb.WriteString(fmt.Sprintf("查询碰瓷贵客可用的菜:\n"))
@@ -209,7 +209,7 @@ func upgradeGuestHelp() string {
 
 // 后厨合成菜功能指引
 func comboHelp() string {
-	prefix := util.PrefixCharacters[0]
+	prefix := prefixCharacters
 	sb := strings.Builder{}
 	sb.WriteString("【后厨合成菜谱查询\n")
 	sb.WriteString(fmt.Sprintf("查询后厨合成菜的前置菜谱:\n"))
@@ -219,7 +219,7 @@ func comboHelp() string {
 
 // 实验室前置功能指引
 func LaboratoryHelp() string {
-	prefix := util.PrefixCharacters[0]
+	prefix := prefixCharacters
 	sb := strings.Builder{}
 	sb.WriteString("【实验室菜谱查询\n")
 	sb.WriteString(fmt.Sprintf("查询实验室菜谱的前置材料:\n"))
@@ -232,7 +232,7 @@ func strategyHelp() string {
 	strategies := make([]database.Strategy, 0)
 	err := database.DB.Find(&strategies)
 	if err != nil {
-		return util.SystemErrorNote
+		return e.SystemErrorNote
 	}
 	sb := strings.Builder{}
 	sb.WriteString("【游戏攻略快捷查询】\n")

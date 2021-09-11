@@ -5,7 +5,7 @@ import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	onebot2 "bcjh-bot/scheduler/onebot"
-	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strconv"
@@ -37,7 +37,7 @@ func MaterialQuery(c *scheduler.Context) {
 	err := database.DB.Where("name like ?", "%"+args[0]+"%").Find(&materials)
 	if err != nil {
 		logger.Error("数据库查询出错!")
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	if len(materials) == 0 {
@@ -66,7 +66,7 @@ func MaterialQuery(c *scheduler.Context) {
 	err = database.DB.Where("material_id = ?", materials[0].MaterialId).Find(&recipeMaterials)
 	if err != nil {
 		logger.Error("数据库查询出错!")
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 	if len(recipeMaterials) == 0 {
@@ -86,7 +86,7 @@ func MaterialQuery(c *scheduler.Context) {
 	err = database.DB.In("gallery_id", recipeGalleryIds).Find(&recipes)
 	if err != nil {
 		logger.Error("数据库查询出错!")
-		_, _ = c.Reply(util.SystemErrorNote)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 
