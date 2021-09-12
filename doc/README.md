@@ -61,4 +61,4 @@ Github仓库地址：https://github.com/Billdex/bcjh-bot
 
 感谢 [JetBrains](https://jb.gg/OpenSource.) 提供的开源项目License
 
-![JetBrains](media/jetbrains.png ':size=50')
+![JetBrains](media/jetbrains.png ':size=200')
