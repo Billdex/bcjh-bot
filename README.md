@@ -23,6 +23,15 @@
 - 感谢每一位提供问题反馈和功能建议的玩家
 
 ## Support
-[JetBrains](https://jb.gg/OpenSource.)
+感谢以下小伙伴的资金支持
+
+|QQ|昵称|金额|
+|---|---|---|
+|294728048| |20|
+|1726688182|不要鸡蛋啊喂|6.66|
+|2226179137|奇奇怪怪的羽毛|6.66|
+|1285600917|小玄猫|6.66|
+
+感谢 [JetBrains](https://jb.gg/OpenSource.) 提供的开源项目License
 
 ![JetBrains](doc/media/jetbrains.png ':size=200')
