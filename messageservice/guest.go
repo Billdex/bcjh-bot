@@ -63,9 +63,9 @@ func GuestQuery(c *scheduler.Context) {
 	case "guest_id":
 		err = database.DB.Where("guest_id = ?", guests[0].GuestId).Asc("total_time").Find(&guestsInfo)
 	case "guest_name":
-		err = database.DB.Where("guest_id = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
+		err = database.DB.Where("guest_name = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
 	default:
-		err = database.DB.Where("guest_id = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
+		err = database.DB.Where("guest_name = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
 	}
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
@@ -78,7 +78,7 @@ func GuestQuery(c *scheduler.Context) {
 	}
 	msg := fmt.Sprintf("%s %s", guests[0].GuestId, guests[0].GuestName)
 	for _, guestInfo := range guestsInfo {
-		msg += fmt.Sprintf("\n%s-%s %s", guestInfo.GuestName, guestInfo.Antique, util.FormatSecondToString(guestInfo.TotalTime))
+		msg += fmt.Sprintf("\n%s-%s %s", guestInfo.Recipe, guestInfo.Antique, util.FormatSecondToString(guestInfo.TotalTime))
 	}
 	_, _ = c.Reply(msg)
 }
