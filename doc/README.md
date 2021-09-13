@@ -6,26 +6,31 @@
 
 私聊机器人或向机器人所在的 QQ 群发送指定格式的指令，达到查询相关数据的功能。例如，私聊发送 `#菜谱 顺德鱼生`，即可收到机器人的回复：
 
-![#菜谱 顺德鱼生](media/16073224849723.jpg ':size=450')
+![菜谱顺德鱼生](media/菜谱顺德鱼生.png ':size=450')
 
 !> **禁止恶意刷数据！禁止频繁调用机器人影响群友正常聊天！！！** 否则关进小黑屋！😈
 
 # 功能一览
-爆炒查询机器人目前提供以下功能（戳页面左下角打开目录）：
+目前提供以下查询功能（戳页面左下角打开目录）：
 
-- [查询菜谱](usage/recipe.md)，对应指令为 `#菜谱`
-- [查询厨师](usage/chef.md)，对应指令为 `#厨师`
-- [查询厨具](usage/equip.md)，对应指令为 `#厨具`
-- [查询贵客](usage/guest.md)，对应指令为 `#贵客`
-- [查询符文](usage/antique.md)，对应指令为 `#符文`
-- [查询任务](usage/quest.md)，对应指令为 `#任务`
-- [查询调料](usage/condiment.md)，对应指令为 `#调料`
-- [查询后厨](usage/combo.md)，对应指令为 `#后厨`
-- [查询实验室](usage/laboratory.md)，对应指令为 `#实验室`
-- [查询兑换码](usage/exchange.md)，对应指令为 `#兑换码`
-- [查询游戏攻略](usage/strategy.md)，对应指令为 `#攻略`
-- [反馈建议](other/feedback.md)，对应指令为 `#反馈`
-- [图鉴网链接](other/convinient.md#图鉴网)，对应指令为 `#图鉴网`
+- [查询菜谱](usage/recipe.md)，示例： `#菜谱 糖番茄`
+- [查询厨师](usage/chef.md)，示例： `#厨师 羽十六`
+- [查询厨具](usage/equip.md)，示例： `#厨具 金烤叉`
+- [查询贵客](usage/guest.md)，示例：`#贵客 丐帮帮主 `
+- [查询升阶贵客](usage/upgrade_guest.md)，示例: `#碰瓷 官爷`
+- [查询符文](usage/antique.md)，示例： `#符文 五香果`
+- [查询任务](usage/quest.md)，示例：`#主线 520` `#限时任务`
+- [查询调料](usage/condiment.md)，示例： `#调料 香菜`
+- [查询后厨合成菜](usage/combo.md)，示例： `#后厨 快乐桶`
+- [查询实验室研究菜谱](usage/laboratory.md)，示例： `#实验室 `
+- [查询兑换码](usage/exchange.md)，示例： `#兑换码`
+- [查询游戏攻略](usage/strategy.md)，示例： `#攻略 奖池指南`
+- [反馈建议](other/feedback.md)，示例： `#反馈 功能XXX回复的XXX有错误`
+- [图鉴网链接](other/convinient.md#图鉴网)，示例： `#图鉴网`
+
+同时提供以下管理功能：
+
+- [启用/停用](admin/onoff.md), 对应指令为
 
 # 数据源说明
 
@@ -45,6 +50,8 @@
 联系方式:
 - QQ: 591404144 （罗觉觉）
 - QQ: 646792290 （汪汪泥）
+
+爆炒江湖嗷呜查询群: 636321135
 
 Github仓库地址：https://github.com/Billdex/bcjh-bot
 

@@ -65,7 +65,7 @@ func introHelp() string {
 	//sb.WriteString(fmt.Sprintf("「帮助」「反馈」「图鉴网」「术语」「厨师」「厨具」「菜谱」「调料」「贵客」「符文」「任务」「碰瓷」「后厨」\n"))
 	//sb.WriteString(fmt.Sprintf("查看功能指引『%s帮助 功能名』\n", preChar))
 	sb.WriteString("\n")
-	sb.WriteString("详情请看说明文档(编写中):\n")
+	sb.WriteString("详情请看说明文档:\n")
 	sb.WriteString("http://bcjhbot.billdex.cn\n")
 	sb.WriteString("数据来源: L图鉴网\n")
 	sb.WriteString("https://foodgame.gitee.io")
