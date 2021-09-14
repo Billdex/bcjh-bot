@@ -92,7 +92,7 @@ func AllowUser(c *scheduler.Context) {
 }
 
 func matchStringTime(s string) string {
-	reg := `(\d+h\d+m\d+s)|(\d+h\d+m)|(\d+h\d+s)|(\d+m\d+s)|(\d+h)|(\d+m)|(\d+s)`
+	reg := `(\d+d\d+h\d+m)|(\d+d\d+h)|(\d+d\d+m)|(\d+h\d+m)|(\d+d)|(\d+h)|(\d+m)`
 	pattern := regexp.MustCompile(reg)
 	allIndexes := pattern.FindAllSubmatch([]byte(s), -1)
 	for _, loc := range allIndexes {
@@ -107,27 +107,27 @@ func stringTimeToSecond(s string) int64 {
 	sumTime := 0
 	buf := ""
 	for _, c := range s {
-		if c == 'h' {
+		if c == 'd' {
+			num, err := strconv.Atoi(buf)
+			if err != nil {
+				return -1
+			}
+			sumTime += num * 60 * 60 * 24
+			buf = ""
+		} else if c == 'h' {
 			num, err := strconv.Atoi(buf)
 			if err != nil {
 				return -1
 			}
 			sumTime += num * 60 * 60
 			buf = ""
+
 		} else if c == 'm' {
 			num, err := strconv.Atoi(buf)
 			if err != nil {
 				return -1
 			}
 			sumTime += num * 60
-			buf = ""
-
-		} else if c == 's' {
-			num, err := strconv.Atoi(buf)
-			if err != nil {
-				return -1
-			}
-			sumTime += num
 			buf = ""
 		} else {
 			buf += string(c)

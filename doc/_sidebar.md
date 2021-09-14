@@ -13,7 +13,8 @@
     - [查询实验室💡](usage/laboratory.md)
     - [查询攻略🎯](usage/strategy.md)
     - [查询升阶贵客 🧚‍♀️](usage/upgrade_guest.md)
-
+    - [管理功能](usage/admin.md)
+    
 * 附录
     - [快捷查询 🔎](other/convinient.md)
     - [常见问题 ❔](other/trouble_shooting.md)
