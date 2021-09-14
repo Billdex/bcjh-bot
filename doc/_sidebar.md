@@ -7,7 +7,7 @@
     - [查询厨具 🥢](usage/equip.md)
     - [查询贵客 🎁‍](usage/guest.md)
     - [查询符文 🌈](usage/antique.md)
-    - [查询任务 🧐](usage/quest.md)
+    - [查询任务 🧐](usage/task.md)
     - [查询调料 💥](usage/condiment.md)
     - [查询后厨 ⏳](usage/combo.md)
     - [查询实验室💡](usage/laboratory.md)
@@ -18,4 +18,3 @@
     - [快捷查询 🔎](other/convinient.md)
     - [常见问题 ❔](other/trouble_shooting.md)
     - [意见反馈 🙋‍♀️](other/feedback.md)
-    - [更新日志 🐞](other/changelog.md)
