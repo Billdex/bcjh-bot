@@ -5,9 +5,11 @@ import (
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
+	"bcjh-bot/util/logger"
 )
 
 func CheckBotState(c *scheduler.Context) {
+	logger.Infof("收到一条需要处理的指令，botId:%d, message type: %s, groupID: %d", c.GetBot().BotId, c.GetMessageType(), c.GetGroupEvent())
 	if c.GetMessageType() == onebot.MessageTypePrivate || c.GetPrivateEvent() != nil {
 		if util.InKeywordList(c.GetKeyword(), "允许私聊", "开启私聊", "禁止私聊", "禁用私聊", "关闭私聊") {
 			c.Next()
@@ -36,7 +38,7 @@ func CheckBotState(c *scheduler.Context) {
 			return
 		}
 		event := c.GetGroupEvent()
-		if botOn, err := global.GetBotState(event.SelfId, event.GroupId); err != nil {
+		if botOn, err := global.GetBotState(c.GetBot().BotId, event.GroupId); err != nil {
 			c.Abort()
 			return
 		} else {

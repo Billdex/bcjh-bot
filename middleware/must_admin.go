@@ -17,7 +17,9 @@ func MustAdmin(c *scheduler.Context) {
 	if senderRole == onebot.GroupSenderRoleOwner || senderRole == onebot.GroupSenderRoleAdmin || global.IsSuperAdmin(c.GetSenderId()) {
 		c.Next()
 	} else {
-		_, _ = c.Reply(e.PermissionDeniedNote)
+		if ok, _ := global.GetBotState(c.GetBot().BotId, event.GroupId); ok {
+			_, _ = c.Reply(e.PermissionDeniedNote)
+		}
 		c.Abort()
 		return
 	}
@@ -27,7 +29,11 @@ func MustSuperAdmin(c *scheduler.Context) {
 	if global.IsSuperAdmin(c.GetSenderId()) {
 		c.Next()
 	} else {
-		_, _ = c.Reply(e.PermissionDeniedNote)
+		if c.GetMessageType() == onebot.MessageTypeGroup {
+			if ok, _ := global.GetBotState(c.GetBot().BotId, c.GetGroupEvent().GroupId); ok {
+				_, _ = c.Reply(e.PermissionDeniedNote)
+			}
+		}
 		c.Abort()
 	}
 }
