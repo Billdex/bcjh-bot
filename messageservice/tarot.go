@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"sync"
 	"time"
 )
+
+var tarotMutex sync.Mutex
 
 func Tarot(c *scheduler.Context) {
 	now := time.Now()
@@ -17,14 +20,16 @@ func Tarot(c *scheduler.Context) {
 	timeSeed -= int64(now.Hour() * 3600)
 	timeSeed -= int64(now.Minute() * 60)
 	timeSeed -= int64(now.Second())
-	rand.Seed(c.GetSenderId() + timeSeed)
 	total, err := database.DB.Count(&database.Tarot{})
 	if err != nil {
 		logger.Error("查询数据库出错", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
+	tarotMutex.Lock()
+	rand.Seed(c.GetSenderId() + timeSeed)
 	tarotId := rand.Int63n(total) + 1
+	tarotMutex.Unlock()
 	if (tarotId == 139 || tarotId == 161) && c.GetSenderId() != 1726688182 {
 		tarotId = 137
 	}
