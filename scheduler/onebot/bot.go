@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	apiResponseMapKey = "%s_%d%d"
+	apiResponseMapKey = "%s_%d_%d%d"
 )
 
 type Bot struct {
@@ -121,7 +121,7 @@ func (bot *Bot) ActionRequestAPI(action string, params interface{}) ([]byte, err
 		Action: action,
 		Params: params,
 	}
-	key := fmt.Sprintf(apiResponseMapKey, action, time.Now().UnixNano(), rand.Intn(100))
+	key := fmt.Sprintf(apiResponseMapKey, action, bot.BotId, time.Now().UnixNano(), rand.Intn(100))
 	req.Echo = key
 	recvChan := make(chan []byte, 1)
 	bot.apiResMux.Lock()
