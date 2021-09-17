@@ -167,6 +167,23 @@ func (bot *Bot) GetMsgInfo(messageId int32) (MsgInfo, error) {
 	return msg, nil
 }
 
+func (bot *Bot) GetGroupInfo(groupId int64) (GroupInfo, error) {
+	params := getGroupInfoParams{
+		GroupId: groupId,
+		NoCache: false,
+	}
+	data, err := bot.ActionRequestAPI("get_group_info", params)
+	if err != nil {
+		return GroupInfo{}, err
+	}
+	var group GroupInfo
+	err = json.Unmarshal(data, &group)
+	if err != nil {
+		return GroupInfo{}, err
+	}
+	return group, nil
+}
+
 func (bot *Bot) GetGroupList() ([]GroupInfo, error) {
 	var params interface{}
 	data, err := bot.ActionRequestAPI("get_group_list", params)

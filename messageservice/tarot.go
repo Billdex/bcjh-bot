@@ -1,6 +1,7 @@
 package messageservice
 
 import (
+	"bcjh-bot/global"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/e"
@@ -8,11 +9,8 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
-	"sync"
 	"time"
 )
-
-var tarotMutex sync.Mutex
 
 func Tarot(c *scheduler.Context) {
 	now := time.Now()
@@ -26,10 +24,10 @@ func Tarot(c *scheduler.Context) {
 		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
-	tarotMutex.Lock()
+	global.RandLock.Lock()
 	rand.Seed(c.GetSenderId() + timeSeed)
 	tarotId := rand.Int63n(total) + 1
-	tarotMutex.Unlock()
+	global.RandLock.Unlock()
 	if (tarotId == 139 || tarotId == 161) && c.GetSenderId() != 1726688182 {
 		tarotId = 137
 	}

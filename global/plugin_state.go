@@ -38,7 +38,8 @@ var pluginList = map[string][]string{
 	"实验室":  {"研究"},
 
 	// 娱乐功能
-	"抽签": {"占卜", "求签", "运势", "卜卦", "占卦"},
+	"抽签":     {"占卜", "求签", "运势", "卜卦", "占卦"},
+	"随机个人图鉴": {},
 }
 
 var pluginAliasComparison = make(map[string]string)

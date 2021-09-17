@@ -5,9 +5,9 @@ func GetCQImage(path string, pathType string) string {
 	case "file":
 		return "[CQ:image,file=file:///" + path + "]"
 	case "url":
-		return "[CQ:image,url=" + path + "]"
+		return "[CQ:image,file=" + path + "]"
 	case "base64":
-		return "[CQ:image,base64=base64://" + path + "]"
+		return "[CQ:image,file=base64://" + path + "]"
 	default:
 		return ""
 	}

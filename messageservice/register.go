@@ -48,4 +48,5 @@ func Register(s *scheduler.Scheduler) {
 
 	// 娱乐功能
 	g.Bind("抽签", CheckPluginState(false), Tarot).Alias("占卜", "求签", "运势", "卜卦", "占卦")
+	g.Bind("随机个人图鉴", CheckPluginState(false), RandChefImg)
 }
