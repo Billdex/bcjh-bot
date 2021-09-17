@@ -61,11 +61,12 @@ var practiceTaskList1 = []func(rarity int) string{
 
 var practiceTaskList2 = []func(rarity int) string{
 	func(rarity int) string { return fmt.Sprintf("一天内水群%d条消息", 50*rarity) },
-	func(rarity int) string { return fmt.Sprintf("一天内获得%d个群的龙王", 1*rarity) },
-	func(rarity int) string { return fmt.Sprintf("一天内发出%d个红包", 1*rarity) },
+	func(rarity int) string { return fmt.Sprintf("一天内获得%d个群的龙王", 2*rarity) },
+	func(rarity int) string { return fmt.Sprintf("一天内发出%d个红包", 2*rarity) },
 	func(rarity int) string { return fmt.Sprintf("一次发出总金额大于%d的红包", 5*rarity) },
 	func(rarity int) string { return fmt.Sprintf("一天内发送%d个表情包", 10*rarity) },
-	func(rarity int) string { return fmt.Sprintf("一天内被管理员禁言%d次", 1*rarity) },
+	func(rarity int) string { return fmt.Sprintf("一天内被管理员禁言%d次", 2*rarity) },
+	func(rarity int) string { return fmt.Sprintf("一天内群内开车%d次", 2*rarity) },
 	func(rarity int) string { return fmt.Sprintf("单次被禁言时长达到%d分钟", 10*rarity) },
 	func(rarity int) string { return fmt.Sprintf("连续潜水%d天", 10*rarity) },
 	func(rarity int) string {
@@ -75,14 +76,15 @@ var practiceTaskList2 = []func(rarity int) string{
 		return fmt.Sprintf("结算后忘记开业单次时长超过%d小时", 3*rarity)
 	},
 	func(rarity int) string { return fmt.Sprintf("一天内实验室研发成功%d次", 2*rarity) },
-	func(rarity int) string { return fmt.Sprintf("一天内实验室研发失败%d次", 1*rarity) },
-	func(rarity int) string { return fmt.Sprintf("连续%d天运势指数在中吉以上", 1*rarity) },
+	func(rarity int) string { return fmt.Sprintf("一天内实验室研发失败%d次", 2*rarity) },
+	func(rarity int) string { return fmt.Sprintf("连续%d天运势指数在中吉以上", 2*rarity) },
 	func(rarity int) string { return fmt.Sprintf("一天内璧池抽奖%d发", 3*rarity) },
 	func(rarity int) string { return fmt.Sprintf("一天内新手池抽奖%d发", 10*rarity) },
 	func(rarity int) string { return fmt.Sprintf("一天内中级池抽奖%d发", 5*rarity) },
-	func(rarity int) string { return fmt.Sprintf("一天内高级池抽奖%d发", 1*rarity) },
-	func(rarity int) string { return fmt.Sprintf("连续%d周厨神分享保", 1*rarity) },
-	func(rarity int) string { return fmt.Sprintf("连续%d周厨神高保", 1*rarity) },
+	func(rarity int) string { return fmt.Sprintf("一天内高级池抽奖%d发", 2*rarity) },
+	func(rarity int) string { return fmt.Sprintf("连续%d周厨神分享保", 2*rarity) },
+	func(rarity int) string { return fmt.Sprintf("连续%d周厨神高保", 2*rarity) },
+	func(rarity int) string { return fmt.Sprintf("连续%d天开车未被管理员发现", 2*rarity) },
 	func(rarity int) string { return fmt.Sprintf("一天内完成%d个主线任务", 3*rarity) },
 }
 
@@ -94,6 +96,7 @@ var practiceTaskList3 = []func(rarity int) string{
 	func(rarity int) string { return fmt.Sprintf("累计潜水%d天", 5*rarity) },
 	func(rarity int) string { return fmt.Sprintf("群活跃等级到达%d级", 20*rarity) },
 	func(rarity int) string { return fmt.Sprintf("累计因开车被管理员禁言%d次", 2*rarity) },
+	func(rarity int) string { return fmt.Sprintf("累计因调戏管理员被禁言%d次", 2*rarity) },
 	func(rarity int) string { return fmt.Sprintf("累计群内被禁言时长达到%d小时", 2*rarity) },
 	func(rarity int) string { return fmt.Sprintf("累计抽到大大吉%d次", 5*rarity) },
 	func(rarity int) string { return fmt.Sprintf("累计抽到小小吉%d次", 5*rarity) },
@@ -124,6 +127,7 @@ var practiceSkillList = []func(rarity int) string{
 	func(rarity int) string { return fmt.Sprintf("实验室研发成功概率提升%d%%", 2*rarity) },
 	func(rarity int) string { return fmt.Sprintf("实验室研发炸锅概率减少%d%%", 2*rarity) },
 	func(rarity int) string { return fmt.Sprintf("招募前十发出坑的概率提高%d%%", 1*rarity) },
+	func(rarity int) string { return fmt.Sprintf("开车被管理员抓住的概率减少%d%%", 2*rarity) },
 }
 
 func RandChefImg(c *scheduler.Context) {
@@ -176,7 +180,7 @@ func RandChefImg(c *scheduler.Context) {
 		chef.Fry = rand.Intn(15*rarity*rarity - 2*rarity + 120)
 		chef.Cut = rand.Intn(15*rarity*rarity - 2*rarity + 120)
 	}
-	condiment := 30*(rarity-1) + (rarity+1)/4*10 + rand.Intn(10+10*(rarity/2))
+	condiment := 20*rarity + (rarity-1)/2*10 + rarity/5*10 + rand.Intn(10+10*(rarity/2))
 	switch rand.Intn(6) {
 	case 0:
 		chef.Sweet = condiment
