@@ -140,7 +140,11 @@ func RandChefImg(c *scheduler.Context) {
 	timeSeed -= int64(now.Hour() * 3600)
 	timeSeed -= int64(now.Minute() * 60)
 	timeSeed -= int64(now.Second())
-	timeSeed -= int64(now.Weekday()-1) * 3600 * 24
+	weekday := now.Weekday()
+	if weekday == time.Sunday {
+		weekday = 7
+	}
+	timeSeed -= int64(weekday-1) * 3600 * 24
 
 	event := c.GetGroupEvent()
 	skills := make([]database.Skill, 0)
@@ -327,7 +331,11 @@ func createRandChefImg(chef userChefInfo) ([]byte, error) {
 	}
 	avatarImg, err := jpeg.Decode(bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		// 读取失败则再尝试用png读取
+		avatarImg, err = png.Decode(bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
 	}
 	avatarImg = resize.Resize(200, 200, avatarImg, resize.Bilinear)
 	draw.Draw(img,
