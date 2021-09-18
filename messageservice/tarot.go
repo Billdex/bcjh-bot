@@ -74,6 +74,10 @@ func ForceTarot(c *scheduler.Context) {
 		_, _ = c.Reply("请输入正确的数字")
 		return
 	}
+	if num == 99 && c.GetSenderId() != 1726688182 {
+		_, _ = c.Reply("改命失败")
+		return
+	}
 	tarotList := make([]database.Tarot, 0)
 	err = database.DB.Where("score = ?", num).Find(&tarotList)
 	if err != nil || len(tarotList) == 0 {
