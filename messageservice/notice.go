@@ -7,7 +7,7 @@ import (
 )
 
 func PublicNotice(c *scheduler.Context) {
-	msg := c.PretreatedMessage
+	msg := fmt.Sprintf("来自「%s」的公告:\n%s", c.GetSenderNickname(), c.PretreatedMessage)
 	bots := c.GetLinkBotList()
 	for _, bot := range bots {
 		groups, err := bot.GetGroupList()
