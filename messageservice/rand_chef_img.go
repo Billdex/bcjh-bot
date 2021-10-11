@@ -16,6 +16,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
@@ -334,7 +335,11 @@ func createRandChefImg(chef userChefInfo) ([]byte, error) {
 		// 读取失败则再尝试用png读取
 		avatarImg, err = png.Decode(bytes.NewReader(body))
 		if err != nil {
-			return nil, err
+			// 再失败就试试gif
+			avatarImg, err = gif.Decode(bytes.NewReader(body))
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	avatarImg = resize.Resize(200, 200, avatarImg, resize.Bilinear)
