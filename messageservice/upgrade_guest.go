@@ -6,6 +6,7 @@ import (
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
+	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strconv"
@@ -35,13 +36,16 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 	}
 
 	guests := make([]database.GuestGift, 0)
-	err := database.DB.Where("guest_id = ?", args[0]).Find(&guests)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply("查询数据失败!")
-		return
+	numId, err := strconv.Atoi(args[0])
+	if err == nil {
+		guestId := fmt.Sprintf("%03d", numId)
+		err := database.DB.Where("guest_id = ?", guestId).Find(&guests)
+		if err != nil {
+			logger.Error("查询数据库出错!", err)
+			_, _ = c.Reply(e.SystemErrorNote)
+			return
+		}
 	}
-
 	if len(guests) == 0 {
 		err = database.DB.Where("guest_name like ?", "%"+args[0]+"%").Find(&guests)
 		if err != nil {
