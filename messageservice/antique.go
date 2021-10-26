@@ -72,9 +72,9 @@ func AntiqueQuery(c *scheduler.Context) {
 		if page > maxPage {
 			page = maxPage
 		}
-		msg += fmt.Sprintf("以下菜有概率得%s: (%d/%d)", antique, page, maxPage)
+		msg += fmt.Sprintf("以下菜有概率得%s: (%d/%d)", guests[0].Antique, page, maxPage)
 	} else {
-		msg += fmt.Sprintf("以下菜有概率得%s:", antique)
+		msg += fmt.Sprintf("以下菜有概率得%s:", guests[0].Antique)
 	}
 	for i := (page - 1) * listLength; i < page*listLength && i < len(guests); i++ {
 		totalTime := util.FormatSecondToString(guests[i].TotalTime)
