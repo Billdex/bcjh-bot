@@ -34,7 +34,7 @@ func RecipeQuery(c *scheduler.Context) {
 		return
 	}
 
-	order := "稀有度"
+	order := "单时间"
 	page := 1
 	var note string
 	recipes := make([]database.Recipe, 0)
