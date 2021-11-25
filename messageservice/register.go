@@ -37,7 +37,7 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("攻略", CheckPluginState(true), StrategyQuery)
 	g.Bind("碰瓷", CheckPluginState(false), UpgradeGuestQuery).Alias("升阶贵客", "升级贵客")
 	g.Bind("后厨", CheckPluginState(true), ComboQuery).Alias("合成")
-	g.Bind("兑换码", CheckPluginState(true), ExchangeQuery).Alias("玉璧")
+	g.Bind("兑换码", CheckPluginState(true), ExchangeQuery).Alias("玉璧", "兑奖码")
 	g.Bind("实验室", CheckPluginState(true), LaboratoryQuery).Alias("研究")
 
 	// 快捷查询
