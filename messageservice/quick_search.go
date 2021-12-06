@@ -1,0 +1,111 @@
+package messageservice
+
+import (
+	"bcjh-bot/model/database"
+	"bcjh-bot/scheduler"
+	"bcjh-bot/util/logger"
+	"fmt"
+	"strings"
+)
+
+func QuickSearch(c *scheduler.Context) {
+	param := strings.TrimSpace(c.PretreatedMessage)
+	if param == "" || param == "%" {
+		return
+	}
+
+	recipes := SearchRecipe(param)
+	chefs := SearchChef(param)
+	equips := SearchEquipment(param)
+	strategies := SearchStrategy(param)
+
+	// 查询到多条结果的时候按顺序输出，每种三个，其他情况输出单个结果
+	var msg string
+	total := len(recipes) + len(chefs) + len(equips) + len(strategies)
+	if total > 1 {
+		msg += "查询到以下结果:"
+		for i := range recipes {
+			if i >= len(recipes)*6/total && i > 1 {
+				msg += "\n......"
+				break
+			}
+			msg += fmt.Sprintf("\n菜谱 %s", recipes[i].Name)
+		}
+		for i := range chefs {
+			if i >= len(chefs)*6/total && i > 1 {
+				msg += "\n......"
+				break
+			}
+			msg += fmt.Sprintf("\n厨师 %s", chefs[i].Name)
+		}
+		for i := range equips {
+			if i >= len(equips)*6/total && i > 1 {
+				msg += "\n......"
+				break
+			}
+			msg += fmt.Sprintf("\n厨具 %s", equips[i].Name)
+		}
+		for i := range strategies {
+			if i >= len(strategies)*6/total && i > 1 {
+				msg += "\n......"
+				break
+			}
+			msg += fmt.Sprintf("\n攻略 %s", strategies[i].Keyword)
+		}
+
+	} else {
+		if len(recipes) == 1 {
+			msg = echoRecipeMessage(recipes[0])
+		} else if len(chefs) == 1 {
+			msg = echoChefMessage(chefs[0])
+		} else if len(equips) == 1 {
+			msg = echoEquipMessage(equips[0])
+		} else if len(strategies) == 1 {
+			msg = strategies[0].Value
+		} else {
+			msg = "没有找到相关结果!"
+		}
+	}
+	_, _ = c.Reply(msg)
+}
+
+func SearchRecipe(name string) []database.Recipe {
+	recipes := make([]database.Recipe, 0)
+	err := database.DB.Where("name like ?", "%"+name+"%").Find(&recipes)
+	if err != nil {
+		logger.Error("查询数据库出错", err)
+		return []database.Recipe{}
+	}
+	return recipes
+}
+
+func SearchChef(name string) []database.Chef {
+	chefs := make([]database.Chef, 0)
+	err := database.DB.Where("name like ?", "%"+name+"%").Find(&chefs)
+	if err != nil {
+		logger.Error("查询数据库出错", err)
+		return []database.Chef{}
+	}
+	return chefs
+}
+
+func SearchEquipment(name string) []database.Equip {
+	equips := make([]database.Equip, 0)
+	err := database.DB.Where("name like ?", "%"+name+"%").Find(&equips)
+	if err != nil {
+		logger.Error("查询数据库出错", err)
+		return []database.Equip{}
+	}
+	return equips
+}
+
+func SearchStrategy(name string) []database.Strategy {
+	strategies := make([]database.Strategy, 0)
+	err := database.DB.Where("keyword like ?", "%"+name+"%").Find(&strategies)
+	if err != nil {
+		logger.Error("查询数据库出错", err)
+		return []database.Strategy{}
+	}
+	return strategies
+
+}
