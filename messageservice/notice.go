@@ -4,6 +4,7 @@ import (
 	"bcjh-bot/global"
 	"bcjh-bot/scheduler"
 	"fmt"
+	"time"
 )
 
 func PublicNotice(c *scheduler.Context) {
@@ -18,6 +19,8 @@ func PublicNotice(c *scheduler.Context) {
 			if botOk, _ := global.GetBotState(bot.BotId, group.GroupId); botOk {
 				if pluginOk, _ := global.GetPluginState(group.GroupId, "公告", true); pluginOk {
 					_, _ = bot.SendGroupMessage(group.GroupId, msg)
+					// 等待一点时间，免得发得太快被风控
+					time.Sleep(200 * time.Millisecond)
 				}
 			}
 		}
