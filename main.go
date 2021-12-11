@@ -2,6 +2,7 @@ package main
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/crontab"
 	"bcjh-bot/messageservice"
 	"bcjh-bot/model/database"
 	"bcjh-bot/noticeservice"
@@ -48,8 +49,13 @@ func main() {
 	// 注册插件与启动服务
 	handler := &onebot.Handler{}
 	s := scheduler.New()
+	// 消息处理
 	messageservice.Register(s)
+	// 时间处理
 	noticeservice.Register(handler)
+
+	// 定时任务
+	crontab.Register(s.Engine)
 	port := strconv.Itoa(config.AppConfig.Server.Port)
 	_ = s.Serve(":"+port, "/", handler)
 }
