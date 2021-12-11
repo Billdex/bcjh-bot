@@ -14,6 +14,7 @@ func PublicNotice(c *scheduler.Context) {
 		groups, err := bot.GetGroupList()
 		if err != nil {
 			_, _ = c.Reply(fmt.Sprintf("未获取[bot %d]到group列表, err:%v", bot.BotId, err))
+			continue
 		}
 		for _, group := range groups {
 			if botOk, _ := global.GetBotState(bot.BotId, group.GroupId); botOk {

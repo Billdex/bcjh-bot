@@ -40,6 +40,9 @@ var pluginList = map[string][]string{
 	// 娱乐功能
 	"抽签":     {"占卜", "求签", "运势", "卜卦", "占卦"},
 	"随机个人图鉴": {},
+
+	// 提醒功能
+	"厨神提醒": {},
 }
 
 var pluginAliasComparison = make(map[string]string)
