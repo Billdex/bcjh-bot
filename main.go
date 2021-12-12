@@ -55,7 +55,7 @@ func main() {
 	noticeservice.Register(handler)
 
 	// 定时任务
-	crontab.Register(s.Engine)
+	crontab.Register(s)
 	port := strconv.Itoa(config.AppConfig.Server.Port)
 	_ = s.Serve(":"+port, "/", handler)
 }
