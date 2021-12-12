@@ -2,14 +2,14 @@ package crontab
 
 import (
 	"bcjh-bot/global"
-	"bcjh-bot/scheduler/onebot"
+	"bcjh-bot/scheduler"
 	"bcjh-bot/util/logger"
 	"time"
 )
 
-func cookRaceRemind(server *onebot.Server) func() {
+func cookRaceRemind(s *scheduler.Scheduler) func() {
 	return func() {
-		bots := server.Bots
+		bots := s.Engine.Bots
 		msg := "本周厨神大赛就快要结束啦，请还未参赛的小伙伴尽快参赛哦！对啦，周常也别忘记做咯~"
 		for _, bot := range bots {
 			groups, err := bot.GetGroupList()
