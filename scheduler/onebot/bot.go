@@ -198,6 +198,22 @@ func (bot *Bot) GetGroupList() ([]GroupInfo, error) {
 	return groups, nil
 }
 
+func (bot *Bot) GetImageInfo(file string) (ImageInfo, error) {
+	params := getImageParams{
+		File: file,
+	}
+	data, err := bot.ActionRequestAPI("get_image", params)
+	if err != nil {
+		return ImageInfo{}, err
+	}
+	var image ImageInfo
+	err = json.Unmarshal(data, &image)
+	if err != nil {
+		return ImageInfo{}, err
+	}
+	return image, nil
+}
+
 func (bot *Bot) SendPrivateMessage(userId int64, message string) (int32, error) {
 	req := actionApiReq{
 		Action: "send_private_msg",

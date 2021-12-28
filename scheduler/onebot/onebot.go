@@ -179,3 +179,13 @@ type getMsgInfoResp struct {
 	Data    MsgInfo `json:"data"`
 	Echo    string  `json:"echo"`
 }
+
+type getImageParams struct {
+	File string `json:"file"`
+}
+
+type ImageInfo struct {
+	Size     int32  `json:"size"`
+	Filename string `json:"filename"`
+	Url      string `json:"url"`
+}

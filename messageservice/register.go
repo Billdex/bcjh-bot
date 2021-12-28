@@ -34,10 +34,10 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("调料", CheckPluginState(true), CondimentQuery)
 	g.Bind("任务", CheckPluginState(true), TaskQuery).Alias("主线", "支线")
 	g.Bind("限时任务", CheckPluginState(true), TimeLimitingTaskQuery).Alias("限时攻略", "限时支线")
-	g.Bind("攻略", CheckPluginState(true), StrategyQuery)
+	g.Bind("攻略", CheckPluginState(true), PretreatedImage, StrategyQuery)
 	g.Bind("碰瓷", CheckPluginState(false), UpgradeGuestQuery).Alias("升阶贵客", "升级贵客")
 	g.Bind("后厨", CheckPluginState(true), ComboQuery).Alias("合成")
-	g.Bind("兑换码", CheckPluginState(true), ExchangeQuery).Alias("玉璧", "兑奖码")
+	g.Bind("兑换码", CheckPluginState(true), PretreatedImage, ExchangeQuery).Alias("玉璧", "兑奖码")
 	g.Bind("实验室", CheckPluginState(true), LaboratoryQuery).Alias("研究")
 
 	// 快捷查询

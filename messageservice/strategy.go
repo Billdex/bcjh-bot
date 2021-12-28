@@ -133,6 +133,7 @@ func createStrategy(keyword string, value string) string {
 	strategy.Value = value
 	_, err = database.DB.Insert(strategy)
 	if err != nil {
+		logger.Error("数据库新增攻略出错", err)
 		return e.SystemErrorNote
 	}
 	return ""
@@ -154,6 +155,7 @@ func updateStrategy(keyword string, value string) string {
 	strategy.Value = value
 	_, err = database.DB.Where("id = ?", strategy.Id).Cols("value").Update(strategy)
 	if err != nil {
+		logger.Error("数据库更新攻略出错", err)
 		return e.SystemErrorNote
 	}
 	return ""
