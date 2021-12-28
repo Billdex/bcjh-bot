@@ -132,3 +132,15 @@ func (c *Context) GetAtList() []int64 {
 	}
 	return atList
 }
+
+func (c *Context) GetImageList() []string {
+	imgList := make([]string, 0)
+	reg := `\[CQ:image,file=(.*?.image).*?\]`
+	pattern := regexp.MustCompile(reg)
+	allIndexes := pattern.FindAllSubmatch([]byte(c.PretreatedMessage), -1)
+	for _, loc := range allIndexes {
+		img := string(loc[1])
+		imgList = append(imgList, img)
+	}
+	return imgList
+}
