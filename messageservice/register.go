@@ -47,7 +47,7 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("游戏术语", TermInfo).Alias("黑话", "术语")
 
 	// 快捷搜索
-	g.Bind("#", QuickSearch)
+	g.Bind("#", QuickSearch).Alias("＃")
 
 	// 娱乐功能
 	g.Bind("抽签", CheckPluginState(false), Tarot).Alias("占卜", "求签", "运势", "卜卦", "占卦")
