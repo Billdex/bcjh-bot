@@ -44,12 +44,15 @@ func (c *Context) Reply(msg string) (int32, error) {
 	}
 	switch c.messageType {
 	case onebot.MessageTypePrivate:
-		return c.bot.SendPrivateMessage(c.privateEvent.Sender.UserId, msg)
+		if c.privateEvent.SubType == "friend" {
+			return c.bot.SendPrivateMessage(c.privateEvent.Sender.UserId, msg)
+		}
 	case onebot.MessageTypeGroup:
 		return c.bot.SendGroupMessage(c.groupEvent.GroupId, msg)
 	default:
 		return 0, nil
 	}
+	return 0, nil
 }
 
 func (c *Context) GetBot() *onebot.Bot {
