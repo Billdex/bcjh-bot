@@ -92,8 +92,9 @@ func TaskQuery(c *scheduler.Context) {
 	var err error
 	if questType == "主线" {
 		id, _ := strconv.Atoi(idStr)
-		if id > 700 {
-			_, _ = c.Reply(prefixMsg + "主线任务目前只有 700 个哦")
+		maxQuest, err := GetMainQuestCount()
+		if id > maxQuest && err == nil {
+			_, _ = c.Reply(prefixMsg + fmt.Sprintf("目前只记录了 %d 条主线任务哦！", maxQuest))
 			return
 		}
 		if length == 1 {
@@ -115,6 +116,15 @@ func TaskQuery(c *scheduler.Context) {
 	}
 	// 构造返回语句
 	_, _ = c.Reply(prefixMsg + echoQuestsMessage(quests))
+}
+
+func GetMainQuestCount() (int, error) {
+	var quest database.Quest
+	_, err := database.DB.Select("quest_id").Where("type = ?", "主线任务").OrderBy("quest_id desc").Get(&quest)
+	if err != nil {
+		return 0, err
+	}
+	return quest.QuestId, nil
 }
 
 // 主线查询（单条）
@@ -153,7 +163,7 @@ func findSubQuest(subId string) ([]database.Quest, error) {
 // 构造返回信息及格式
 func echoQuestsMessage(quests []database.Quest) string {
 	if len(quests) == 0 {
-		return "哎呀，好像找不到呢!"
+		return "没有找到这个任务信息诶!"
 	}
 	sb := strings.Builder{}
 
