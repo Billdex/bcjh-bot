@@ -17,17 +17,13 @@ func CheckBotState(c *scheduler.Context) {
 			c.Next()
 			return
 		}
-		if privateOn, err := global.GetBotState(c.GetBot().BotId, 0); err != nil {
-			c.Abort()
+		if privateOn, _ := global.GetBotState(c.GetBot().BotId, 0); privateOn {
+			c.Next()
 			return
 		} else {
-			if privateOn {
-				c.Next()
-				return
-			} else {
-				c.Abort()
-				return
-			}
+			c.Abort()
+			c.SetWarnMessage("该 bot 未开启私聊查询")
+			return
 		}
 	}
 	if c.GetMessageType() == onebot.MessageTypeGroup || c.GetGroupEvent() != nil {
@@ -36,15 +32,13 @@ func CheckBotState(c *scheduler.Context) {
 			return
 		}
 		event := c.GetGroupEvent()
-		if botOn, err := global.GetBotState(c.GetBot().BotId, event.GroupId); err != nil {
-			c.Abort()
+		if botOn, _ := global.GetBotState(c.GetBot().BotId, event.GroupId); botOn {
+			c.Next()
 			return
 		} else {
-			if botOn {
-				c.Next()
-			} else {
-				c.Abort()
-			}
+			c.Abort()
+			c.SetWarnMessage("该群未启用此bot")
+			return
 		}
 	}
 }

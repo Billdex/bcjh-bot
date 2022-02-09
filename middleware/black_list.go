@@ -16,6 +16,7 @@ func CheckBlackList(c *scheduler.Context) {
 		return
 	} else {
 		c.Abort()
+		c.SetWarnMessage("该用户当前处于禁用状态")
 		return
 	}
 }
