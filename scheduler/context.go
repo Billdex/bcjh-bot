@@ -20,6 +20,7 @@ type Context struct {
 	messageType       string
 	rawMessage        string
 	PretreatedMessage string
+	WarnMessage       string
 }
 
 func (c *Context) Next() {
@@ -91,6 +92,10 @@ func (c *Context) GetRawMessage() string {
 	return c.rawMessage
 }
 
+func (c *Context) SetWarnMessage(msg string) {
+	c.WarnMessage = msg
+}
+
 func (c *Context) GetEventTime() int64 {
 	switch c.messageType {
 	case onebot.MessageTypePrivate:
@@ -100,6 +105,13 @@ func (c *Context) GetEventTime() int64 {
 	default:
 		return 0
 	}
+}
+
+func (c *Context) GetGroupId() int64 {
+	if c.messageType == onebot.MessageTypeGroup && c.GetGroupEvent() != nil {
+		return c.GetGroupEvent().GroupId
+	}
+	return 0
 }
 
 func (c *Context) GetSenderId() int64 {
