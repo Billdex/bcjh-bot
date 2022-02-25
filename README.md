@@ -36,4 +36,4 @@
 
 感谢 [JetBrains](https://jb.gg/OpenSource.) 提供的开源项目 License
 
-<img src= "media/jetbrains.png" width="200px">
+<img src= "doc/media/jetbrains.png" width="200px">
