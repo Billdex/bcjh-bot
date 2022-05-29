@@ -22,7 +22,8 @@ import (
 const (
 	foodGameGithubURLBase = "https://foodgame.github.io"
 	foodGameGiteeURLBase  = "https://foodgame.gitee.io"
-	bcjhURLBase           = "https://bcjh.gitee.io"
+	bcjhURLBase           = "https://bcjh.pages.dev"
+	bcjhxyzURLBase        = "https://bcjh.xyz"
 
 	dataURI        = "/data/data.min.json"
 	imageCSSURI    = "/css/image.css"
@@ -62,6 +63,8 @@ func UpdateData(c *scheduler.Context) {
 		baseURL = foodGameGiteeURLBase
 	case "白菜菊花":
 		baseURL = bcjhURLBase
+	case "bcjhxyz":
+		baseURL = bcjhxyzURLBase
 	default:
 		baseURL = foodGameGiteeURLBase
 	}

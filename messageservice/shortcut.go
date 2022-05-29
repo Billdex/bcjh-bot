@@ -11,7 +11,7 @@ import (
 func GalleryWebsite(c *scheduler.Context) {
 	var msg string
 	foodgame := "https://foodgame.gitee.io/"
-	bcjh := "https://bcjh.gitee.io/"
+	bcjh := "https://bcjh.pages.dev/"
 
 	msg += fmt.Sprintf("L图鉴网: %s\n", foodgame)
 	msg += fmt.Sprintf("白菜菊花手机图鉴网: %s", bcjh)
@@ -38,7 +38,7 @@ func BCJHAppDownload(c *scheduler.Context) {
 
 // 计算器，不用第二遍解释
 func Calculator(c *scheduler.Context) {
-	bcjh := "https://bcjh.gitee.io/"
+	bcjh := "https://bcjh.pages.dev/"
 	imgPath := config.AppConfig.Resource.Shortcut + "/白菜菊花.jpg"
 	var msg string
 	msg += fmt.Sprintf("网页版计算器在白菜菊花图鉴网:%s\n", bcjh)
