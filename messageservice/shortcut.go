@@ -12,9 +12,11 @@ func GalleryWebsite(c *scheduler.Context) {
 	var msg string
 	foodgame := "https://foodgame.gitee.io/"
 	bcjh := "https://bcjh.pages.dev/"
+	bcjhxyz := "https://www.bcjh.xyz/"
 
 	msg += fmt.Sprintf("L图鉴网: %s\n", foodgame)
-	msg += fmt.Sprintf("白菜菊花手机图鉴网: %s", bcjh)
+	msg += fmt.Sprintf("白菜菊花手机图鉴网: %s\n", bcjh)
+	msg += fmt.Sprintf("白菜菊花备用网址: %s", bcjhxyz)
 
 	_, _ = c.Reply(msg)
 }
@@ -28,10 +30,11 @@ func TermInfo(c *scheduler.Context) {
 
 // 白菜菊花App下载
 func BCJHAppDownload(c *scheduler.Context) {
-	imgPath := config.AppConfig.Resource.Shortcut + "/白菜菊花.jpg"
+	imgPathPage := config.AppConfig.Resource.Shortcut + "/白菜菊花page.jpg"
+	imgPathXyz := config.AppConfig.Resource.Shortcut + "/白菜菊花xyz.jpg"
 	var msg string
-	msg += fmt.Sprintf("密码: bcjh\n")
-	msg += onebot.GetCQImage(imgPath, "file")
+	msg += onebot.GetCQImage(imgPathPage, "file")
+	msg += onebot.GetCQImage(imgPathXyz, "file")
 
 	_, _ = c.Reply(msg)
 }
@@ -39,9 +42,14 @@ func BCJHAppDownload(c *scheduler.Context) {
 // 计算器，不用第二遍解释
 func Calculator(c *scheduler.Context) {
 	bcjh := "https://bcjh.pages.dev/"
-	imgPath := config.AppConfig.Resource.Shortcut + "/白菜菊花.jpg"
+	bcjhxyz := "https://www.bcjh.xyz/"
+	imgPathPage := config.AppConfig.Resource.Shortcut + "/白菜菊花page.jpg"
+	imgPathXyz := config.AppConfig.Resource.Shortcut + "/白菜菊花xyz.jpg"
 	var msg string
 	msg += fmt.Sprintf("网页版计算器在白菜菊花图鉴网:%s\n", bcjh)
-	msg += fmt.Sprintf("安卓用户支持使用白菜菊花app，扫描下图二维码下载，密码bcjh %s", onebot.GetCQImage(imgPath, "file"))
+	msg += fmt.Sprintf("白菜菊花备用网址: %s\n", bcjhxyz)
+	msg += fmt.Sprintf("安卓用户支持使用白菜菊花app，扫描下图二维码下载 %s %s",
+		onebot.GetCQImage(imgPathPage, "file"),
+		onebot.GetCQImage(imgPathXyz, "file"))
 	_, _ = c.Reply(msg)
 }
