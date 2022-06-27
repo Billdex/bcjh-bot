@@ -6,6 +6,7 @@ import (
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 func QuickSearch(c *scheduler.Context) {
@@ -14,10 +15,29 @@ func QuickSearch(c *scheduler.Context) {
 		return
 	}
 
-	recipes := SearchRecipe(param)
-	chefs := SearchChef(param)
-	equips := SearchEquipment(param)
-	strategies := SearchStrategy(param)
+	var wg sync.WaitGroup
+	var recipes []database.Recipe
+	var chefs []database.Chef
+	var equips []database.Equip
+	var strategies []database.Strategy
+	wg.Add(4)
+	go func() {
+		recipes = SearchRecipe(param)
+		wg.Done()
+	}()
+	go func() {
+		chefs = SearchChef(param)
+		wg.Done()
+	}()
+	go func() {
+		equips = SearchEquipment(param)
+		wg.Done()
+	}()
+	go func() {
+		strategies = SearchStrategy(param)
+		wg.Done()
+	}()
+	wg.Wait()
 
 	// 查询到多条结果的时候按顺序输出，每种三个，其他情况输出单个结果
 	var msg string
