@@ -66,7 +66,7 @@ func UpdateData(c *scheduler.Context) {
 	case "bcjhxyz":
 		baseURL = bcjhxyzURLBase
 	default:
-		baseURL = foodGameGiteeURLBase
+		baseURL = foodGameGithubURLBase
 	}
 	_, _ = c.Reply(fmt.Sprintf("开始导入数据, 数据源:\n%s", baseURL))
 	updateStart := time.Now().UnixNano()
