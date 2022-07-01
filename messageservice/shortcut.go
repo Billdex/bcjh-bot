@@ -10,7 +10,7 @@ import (
 // 图鉴网快捷访问
 func GalleryWebsite(c *scheduler.Context) {
 	var msg string
-	foodgame := "https://foodgame.gitee.io/"
+	foodgame := "https://foodgame.github.io/"
 	//bcjh := "https://bcjh.pages.dev/"
 	bcjh := "https://www.bcjh.xyz/"
 

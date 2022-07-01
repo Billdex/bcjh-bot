@@ -68,7 +68,7 @@ func introHelp() string {
 	sb.WriteString("详情请看说明文档:\n")
 	sb.WriteString("http://bcjhbot.billdex.cn\n")
 	sb.WriteString("数据来源: L图鉴网\n")
-	sb.WriteString("https://foodgame.gitee.io")
+	sb.WriteString("https://foodgame.github.io")
 	return sb.String()
 }
 
