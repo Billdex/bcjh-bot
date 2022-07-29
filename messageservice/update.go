@@ -35,26 +35,18 @@ const (
 var updateState = false
 var updateMux sync.Mutex
 
-func setUpdateState(state bool) {
-	updateMux.Lock()
-	defer updateMux.Unlock()
-	updateState = state
-}
-
-func getUpdateState() bool {
-	updateMux.Lock()
-	defer updateMux.Unlock()
-	return updateState
-}
-
 func UpdateData(c *scheduler.Context) {
 	// 防止在未更新完毕的情况下调用更新
-	if getUpdateState() {
+	updateMux.Lock()
+	if updateState == true {
 		_, _ = c.Reply("数据正在更新中")
+		updateMux.Unlock()
 		return
 	}
-	setUpdateState(true)
-	defer setUpdateState(false)
+	updateState = true
+	updateMux.Unlock()
+	defer func() { updateState = false }()
+
 	var baseURL string
 	switch strings.TrimSpace(c.PretreatedMessage) {
 	case "github":
