@@ -1,6 +1,7 @@
 package messageservice
 
 import (
+	"bcjh-bot/dao"
 	"bcjh-bot/global"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
@@ -92,7 +93,7 @@ func StrategyQuery(c *scheduler.Context) {
 	}
 
 	strategies := make([]database.Strategy, 0)
-	err := database.DB.Where("keyword like ?", "%"+arg+"%").Find(&strategies)
+	err := dao.DB.Where("keyword like ?", "%"+arg+"%").Find(&strategies)
 	if err != nil {
 		logger.Error("数据库查询出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
@@ -120,7 +121,7 @@ func createStrategy(keyword string, value string) string {
 	}
 
 	strategy := new(database.Strategy)
-	has, err := database.DB.Where("keyword = ?", keyword).Get(strategy)
+	has, err := dao.DB.Where("keyword = ?", keyword).Get(strategy)
 	if err != nil {
 		return e.SystemErrorNote
 	}
@@ -131,7 +132,7 @@ func createStrategy(keyword string, value string) string {
 	strategy = new(database.Strategy)
 	strategy.Keyword = keyword
 	strategy.Value = value
-	_, err = database.DB.Insert(strategy)
+	_, err = dao.DB.Insert(strategy)
 	if err != nil {
 		logger.Error("数据库新增攻略出错", err)
 		return e.SystemErrorNote
@@ -145,7 +146,7 @@ func updateStrategy(keyword string, value string) string {
 	}
 
 	strategy := new(database.Strategy)
-	has, err := database.DB.Where("keyword = ?", keyword).Get(strategy)
+	has, err := dao.DB.Where("keyword = ?", keyword).Get(strategy)
 	if err != nil {
 		return e.SystemErrorNote
 	}
@@ -153,7 +154,7 @@ func updateStrategy(keyword string, value string) string {
 		return "关键词不存在!"
 	}
 	strategy.Value = value
-	_, err = database.DB.Where("id = ?", strategy.Id).Cols("value").Update(strategy)
+	_, err = dao.DB.Where("id = ?", strategy.Id).Cols("value").Update(strategy)
 	if err != nil {
 		logger.Error("数据库更新攻略出错", err)
 		return e.SystemErrorNote
@@ -167,7 +168,7 @@ func deleteStrategy(keyword string) string {
 	}
 
 	strategy := new(database.Strategy)
-	affected, err := database.DB.Where("keyword = ?", keyword).Delete(strategy)
+	affected, err := dao.DB.Where("keyword = ?", keyword).Delete(strategy)
 	if err != nil {
 		return e.SystemErrorNote
 	}
@@ -182,7 +183,7 @@ func TimeLimitingTaskQuery(c *scheduler.Context) {
 	logger.Info("限时任务攻略查询")
 
 	strategies := new(database.Strategy)
-	has, err := database.DB.Where("keyword = ?", "限时任务").Get(strategies)
+	has, err := dao.DB.Where("keyword = ?", "限时任务").Get(strategies)
 	if err != nil {
 		logger.Error("数据库查询出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)

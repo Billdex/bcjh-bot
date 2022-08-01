@@ -2,6 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/dao"
 	"bcjh-bot/global"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
@@ -149,7 +150,7 @@ func RandChefImg(c *scheduler.Context) {
 
 	event := c.GetGroupEvent()
 	skills := make([]database.Skill, 0)
-	err := database.DB.Find(&skills)
+	err := dao.DB.Find(&skills)
 	if err != nil || len(skills) == 0 {
 		logger.Error("数据库查询出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)

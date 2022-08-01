@@ -2,6 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
@@ -39,7 +40,7 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 	numId, err := strconv.Atoi(args[0])
 	if err == nil {
 		guestId := fmt.Sprintf("%03d", numId)
-		err := database.DB.Where("guest_id = ?", guestId).Find(&guests)
+		err := dao.DB.Where("guest_id = ?", guestId).Find(&guests)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_, _ = c.Reply(e.SystemErrorNote)
@@ -47,7 +48,7 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 		}
 	}
 	if len(guests) == 0 {
-		err = database.DB.Where("guest_name like ?", "%"+args[0]+"%").Find(&guests)
+		err = dao.DB.Where("guest_name like ?", "%"+args[0]+"%").Find(&guests)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_, _ = c.Reply("查询数据失败!")
@@ -69,7 +70,7 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 		for _, guest := range guestInfo {
 			guestName = guest
 		}
-		err = database.DB.Where("guests like ?", "%\""+guestName+"\"%").Asc("Time").Find(&recipes)
+		err = dao.DB.Where("guests like ?", "%\""+guestName+"\"%").Asc("Time").Find(&recipes)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_, _ = c.Reply("查询数据失败!")

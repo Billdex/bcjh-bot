@@ -1,6 +1,7 @@
 package messageservice
 
 import (
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/logger"
@@ -91,7 +92,7 @@ func QuickSearch(c *scheduler.Context) {
 
 func SearchRecipe(name string) []database.Recipe {
 	recipes := make([]database.Recipe, 0)
-	err := database.DB.Where("name like ?", "%"+name+"%").Find(&recipes)
+	err := dao.DB.Where("name like ?", "%"+name+"%").Find(&recipes)
 	if err != nil {
 		logger.Error("查询数据库出错", err)
 		return []database.Recipe{}
@@ -101,7 +102,7 @@ func SearchRecipe(name string) []database.Recipe {
 
 func SearchChef(name string) []database.Chef {
 	chefs := make([]database.Chef, 0)
-	err := database.DB.Where("name like ?", "%"+name+"%").Find(&chefs)
+	err := dao.DB.Where("name like ?", "%"+name+"%").Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错", err)
 		return []database.Chef{}
@@ -111,7 +112,7 @@ func SearchChef(name string) []database.Chef {
 
 func SearchEquipment(name string) []database.Equip {
 	equips := make([]database.Equip, 0)
-	err := database.DB.Where("name like ?", "%"+name+"%").Find(&equips)
+	err := dao.DB.Where("name like ?", "%"+name+"%").Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错", err)
 		return []database.Equip{}
@@ -121,7 +122,7 @@ func SearchEquipment(name string) []database.Equip {
 
 func SearchStrategy(name string) []database.Strategy {
 	strategies := make([]database.Strategy, 0)
-	err := database.DB.Where("keyword like ?", "%"+name+"%").Find(&strategies)
+	err := dao.DB.Where("keyword like ?", "%"+name+"%").Find(&strategies)
 	if err != nil {
 		logger.Error("查询数据库出错", err)
 		return []database.Strategy{}

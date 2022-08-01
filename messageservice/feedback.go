@@ -1,6 +1,7 @@
 package messageservice
 
 import (
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/logger"
@@ -22,7 +23,7 @@ func Feedback(c *scheduler.Context) {
 	feedback.Nickname = c.GetSenderNickname()
 	feedback.Message = c.PretreatedMessage
 	feedback.Status = open
-	affected, err := database.DB.Insert(feedback)
+	affected, err := dao.DB.Insert(feedback)
 	if err != nil {
 		logger.Error("插入数据库出错:", err)
 		_, _ = c.Reply("不小心反馈失败了呢!")

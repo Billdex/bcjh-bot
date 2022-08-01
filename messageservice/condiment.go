@@ -2,6 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util"
@@ -19,7 +20,7 @@ func CondimentQuery(c *scheduler.Context) {
 	}
 
 	// 建立会话
-	Session := database.DB.Select("*")
+	Session := dao.DB.Select("*")
 
 	// 1. 第一个参数
 	// 过滤等级，在调料中查询是否包含等级相关的参数，查询后保留原有参数
@@ -76,7 +77,7 @@ func CondimentQuery(c *scheduler.Context) {
 				sb.WriteString("🔥")
 			}
 			skills := make([]database.Skill, 0)
-			_ = database.DB.Select("description").In("skill_id", condiment.Skill).Find(&skills)
+			_ = dao.DB.Select("description").In("skill_id", condiment.Skill).Find(&skills)
 			logger.Debugf("%v", skills)
 			for _, skill := range skills {
 				sb.WriteString(fmt.Sprintf("\n%v", skill.Description))

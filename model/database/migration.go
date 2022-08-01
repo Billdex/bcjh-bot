@@ -41,7 +41,7 @@ var migrations = []*migrate.Migration{
 	},
 }
 
-func Migration() error {
-	m := migrate.New(DB, migrate.DefaultOptions, migrations)
+func Migration(db *xorm.Engine) error {
+	m := migrate.New(db, migrate.DefaultOptions, migrations)
 	return m.Migrate()
 }
