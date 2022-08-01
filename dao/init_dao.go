@@ -4,8 +4,8 @@ import (
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"fmt"
-	_ "github.com/glebarez/sqlite"
 	_ "github.com/go-sql-driver/mysql"
+	_ "modernc.org/sqlite"
 	"xorm.io/xorm"
 )
 
@@ -18,7 +18,7 @@ var DB *xorm.Engine
 func InitDatabase(dsn string) error {
 	var err error
 	if config.AppConfig.DB.UseLocal {
-		DB, err = xorm.NewEngine("sqlite3", "./bcjh_data.db")
+		DB, err = xorm.NewEngine("sqlite", "./bcjh_data.db")
 	} else {
 		DB, err = xorm.NewEngine("mysql", dsn)
 	}
