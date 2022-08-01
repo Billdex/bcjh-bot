@@ -3,6 +3,7 @@ module bcjh-bot
 go 1.14
 
 require (
+	github.com/glebarez/sqlite v1.4.6 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/gorilla/websocket v1.4.2

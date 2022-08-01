@@ -17,6 +17,7 @@ type botConfig struct {
 }
 
 type dbConfig struct {
+	UseLocal bool   `int:"use_local"`
 	Host     string `ini:"host"`
 	Database string `ini:"database"`
 	User     string `ini:"user"`
@@ -57,9 +58,10 @@ func InitConfig() error {
 			ExchangeMsgMaxLen: 3,
 		},
 		DB: dbConfig{
+			UseLocal: true,
 			Host:     "127.0.0.1:3306",
 			Database: "bcjh",
-			User:     "root",
+			User:     "bcjh",
 			Password: "",
 		},
 		Resource: resourceConfig{
@@ -107,6 +109,7 @@ func initDefaultConfig(path string) error {
 			ExchangeMsgMaxLen: 3,
 		},
 		DB: dbConfig{
+			UseLocal: true,
 			Host:     "127.0.0.1:3306",
 			Database: "bcjh",
 			User:     "root",

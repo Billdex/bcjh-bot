@@ -2,6 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
@@ -75,7 +76,7 @@ func UpdateData(c *scheduler.Context) {
 
 	// 导入sql数据
 	start = time.Now().UnixNano()
-	err = importDirAllSqlFile(database.DB, config.AppConfig.Resource.Sql)
+	err = importDirAllSqlFile(dao.DB, config.AppConfig.Resource.Sql)
 	if err != nil {
 		logger.Error("导入预配置sql数据出错!", err)
 		_, _ = c.Reply("导入预配置sql数据出错!")
@@ -209,7 +210,7 @@ func UpdateData(c *scheduler.Context) {
 	// 更新厨师图鉴图片数据
 	start = time.Now().UnixNano()
 	chefs := make([]database.Chef, 0)
-	err = database.DB.Asc("gallery_id").Find(&chefs)
+	err = dao.DB.Asc("gallery_id").Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply("更新厨师图鉴图片数据出错!")
@@ -227,7 +228,7 @@ func UpdateData(c *scheduler.Context) {
 	// 更新菜谱图鉴图片数据
 	start = time.Now().UnixNano()
 	recipes := make([]database.Recipe, 0)
-	err = database.DB.Asc("gallery_id").Find(&recipes)
+	err = dao.DB.Asc("gallery_id").Find(&recipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply("更新菜谱图鉴图片数据出错!")
@@ -245,7 +246,7 @@ func UpdateData(c *scheduler.Context) {
 	// 更新厨具图鉴图片数据
 	start = time.Now().UnixNano()
 	equips := make([]database.Equip, 0)
-	err = database.DB.Asc("gallery_id").Find(&equips)
+	err = dao.DB.Asc("gallery_id").Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply("更新厨具图鉴图片数据出错!")
@@ -323,7 +324,7 @@ func importDirAllSqlFile(engine *xorm.Engine, dir string) error {
 
 // 更新厨师信息
 func updateChefs(chefsData []gamedata.ChefData) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -379,7 +380,7 @@ func updateChefs(chefsData []gamedata.ChefData) error {
 
 // 更新厨具信息
 func updateEquips(equipsData []gamedata.EquipData) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -413,7 +414,7 @@ func updateEquips(equipsData []gamedata.EquipData) error {
 
 // 更新菜谱信息
 func updateRecipes(recipesData []gamedata.RecipeData) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -495,7 +496,7 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 
 // 更新后厨合成菜信息
 func updateCombos(combosData []gamedata.ComboData) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -535,7 +536,7 @@ func updateCombos(combosData []gamedata.ComboData) error {
 
 // 更新贵客信息
 func updateGuests(guestsData []gamedata.GuestData) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -549,7 +550,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	}
 	// 从guest表中获取预设的贵客编号
 	guestInfo := make([]database.Guest, 0)
-	err = database.DB.Find(&guestInfo)
+	err = dao.DB.Find(&guestInfo)
 	if err != nil {
 		logger.Error("数据库查询出错", err)
 		_ = session.Rollback()
@@ -561,7 +562,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	}
 	// 从菜谱表中获取菜谱相关信息
 	recipeInfo := make([]database.Recipe, 0)
-	err = database.DB.Find(&recipeInfo)
+	err = dao.DB.Find(&recipeInfo)
 	if err != nil {
 		logger.Error("数据库查询出错", err)
 		_ = session.Rollback()
@@ -595,7 +596,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 }
 
 func updateMaterials(materialsData []gamedata.MaterialData) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -625,7 +626,7 @@ func updateMaterials(materialsData []gamedata.MaterialData) error {
 }
 
 func updateSkills(skillsData []gamedata.SkillData) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -667,7 +668,7 @@ func updateSkills(skillsData []gamedata.SkillData) error {
 
 // 更新家具信息
 func updateDecorations(decorationsData []gamedata.Decoration) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -707,7 +708,7 @@ func updateDecorations(decorationsData []gamedata.Decoration) error {
 
 // 更新调料信息
 func updateCondiments(condimentsData []gamedata.Condiment) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
@@ -741,7 +742,7 @@ func updateCondiments(condimentsData []gamedata.Condiment) error {
 
 // 更新任务信息
 func updateQuests(questsData []gamedata.QuestData) error {
-	session := database.DB.NewSession()
+	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {

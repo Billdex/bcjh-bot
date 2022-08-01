@@ -10,9 +10,10 @@ group_msg_max_len = 10
 exchange_msg_max_len = 3
 
 [database]
+use_local = true
 host = 127.0.0.1:3306
 database = bcjh
-user = root
+user = bcjh
 password =
 
 # 所有静态资源需要使用能被onebot客户端读取到的路径

@@ -1,6 +1,7 @@
 package messageservice
 
 import (
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/e"
@@ -18,7 +19,7 @@ func LaboratoryQuery(c *scheduler.Context) {
 	}
 
 	targets := make([]database.Laboratory, 0)
-	err := database.DB.Where("target_name like ?", "%"+arg+"%").Find(&targets)
+	err := dao.DB.Where("target_name like ?", "%"+arg+"%").Find(&targets)
 	if err != nil {
 		logger.Error("数据库查询出错!")
 		_, _ = c.Reply(e.SystemErrorNote)

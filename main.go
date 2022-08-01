@@ -3,8 +3,8 @@ package main
 import (
 	"bcjh-bot/config"
 	"bcjh-bot/crontab"
+	"bcjh-bot/dao"
 	"bcjh-bot/messageservice"
-	"bcjh-bot/model/database"
 	"bcjh-bot/noticeservice"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
@@ -39,7 +39,7 @@ func main() {
 		config.AppConfig.DB.Database,
 	)
 
-	err = database.InitDatabase(connStr)
+	err = dao.InitDatabase(connStr)
 	if err != nil {
 		logger.Error("数据库连接出错!", err)
 		return

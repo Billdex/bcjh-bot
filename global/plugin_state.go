@@ -1,6 +1,7 @@
 package global
 
 import (
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/util/logger"
 	"fmt"
@@ -86,7 +87,7 @@ func GetPluginState(groupId int64, pluginName string, defaultState bool) (bool, 
 		return pluginON, nil
 	} else {
 		pluginState := database.PluginState{}
-		has, err := database.DB.Where("group_id = ? and plugin_name = ?", groupId, pluginName).Get(&pluginState)
+		has, err := dao.DB.Where("group_id = ? and plugin_name = ?", groupId, pluginName).Get(&pluginState)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return false, err
@@ -95,7 +96,7 @@ func GetPluginState(groupId int64, pluginName string, defaultState bool) (bool, 
 			updatePluginState(key, pluginState.State)
 			return pluginState.State, nil
 		} else {
-			_, err := database.DB.Insert(&database.PluginState{
+			_, err := dao.DB.Insert(&database.PluginState{
 				GroupId:    groupId,
 				PluginName: pluginName,
 				State:      defaultState,
@@ -113,19 +114,19 @@ func GetPluginState(groupId int64, pluginName string, defaultState bool) (bool, 
 func SetPluginState(groupId int64, pluginName string, state bool) error {
 	key := fmt.Sprintf(pluginStateMapKey, groupId, pluginName)
 	defer deletePluginState(key)
-	has, err := database.DB.Where("group_id = ? and plugin_name = ?", groupId, pluginName).Get(&database.PluginState{})
+	has, err := dao.DB.Where("group_id = ? and plugin_name = ?", groupId, pluginName).Get(&database.PluginState{})
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		return err
 	}
 	if has {
-		_, err := database.DB.Cols("state").Where("group_id = ? and plugin_name = ?", groupId, pluginName).Update(&database.PluginState{State: state})
+		_, err := dao.DB.Cols("state").Where("group_id = ? and plugin_name = ?", groupId, pluginName).Update(&database.PluginState{State: state})
 		if err != nil {
 			logger.Error("更新数据库出错!", err)
 			return err
 		}
 	} else {
-		_, err := database.DB.Insert(&database.PluginState{
+		_, err := dao.DB.Insert(&database.PluginState{
 			GroupId:    groupId,
 			PluginName: pluginName,
 			State:      state,
