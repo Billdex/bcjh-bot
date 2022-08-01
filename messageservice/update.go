@@ -307,9 +307,9 @@ func importDirAllSqlFile(engine *xorm.Engine, dir string) error {
 		"laboratory.sql": database.Laboratory{},
 	}
 	for file, table := range tableMap {
-		if exist, err := engine.IsTableExist(table); err != nil {
+		if total, err := engine.Count(table); err != nil {
 			return err
-		} else if exist {
+		} else if total > 0 {
 			continue
 		} else {
 			_, err = engine.ImportFile(fmt.Sprintf("%s/%s", dir, file))
