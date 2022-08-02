@@ -41,7 +41,7 @@ func main() {
 
 	err = dao.InitDatabase(connStr)
 	if err != nil {
-		logger.Error("数据库连接出错!", err)
+		logger.Error("初始化数据库配置出错!", err)
 		return
 	}
 	logger.Info("初始化数据库引擎完毕")
