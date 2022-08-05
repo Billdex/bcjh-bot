@@ -92,7 +92,7 @@ func ChefQuery(c *scheduler.Context) {
 	}
 
 	if argCount == 0 {
-		_, _ = c.Reply(recipeHelp())
+		_, _ = c.Reply(chefHelp())
 		return
 	}
 

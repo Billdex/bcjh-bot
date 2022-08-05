@@ -31,7 +31,7 @@ import (
 func RecipeQuery(c *scheduler.Context) {
 
 	if strings.TrimSpace(c.PretreatedMessage) == "" {
-		_, _ = c.Reply(chefHelp())
+		_, _ = c.Reply(recipeHelp())
 		return
 	}
 
