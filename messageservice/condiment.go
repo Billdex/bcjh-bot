@@ -15,7 +15,7 @@ import (
 func CondimentQuery(c *scheduler.Context) {
 	args := strings.Split(util.MergeRepeatSpace(strings.TrimSpace(c.PretreatedMessage)), " ")
 	if args[0] == "" {
-		_, _ = c.Reply(antiqueHelp())
+		_, _ = c.Reply(condimentHelp())
 		return
 	}
 
