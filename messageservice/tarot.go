@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"bcjh-bot/dao"
-	"bcjh-bot/global"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/e"
@@ -25,10 +24,8 @@ func Tarot(c *scheduler.Context) {
 		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
-	global.RandLock.Lock()
-	rand.Seed(c.GetSenderId() + timeSeed)
-	tarotId := rand.Int63n(total) + 1
-	global.RandLock.Unlock()
+	selfRand := rand.New(rand.NewSource(c.GetSenderId() + timeSeed))
+	tarotId := selfRand.Int63n(total) + 1
 	if (tarotId == 139 || tarotId == 161) && c.GetSenderId() != 1726688182 {
 		tarotId = 137
 	}
