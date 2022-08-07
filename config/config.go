@@ -2,8 +2,11 @@ package config
 
 import (
 	"bcjh-bot/util"
+	_ "embed"
 	"fmt"
 	"gopkg.in/ini.v1"
+	"io/ioutil"
+	"path/filepath"
 )
 
 type serverConfig struct {
@@ -51,10 +54,11 @@ type appConfig struct {
 	Log      logConfig      `ini:"log"`
 }
 
-var AppConfig *appConfig
+var AppConfig appConfig
 
-func InitConfig() error {
-	AppConfig = &appConfig{
+// InitConfig 初始化配置信息，如果没有文件则生成默认配置
+func InitConfig(path string) error {
+	AppConfig = appConfig{
 		Server: serverConfig{
 			Port: 5800,
 		},
@@ -71,10 +75,10 @@ func InitConfig() error {
 			Password: "",
 		},
 		Resource: resourceConfig{
-			Image:    "/home/bcjh-bot/resource/image/",
-			Font:     "/home/bcjh-bot/resource/font/",
-			Shortcut: "/home/bcjh-bot/resource/shortcut/",
-			Sql:      "/home/bcjh-bot/resource/sql/",
+			Image:    "./resource/image/",
+			Font:     "./resource/font/",
+			Shortcut: "./resource/shortcut/",
+			Sql:      "./resource/sql/",
 		},
 		Log: logConfig{
 			Style:   "CONSOLE",
@@ -82,10 +86,9 @@ func InitConfig() error {
 			OutPath: "./logs/bcjh-bot.log",
 		},
 	}
-	path := "./config/app.ini"
 	has, err := util.PathExists(path)
 	if !has {
-		err := initDefaultConfig(path)
+		err := saveDefaultConfig(path)
 		if err != nil {
 			return fmt.Errorf("未找到配置文件, 生成默认配置文件出错! %s", err)
 		}
@@ -96,51 +99,49 @@ func InitConfig() error {
 		return fmt.Errorf("加载配置文件出错! %s", err)
 	}
 
-	err = cfg.MapTo(AppConfig)
+	err = cfg.MapTo(&AppConfig)
 	if nil != err {
 		return err
 	}
 
+	// 资源路径转换为绝对路径
+	changeResourceToAbsPath()
+
 	return nil
 }
 
-func initDefaultConfig(path string) error {
-	defaultConfig := &appConfig{
-		Server: serverConfig{
-			Port: 5800,
-		},
-		Bot: botConfig{
-			PrivateMsgMaxLen:  20,
-			GroupMsgMaxLen:    10,
-			ExchangeMsgMaxLen: 3,
-		},
-		DB: dbConfig{
-			UseLocal: true,
-			Host:     "127.0.0.1:3306",
-			Database: "bcjh",
-			User:     "root",
-			Password: "",
-		},
-		Resource: resourceConfig{
-			Image:    "/home/bcjh-bot/resource/image/",
-			Font:     "/home/bcjh-bot/resource/font/",
-			Shortcut: "/home/bcjh-bot/resource/shortcut/",
-			Sql:      "/home/bcjh-bot/resource/sql/",
-		},
-		Log: logConfig{
-			Style:   "CONSOLE",
-			Level:   "INFO",
-			OutPath: "./logs/bcjh-bot.log",
-		},
-	}
-	cfg := ini.Empty()
-	err := ini.ReflectFrom(cfg, defaultConfig)
-	if err != nil {
-		return err
-	}
-	err = cfg.SaveTo(path)
+//go:embed app.ini.example
+var exampleConfig []byte
+
+// saveDefaultConfig 保存默认配置信息
+func saveDefaultConfig(path string) error {
+	err := ioutil.WriteFile(path, exampleConfig, 0666)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// changeResourceToAbsPath 转换资源路径为绝对路径
+func changeResourceToAbsPath() {
+	var path string
+	var err error
+	path, err = filepath.Abs(AppConfig.Resource.Image)
+	if err == nil {
+		AppConfig.Resource.Image = path
+	}
+	path, err = filepath.Abs(AppConfig.Resource.Font)
+	if err == nil {
+		AppConfig.Resource.Font = path
+	}
+	path, err = filepath.Abs(AppConfig.Resource.Shortcut)
+	if err == nil {
+		AppConfig.Resource.Shortcut = path
+	}
+	path, err = filepath.Abs(AppConfig.Resource.Sql)
+	if err == nil {
+		AppConfig.Resource.Sql = path
+	}
+
+	fmt.Printf("%#+v", AppConfig.Resource)
 }

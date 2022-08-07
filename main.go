@@ -9,13 +9,18 @@ import (
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/logger"
+	"flag"
 	"fmt"
 	"strconv"
 )
 
 func main() {
+	// 加在启动参数
+	cfgPath := flag.String("config", "config/app.ini", "配置文件路径")
+	flag.Parse()
+
 	// 初始化配置文件
-	err := config.InitConfig()
+	err := config.InitConfig(*cfgPath)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -32,14 +37,7 @@ func main() {
 	logger.Info("初始化logger完毕")
 
 	// 初始化数据库引擎
-	connStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&loc=Local",
-		config.AppConfig.DB.User,
-		config.AppConfig.DB.Password,
-		config.AppConfig.DB.Host,
-		config.AppConfig.DB.Database,
-	)
-
-	err = dao.InitDatabase(connStr)
+	err = dao.InitDatabase()
 	if err != nil {
 		logger.Error("初始化数据库配置出错!", err)
 		return

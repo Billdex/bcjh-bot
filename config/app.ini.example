@@ -9,29 +9,30 @@ group_msg_max_len = 10
 # 兑换码消息最大长度
 exchange_msg_max_len = 3
 # 管理员账号，要配置多个时用半角逗号分隔
-admin = 12345678
+admin = 123456789
 
 # 数据库相关配置
 [database]
 # 是否开启本地数据库，开启后将在程序目录自动创建一个数据库文件。关闭则根据后续配置连接 mysql
 use_local = true
+# use_local 为false时会读取以下数据库连接配置
 host = 127.0.0.1:3306
 database = bcjh
 user = bcjh
 password =
 
-# 所有静态资源需要使用能被onebot客户端读取到的路径
+# 静态资源路径
 [resource]
-image = /bcjh-bot/resource/image/
-font = /bcjh-bot/resource/font/
+image = /home/bcjh-bot/resource/image/
+font = /home/bcjh-bot/resource/font/
 shortcut = /home/bcjh-bot/resource/shortcut/
 sql = /home/bcjh-bot/resource/sql/
 
 # 日志相关配置
 [log]
-# log style: JSON, CONSOLE
+# 日志风格: JSON, CONSOLE
 style = CONSOLE
-# log level: DEBUG, INFO, WARN, ERROR, PANIC, FATAL
-level = DEBUG
-# log file path
+# 日志级别: DEBUG, INFO, WARN, ERROR, PANIC, FATAL
+level = INFO
+# 日志输出路径
 out_path = ./logs/bcjh-bot.log
