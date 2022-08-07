@@ -4,11 +4,6 @@ import (
 	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/util/logger"
-	"sync"
-)
-
-var (
-	RandLock sync.Mutex
 )
 
 func init() {
