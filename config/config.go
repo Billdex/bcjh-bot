@@ -35,7 +35,6 @@ type resourceConfig struct {
 	Image    string `ini:"image"`    // 各项图片资源存放和生成用的路径
 	Font     string `ini:"font"`     // 字体路径
 	Shortcut string `ini:"shortcut"` // 部分快捷用于所需图片的存放路径
-	Sql      string `ini:"sql"`      // 需要导入的预配置 sql 数据文件目录
 }
 
 // logConfig 日志配置
@@ -78,7 +77,6 @@ func InitConfig(path string) error {
 			Image:    "./resource/image/",
 			Font:     "./resource/font/",
 			Shortcut: "./resource/shortcut/",
-			Sql:      "./resource/sql/",
 		},
 		Log: logConfig{
 			Style:   "CONSOLE",
@@ -137,10 +135,6 @@ func changeResourceToAbsPath() {
 	path, err = filepath.Abs(AppConfig.Resource.Shortcut)
 	if err == nil {
 		AppConfig.Resource.Shortcut = path
-	}
-	path, err = filepath.Abs(AppConfig.Resource.Sql)
-	if err == nil {
-		AppConfig.Resource.Sql = path
 	}
 
 	fmt.Printf("%#+v", AppConfig.Resource)

@@ -1,4 +1,4 @@
-INSERT INTO laboratory (target_name, target_type, rarity, skill, antique, antique_number, equips, recipes)
+INSERT INTO `laboratory` (target_name, target_type, rarity, skill, antique, antique_number, equips, recipes)
 VALUES ('猪肉脯', 'recipe', 1, '炒', '五香果', 4, '[]', '[]'),
        ('豆腐青菜', 'recipe', 1, '炒', '五香果', 4, '[]', '["炒青菜","香菇青菜","青菜豆腐汤"]'),
        ('青椒香干', 'recipe', 1, '炒', '五香果', 4, '[]', '["剁椒跑蛋","罗宋汤"]'),
