@@ -26,7 +26,6 @@ password =
 image = /home/bcjh-bot/resource/image/
 font = /home/bcjh-bot/resource/font/
 shortcut = /home/bcjh-bot/resource/shortcut/
-sql = /home/bcjh-bot/resource/sql/
 
 # 日志相关配置
 [log]
