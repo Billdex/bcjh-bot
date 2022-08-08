@@ -14,6 +14,9 @@ var guestSql string
 //go:embed sql/laboratory.sql
 var laboratorySql string
 
+//go:embed sql/tarot.sql
+var tarotSql string
+
 // initDataImport 初始化数据导入
 // 用于导入一些配置数据，以及图鉴网没有的数据
 func initDataImport() error {
@@ -40,6 +43,7 @@ func initDataImport() error {
 	tableMap := map[string]string{
 		database.Guest{}.TableName():      guestSql,
 		database.Laboratory{}.TableName(): laboratorySql,
+		database.Tarot{}.TableName():      tarotSql,
 	}
 	for tableName, sql := range tableMap {
 		if total, err := DB.Table(tableName).Count(); err != nil {
