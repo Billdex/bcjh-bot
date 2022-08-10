@@ -5,21 +5,46 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 )
 
 type Server struct {
-	Bots map[int64]*Bot
+	bots map[int64]*Bot
 	Port string
 	Path string
+
+	mux sync.Mutex
 }
 
 func New(port string, path string) *Server {
 	s := &Server{
-		Bots: make(map[int64]*Bot),
+		bots: make(map[int64]*Bot),
 		Port: port,
 		Path: path,
 	}
 	return s
+}
+
+func (s *Server) GetBots() []*Bot {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	bots := make([]*Bot, 0)
+	for _, bot := range s.bots {
+		bots = append(bots, bot)
+	}
+	return bots
+}
+
+func (s *Server) AddBot(id int64, bot *Bot) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.bots[id] = bot
+}
+
+func (s *Server) RemoveBot(id int64) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	delete(s.bots, id)
 }
 
 func (s *Server) Serve(handler Handler) error {
@@ -40,9 +65,9 @@ func (s *Server) Serve(handler Handler) error {
 		}
 		onCloseHandler := func(code int, message string) {
 			log.Printf("Bot %d 断开连接\n", botId)
-			delete(s.Bots, botId)
+			s.RemoveBot(botId)
 		}
-		s.Bots[botId] = NewBot(botId, c, handler, onCloseHandler, false)
+		s.AddBot(botId, NewBot(botId, c, handler, onCloseHandler, false))
 		log.Printf("Bot %d 已建立连接\n", botId)
 		return
 	})
