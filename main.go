@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// 加在启动参数
-	cfgPath := flag.String("config", "config/app.ini", "配置文件路径")
+	cfgPath := flag.String("cfg", "config.ini", "配置文件路径")
 	flag.Parse()
 
 	// 初始化配置文件
