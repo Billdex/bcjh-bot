@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
-	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
@@ -38,7 +37,7 @@ func ChefQuery(c *scheduler.Context) {
 	page := 1
 	var note string
 	chefs := make([]database.Chef, 0)
-	err := dao.DB.Find(&chefs)
+	err := database.DB.Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
@@ -92,7 +91,7 @@ func ChefQuery(c *scheduler.Context) {
 	}
 
 	if argCount == 0 {
-		_, _ = c.Reply(chefHelp())
+		_, _ = c.Reply(recipeHelp())
 		return
 	}
 
@@ -162,7 +161,7 @@ func filterChefsBySkill(chefs []database.Chef, skill string) ([]database.Chef, s
 	}
 	result := make([]database.Chef, 0)
 	skills := make(map[int]database.Skill)
-	err := dao.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
+	err := database.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		return result, e.SystemErrorNote
@@ -271,19 +270,19 @@ func echoChefMessage(chef database.Chef) string {
 			rarity += "🔥"
 		}
 		skill := new(database.Skill)
-		_, err = dao.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
+		_, err = database.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return e.SystemErrorNote
 		}
 		ultimateSkill := new(database.Skill)
-		_, err = dao.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
+		_, err = database.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return e.SystemErrorNote
 		}
 		ultimateGoals := make([]database.Quest, 0)
-		err = dao.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
+		err = database.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return e.SystemErrorNote
@@ -582,7 +581,7 @@ func ChefInfoToImage(chefs []database.Chef, imgURL string, imgCSS *gamedata.ImgC
 
 		// 输出技法数据
 		skill := new(database.Skill)
-		_, err = dao.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
+		_, err = database.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
 		if err != nil {
 			return err
 		}
@@ -594,7 +593,7 @@ func ChefInfoToImage(chefs []database.Chef, imgURL string, imgCSS *gamedata.ImgC
 
 		// 输出修炼效果数据
 		ultimateSkill := new(database.Skill)
-		_, err = dao.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
+		_, err = database.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
 		if err != nil {
 			return err
 		}
@@ -609,7 +608,7 @@ func ChefInfoToImage(chefs []database.Chef, imgURL string, imgCSS *gamedata.ImgC
 
 		// 输出修炼任务数据
 		ultimateGoals := make([]database.Quest, 0)
-		err = dao.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
+		err = database.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
 		if err != nil {
 			return err
 		}

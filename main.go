@@ -3,57 +3,55 @@ package main
 import (
 	"bcjh-bot/config"
 	"bcjh-bot/crontab"
-	"bcjh-bot/dao"
 	"bcjh-bot/messageservice"
+	"bcjh-bot/model/database"
 	"bcjh-bot/noticeservice"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/logger"
-	"flag"
-	"log"
+	"fmt"
 	"strconv"
-	"time"
 )
 
 func main() {
-	// 加在启动参数
-	cfgPath := flag.String("cfg", "config.ini", "配置文件路径")
-	flag.Parse()
-
 	// 初始化配置文件
-	err := config.InitConfig(*cfgPath)
+	err := config.InitConfig()
 	if err != nil {
-		log.Println(err)
-		time.Sleep(5 * time.Second)
+		fmt.Println(err)
 		return
 	}
-	log.Println("已加载配置文件")
+	fmt.Println("配置文件加载完毕")
 
 	// 初始化logger
-	err = logger.InitLog(logger.EncodeStyleConsole, config.AppConfig.Log.OutPath, config.AppConfig.Log.Level)
+	err = logger.InitLog(config.AppConfig.Log.Style, config.AppConfig.Log.OutPath, config.AppConfig.Log.Level)
 	if err != nil {
-		log.Println("初始化日志组件出错！", err)
-		time.Sleep(5 * time.Second)
+		fmt.Println("初始化logger出错！", err)
 		return
 	}
 	defer logger.Sync()
-	log.Println("日志组件初始化完毕")
+	logger.Info("初始化logger完毕")
 
 	// 初始化数据库引擎
-	err = dao.InitDatabase()
+	connStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&loc=Local",
+		config.AppConfig.DB.User,
+		config.AppConfig.DB.Password,
+		config.AppConfig.DB.Host,
+		config.AppConfig.DB.Database,
+	)
+
+	err = database.InitDatabase(connStr)
 	if err != nil {
-		log.Println("初始化数据库配置出错!", err)
-		time.Sleep(5 * time.Second)
+		logger.Error("数据库连接出错!", err)
 		return
 	}
-	log.Println("初始化数据库引擎完毕")
+	logger.Info("初始化数据库引擎完毕")
 
 	// 注册插件与启动服务
 	handler := &onebot.Handler{}
 	s := scheduler.New()
 	// 消息处理
 	messageservice.Register(s)
-	// 事件处理
+	// 时间处理
 	noticeservice.Register(handler)
 
 	// 定时任务

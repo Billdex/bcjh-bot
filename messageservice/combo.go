@@ -1,7 +1,6 @@
 package messageservice
 
 import (
-	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/e"
@@ -25,14 +24,14 @@ func ComboQuery(c *scheduler.Context) {
 	recipes := make([]database.Recipe, 0)
 	recipeId, err := strconv.Atoi(comboRecipeName)
 	if err == nil {
-		err = dao.DB.Where("gallery_id = ?", fmt.Sprintf("%03d", recipeId)).Find(&recipes)
+		err = database.DB.Where("gallery_id = ?", fmt.Sprintf("%03d", recipeId)).Find(&recipes)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_, _ = c.Reply(e.SystemErrorNote)
 			return
 		}
 	} else {
-		err = dao.DB.Where("name like ?", "%"+comboRecipeName+"%").Find(&recipes)
+		err = database.DB.Where("name like ?", "%"+comboRecipeName+"%").Find(&recipes)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_, _ = c.Reply(e.SystemErrorNote)
@@ -55,7 +54,7 @@ func ComboQuery(c *scheduler.Context) {
 	comboRecipeName = recipes[0].Name
 
 	preRecipes := make([]database.Recipe, 0)
-	err = dao.DB.Where("combo = ?", comboRecipeName).Find(&preRecipes)
+	err = database.DB.Where("combo = ?", comboRecipeName).Find(&preRecipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)

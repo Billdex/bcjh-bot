@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
-	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util"
@@ -25,7 +24,7 @@ func GuestQuery(c *scheduler.Context) {
 	numId, err := strconv.Atoi(arg)
 	if err == nil {
 		guestId := fmt.Sprintf("%03d", numId)
-		err := dao.DB.Where("guest_id = ?", guestId).Find(&guests)
+		err := database.DB.Where("guest_id = ?", guestId).Find(&guests)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_, _ = c.Reply(e.SystemErrorNote)
@@ -33,7 +32,7 @@ func GuestQuery(c *scheduler.Context) {
 		}
 	}
 	if len(guests) == 0 {
-		err = dao.DB.Where("guest_name like ?", "%"+arg+"%").Find(&guests)
+		err = database.DB.Where("guest_name like ?", "%"+arg+"%").Find(&guests)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			_, _ = c.Reply(e.SystemErrorNote)
@@ -62,11 +61,11 @@ func GuestQuery(c *scheduler.Context) {
 	guestsInfo := make([]database.GuestGift, 0)
 	switch argType {
 	case "guest_id":
-		err = dao.DB.Where("guest_id = ?", guests[0].GuestId).Asc("total_time").Find(&guestsInfo)
+		err = database.DB.Where("guest_id = ?", guests[0].GuestId).Asc("total_time").Find(&guestsInfo)
 	case "guest_name":
-		err = dao.DB.Where("guest_name = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
+		err = database.DB.Where("guest_name = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
 	default:
-		err = dao.DB.Where("guest_name = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
+		err = database.DB.Where("guest_name = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
 	}
 	if err != nil {
 		logger.Error("查询数据库出错!", err)

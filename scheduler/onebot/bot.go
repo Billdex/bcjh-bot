@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -74,7 +74,7 @@ func (bot *Bot) handleMessageEvent(data []byte) {
 	if msgType == MessageTypePrivate {
 		req := &MessageEventPrivateReq{}
 		if err := json.Unmarshal(data, req); err != nil {
-			log.Printf("解析私聊消息出错: %v, 原始json数据: %s\n", err, string(data))
+			log.Errorf("解析私聊消息出错: %v, 原始json数据: %s\n", err, string(data))
 			return
 		}
 		if bot.OnebotHandler.HandlePrivateMessage != nil {
@@ -83,7 +83,7 @@ func (bot *Bot) handleMessageEvent(data []byte) {
 	} else if msgType == MessageTypeGroup {
 		req := &MessageEventGroupReq{}
 		if err := json.Unmarshal(data, req); err != nil {
-			log.Printf("解析群消息出错: %v, 原始json数据: %s\n", err, string(data))
+			log.Errorf("解析群消息出错: %v, 原始json数据: %s\n", err, string(data))
 			return
 		}
 		if bot.OnebotHandler.HandleGroupMessage != nil {
@@ -99,7 +99,7 @@ func (bot *Bot) handleNoticeEvent(data []byte) {
 		if bot.OnebotHandler.HandleGroupRecallNotice != nil {
 			req := &NoticeEventGroupRecall{}
 			if err := json.Unmarshal(data, req); err != nil {
-				log.Printf("解析群撤回消息出错: %v, 原始json数据: %s\n", err, string(data))
+				log.Errorf("解析群撤回消息出错: %v, 原始json数据: %s\n", err, string(data))
 				return
 			}
 			bot.OnebotHandler.HandleGroupRecallNotice(bot, req)

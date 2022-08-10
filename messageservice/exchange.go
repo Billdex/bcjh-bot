@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
-	"bcjh-bot/dao"
 	"bcjh-bot/global"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
@@ -22,7 +21,7 @@ func ExchangeQuery(c *scheduler.Context) {
 		if num > config.AppConfig.Bot.ExchangeMsgMaxLen {
 			num = config.AppConfig.Bot.ExchangeMsgMaxLen
 		}
-		err = dao.DB.Limit(num).Desc("update_time").Find(&exchangeCodes)
+		err = database.DB.Limit(num).Desc("update_time").Find(&exchangeCodes)
 		if err != nil {
 			logger.Error("数据库查询出错!", err)
 			_, _ = c.Reply(e.SystemErrorNote)
@@ -48,7 +47,7 @@ func ExchangeQuery(c *scheduler.Context) {
 			content := strings.ReplaceAll(arg, prefix, "")
 			exchange := new(database.Exchange)
 			exchange.Content = content
-			_, err = dao.DB.Insert(exchange)
+			_, err = database.DB.Insert(exchange)
 			if err != nil {
 				logger.Error("数据库插入出错!", err)
 				_, _ = c.Reply(e.SystemErrorNote)
@@ -62,7 +61,7 @@ func ExchangeQuery(c *scheduler.Context) {
 				return
 			}
 			exchangeCodes := make([]database.Exchange, 0)
-			err = dao.DB.Limit(1).Desc("update_time").Find(&exchangeCodes)
+			err = database.DB.Limit(1).Desc("update_time").Find(&exchangeCodes)
 			if err != nil {
 				logger.Error("数据库查询出错!", err)
 				_, _ = c.Reply(e.SystemErrorNote)
@@ -74,7 +73,7 @@ func ExchangeQuery(c *scheduler.Context) {
 			}
 			exchangeCode := exchangeCodes[0]
 			exchangeCode.Content = strings.ReplaceAll(arg, prefix, "")
-			_, err = dao.DB.Where("id = ?", exchangeCode.Id).Update(&exchangeCode)
+			_, err = database.DB.Where("id = ?", exchangeCode.Id).Update(&exchangeCode)
 			if err != nil {
 				logger.Error("数据库更新出错!", err)
 				_, _ = c.Reply(e.SystemErrorNote)
@@ -88,7 +87,7 @@ func ExchangeQuery(c *scheduler.Context) {
 				return
 			}
 			exchangeCodes := make([]database.Exchange, 0)
-			err = dao.DB.Limit(1).Desc("update_time").Find(&exchangeCodes)
+			err = database.DB.Limit(1).Desc("update_time").Find(&exchangeCodes)
 			if err != nil {
 				logger.Error("数据库查询出错!", err)
 				_, _ = c.Reply(e.SystemErrorNote)
@@ -98,7 +97,7 @@ func ExchangeQuery(c *scheduler.Context) {
 				_, _ = c.Reply("没有可删除的兑换码")
 				return
 			}
-			_, err = dao.DB.Delete(&exchangeCodes[0])
+			_, err = database.DB.Delete(&exchangeCodes[0])
 			if err != nil {
 				logger.Error("数据库删除出错!", err)
 				_, _ = c.Reply(e.SystemErrorNote)
@@ -110,7 +109,7 @@ func ExchangeQuery(c *scheduler.Context) {
 	}
 	// 其他情况均视为查询最新的一条
 	exchangeCodes := make([]database.Exchange, 0)
-	err = dao.DB.Limit(1).Desc("update_time").Find(&exchangeCodes)
+	err = database.DB.Limit(1).Desc("update_time").Find(&exchangeCodes)
 	if err != nil {
 		logger.Error("数据库查询出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)

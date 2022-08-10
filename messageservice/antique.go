@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
-	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
@@ -24,7 +23,7 @@ func AntiqueQuery(c *scheduler.Context) {
 	antique := args[0]
 
 	guests := make([]database.GuestGift, 0)
-	err := dao.DB.Where("antique like ?", "%"+antique+"%").Asc("total_time").Find(&guests)
+	err := database.DB.Where("antique like ?", "%"+antique+"%").Asc("total_time").Find(&guests)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)

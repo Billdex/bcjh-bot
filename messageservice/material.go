@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
-	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	onebot2 "bcjh-bot/scheduler/onebot"
@@ -35,7 +34,7 @@ func MaterialQuery(c *scheduler.Context) {
 	}
 
 	materials := make([]database.Material, 0)
-	err := dao.DB.Where("name like ?", "%"+args[0]+"%").Find(&materials)
+	err := database.DB.Where("name like ?", "%"+args[0]+"%").Find(&materials)
 	if err != nil {
 		logger.Error("数据库查询出错!")
 		_, _ = c.Reply(e.SystemErrorNote)
@@ -64,7 +63,7 @@ func MaterialQuery(c *scheduler.Context) {
 	}
 
 	recipeMaterials := make([]database.RecipeMaterial, 0)
-	err = dao.DB.Where("material_id = ?", materials[0].MaterialId).Find(&recipeMaterials)
+	err = database.DB.Where("material_id = ?", materials[0].MaterialId).Find(&recipeMaterials)
 	if err != nil {
 		logger.Error("数据库查询出错!")
 		_, _ = c.Reply(e.SystemErrorNote)
@@ -84,7 +83,7 @@ func MaterialQuery(c *scheduler.Context) {
 
 	// 根据查出的信息查询菜谱信息
 	recipes := make([]database.Recipe, 0)
-	err = dao.DB.In("gallery_id", recipeGalleryIds).Find(&recipes)
+	err = database.DB.In("gallery_id", recipeGalleryIds).Find(&recipes)
 	if err != nil {
 		logger.Error("数据库查询出错!")
 		_, _ = c.Reply(e.SystemErrorNote)

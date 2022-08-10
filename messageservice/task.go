@@ -1,7 +1,6 @@
 package messageservice
 
 import (
-	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/e"
@@ -121,7 +120,7 @@ func TaskQuery(c *scheduler.Context) {
 
 func GetMainQuestCount() (int, error) {
 	var quest database.Quest
-	_, err := dao.DB.Select("quest_id").Where("type = ?", "主线任务").OrderBy("quest_id desc").Get(&quest)
+	_, err := database.DB.Select("quest_id").Where("type = ?", "主线任务").OrderBy("quest_id desc").Get(&quest)
 	if err != nil {
 		return 0, err
 	}
@@ -130,7 +129,7 @@ func GetMainQuestCount() (int, error) {
 
 // 主线查询（单条）
 func findMainQuest(id int) ([]database.Quest, error) {
-	Session := dao.DB.Where("type = ? and quest_id = ?", "主线任务", id).
+	Session := database.DB.Where("type = ? and quest_id = ?", "主线任务", id).
 		Limit(5)
 	quests := make([]database.Quest, 0)
 	if err := Session.Find(&quests); err != nil {
@@ -141,7 +140,7 @@ func findMainQuest(id int) ([]database.Quest, error) {
 
 // 主线查询（多条）
 func findMainQuests(id int, length int) ([]database.Quest, error) {
-	Session := dao.DB.Where("type = ? and quest_id >= ? and quest_id <= ?", "主线任务", id, id+length-1).
+	Session := database.DB.Where("type = ? and quest_id >= ? and quest_id <= ?", "主线任务", id, id+length-1).
 		Limit(5)
 	quests := make([]database.Quest, 0)
 	if err := Session.Find(&quests); err != nil {
@@ -152,7 +151,7 @@ func findMainQuests(id int, length int) ([]database.Quest, error) {
 
 // 支线查询（单条）
 func findSubQuest(subId string) ([]database.Quest, error) {
-	Session := dao.DB.Where("type = ? and quest_id_disp = ?", "支线任务", subId).
+	Session := database.DB.Where("type = ? and quest_id_disp = ?", "支线任务", subId).
 		Limit(5)
 	quests := make([]database.Quest, 0)
 	if err := Session.Find(&quests); err != nil {

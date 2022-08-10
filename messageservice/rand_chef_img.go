@@ -2,7 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
-	"bcjh-bot/dao"
+	"bcjh-bot/global"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
@@ -149,43 +149,44 @@ func RandChefImg(c *scheduler.Context) {
 
 	event := c.GetGroupEvent()
 	skills := make([]database.Skill, 0)
-	err := dao.DB.Find(&skills)
+	err := database.DB.Find(&skills)
 	if err != nil || len(skills) == 0 {
 		logger.Error("数据库查询出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
-	selfRand := rand.New(rand.NewSource(c.GetSenderId() + timeSeed))
-	rarity := selfRand.Intn(5) + 1
+	global.RandLock.Lock()
+	rand.Seed(c.GetSenderId() + timeSeed)
+	rarity := rand.Intn(5) + 1
 	chef := userChefInfo{
 		Name:   c.GetSenderNickname(),
 		Rarity: rarity,
 		Avatar: fmt.Sprintf("https://q1.qlogo.cn/g?b=qq&nk=%d&s=100", event.Sender.UserId),
 
-		Meat:      selfRand.Intn(rarity + 4),
-		Flour:     selfRand.Intn(rarity + 4),
-		Fish:      selfRand.Intn(rarity + 4),
-		Vegetable: selfRand.Intn(rarity + 4),
+		Meat:      rand.Intn(rarity + 4),
+		Flour:     rand.Intn(rarity + 4),
+		Fish:      rand.Intn(rarity + 4),
+		Vegetable: rand.Intn(rarity + 4),
 
-		Skill: skills[selfRand.Intn(len(skills))].Description,
+		Skill: skills[rand.Intn(len(skills))].Description,
 		UltimateGoals: []string{
-			practiceTaskList1[selfRand.Intn(len(practiceTaskList1))](rarity),
-			practiceTaskList2[selfRand.Intn(len(practiceTaskList2))](rarity),
-			practiceTaskList3[selfRand.Intn(len(practiceTaskList3))](rarity),
+			practiceTaskList1[rand.Intn(len(practiceTaskList1))](rarity),
+			practiceTaskList2[rand.Intn(len(practiceTaskList2))](rarity),
+			practiceTaskList3[rand.Intn(len(practiceTaskList3))](rarity),
 		},
-		UltimateSkill: practiceSkillList[selfRand.Intn(len(practiceSkillList))](rarity),
+		UltimateSkill: practiceSkillList[rand.Intn(len(practiceSkillList))](rarity),
 	}
 	for chef.Stirfry < 15+60*rarity && chef.Bake < 15+60*rarity && chef.Boil < 15+60*rarity &&
 		chef.Steam < 15+60*rarity && chef.Fry < 15+60*rarity && chef.Cut < 15+60*rarity {
-		chef.Stirfry = selfRand.Intn(15*rarity*rarity - 2*rarity + 120)
-		chef.Bake = selfRand.Intn(15*rarity*rarity - 2*rarity + 120)
-		chef.Boil = selfRand.Intn(15*rarity*rarity - 2*rarity + 120)
-		chef.Steam = selfRand.Intn(15*rarity*rarity - 2*rarity + 120)
-		chef.Fry = selfRand.Intn(15*rarity*rarity - 2*rarity + 120)
-		chef.Cut = selfRand.Intn(15*rarity*rarity - 2*rarity + 120)
+		chef.Stirfry = rand.Intn(15*rarity*rarity - 2*rarity + 120)
+		chef.Bake = rand.Intn(15*rarity*rarity - 2*rarity + 120)
+		chef.Boil = rand.Intn(15*rarity*rarity - 2*rarity + 120)
+		chef.Steam = rand.Intn(15*rarity*rarity - 2*rarity + 120)
+		chef.Fry = rand.Intn(15*rarity*rarity - 2*rarity + 120)
+		chef.Cut = rand.Intn(15*rarity*rarity - 2*rarity + 120)
 	}
-	condiment := 20*rarity + (rarity-1)/2*10 + rarity/5*10 + selfRand.Intn(10+10*(rarity/2))
-	switch selfRand.Intn(6) {
+	condiment := 20*rarity + (rarity-1)/2*10 + rarity/5*10 + rand.Intn(10+10*(rarity/2))
+	switch rand.Intn(6) {
 	case 0:
 		chef.Sweet = condiment
 	case 1:
@@ -201,6 +202,7 @@ func RandChefImg(c *scheduler.Context) {
 	default:
 		chef.Sweet = condiment
 	}
+	global.RandLock.Unlock()
 
 	// 数值调整
 	groupInfo, err := c.GetBot().GetGroupInfo(c.GetGroupEvent().GroupId)
