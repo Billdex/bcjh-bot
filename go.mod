@@ -9,7 +9,6 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/robfig/cron/v3 v3.0.0
-	github.com/sirupsen/logrus v1.8.1
 	github.com/tidwall/gjson v1.8.1
 	go.uber.org/zap v1.16.0
 	gopkg.in/ini.v1 v1.62.0

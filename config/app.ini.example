@@ -23,14 +23,12 @@ password =
 
 # 静态资源路径
 [resource]
-image = /home/bcjh-bot/resource/image/
-font = /home/bcjh-bot/resource/font/
-shortcut = /home/bcjh-bot/resource/shortcut/
+image = ./resource/image/
+font = ./resource/font/
+shortcut = ./resource/shortcut/
 
 # 日志相关配置
 [log]
-# 日志风格: JSON, CONSOLE
-style = CONSOLE
 # 日志级别: DEBUG, INFO, WARN, ERROR, PANIC, FATAL
 level = INFO
 # 日志输出路径

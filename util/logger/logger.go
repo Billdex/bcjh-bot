@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+type EncodeStyle string
+
+const (
+	EncodeStyleJson    EncodeStyle = "json"
+	EncodeStyleConsole EncodeStyle = "console"
+)
+
 var logger *zap.SugaredLogger
 
 func Debug(args ...interface{}) {
@@ -81,7 +88,7 @@ func Fatalf(template string, args ...interface{}) {
 	logger.Fatalf(template, args...)
 }
 
-func InitLog(style string, path string, level string) error {
+func InitLog(style EncodeStyle, path string, level string) error {
 	encoder := getZapEncoder(style)
 	writeSyncer, err := getZapWriterSync(path)
 	if err != nil {
@@ -98,7 +105,7 @@ func Sync() {
 }
 
 // 设定Zap编码格式
-func getZapEncoder(style string) zapcore.Encoder {
+func getZapEncoder(style EncodeStyle) zapcore.Encoder {
 	cfg := zapcore.EncoderConfig{
 		TimeKey:       "time",
 		LevelKey:      "level",
@@ -114,10 +121,10 @@ func getZapEncoder(style string) zapcore.Encoder {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 	switch style {
-	case "JSON", "Json", "json":
+	case EncodeStyleJson:
 		cfg.EncodeLevel = zapcore.CapitalLevelEncoder
 		return zapcore.NewJSONEncoder(cfg)
-	case "CONSOLE", "Console", "console":
+	case EncodeStyleConsole:
 		cfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		return zapcore.NewConsoleEncoder(cfg)
 	default:

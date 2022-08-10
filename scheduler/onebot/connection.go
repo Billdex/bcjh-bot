@@ -3,7 +3,7 @@ package onebot
 import (
 	"errors"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
+	"log"
 )
 
 type WsConnection struct {
@@ -39,7 +39,7 @@ func NewWsConnection(conn *websocket.Conn, rh onRecvHandler, ch onCloseHandler) 
 		for {
 			messageType, data, err := conn.ReadMessage()
 			if err != nil {
-				log.Errorf("failed to read message, err: %+v", err)
+				log.Printf("failed to read message, err: %+v", err)
 				_ = wsc.Close()
 				return
 			}
