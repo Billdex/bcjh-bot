@@ -1,6 +1,7 @@
 package global
 
 import (
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/util/logger"
 	"fmt"
@@ -39,7 +40,7 @@ func GetUserAllowState(userId int64, groupId int64) bool {
 	key := fmt.Sprintf(botStateMapKey, userId, groupId)
 	if endTime, ok := getUserState(key); ok {
 		if endTime < now {
-			_, err := database.DB.Where("qq = ? and group_id = ?", userId, groupId).Delete(&database.BlackList{})
+			_, err := dao.DB.Where("qq = ? and group_id = ?", userId, groupId).Delete(&database.BlackList{})
 			if err != nil {
 				logger.Error("数据库执行删除出错!", err)
 			}
@@ -50,14 +51,14 @@ func GetUserAllowState(userId int64, groupId int64) bool {
 		}
 	} else {
 		userState := database.BlackList{}
-		has, err := database.DB.Where("qq = ? and group_id = ?", userId, groupId).Get(&userState)
+		has, err := dao.DB.Where("qq = ? and group_id = ?", userId, groupId).Get(&userState)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return true
 		}
 		if has {
 			if userState.EndTime < now {
-				_, err := database.DB.Where("qq = ? and group_id = ?", userId, groupId).Delete(&database.BlackList{})
+				_, err := dao.DB.Where("qq = ? and group_id = ?", userId, groupId).Delete(&database.BlackList{})
 				if err != nil {
 					logger.Error("数据库执行删除出错!", err)
 				}
@@ -77,20 +78,20 @@ func GetUserAllowState(userId int64, groupId int64) bool {
 func PullUserBlackList(userId int64, groupId int64, endTime int64) error {
 	key := fmt.Sprintf(blackListMapKey, userId, groupId)
 	defer deleteUserState(key)
-	has, err := database.DB.Where("qq = ? and group_id = ?", userId, groupId).Get(&database.BlackList{})
+	has, err := dao.DB.Where("qq = ? and group_id = ?", userId, groupId).Get(&database.BlackList{})
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		return err
 	}
 	if has {
-		_, err := database.DB.Cols("end_time").Where("qq = ? and group_id = ?", userId, groupId).
+		_, err := dao.DB.Cols("end_time").Where("qq = ? and group_id = ?", userId, groupId).
 			Update(&database.BlackList{EndTime: endTime})
 		if err != nil {
 			logger.Error("更新数据库出错!", err)
 			return err
 		}
 	} else {
-		_, err := database.DB.Insert(&database.BlackList{
+		_, err := dao.DB.Insert(&database.BlackList{
 			QQ:      userId,
 			GroupId: groupId,
 			EndTime: endTime,
@@ -106,7 +107,7 @@ func PullUserBlackList(userId int64, groupId int64, endTime int64) error {
 func RemoveUserFromBlackList(userId int64, groupId int64) error {
 	key := fmt.Sprintf(blackListMapKey, userId, groupId)
 	defer deleteUserState(key)
-	_, err := database.DB.Where("qq = ? and group_id = ?", userId, groupId).Delete(&database.BlackList{})
+	_, err := dao.DB.Where("qq = ? and group_id = ?", userId, groupId).Delete(&database.BlackList{})
 	if err != nil {
 		logger.Error("删除数据库数据出错!", err)
 		return err

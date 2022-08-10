@@ -61,11 +61,7 @@ func (c *Context) GetBot() *onebot.Bot {
 }
 
 func (c *Context) GetLinkBotList() []*onebot.Bot {
-	bots := make([]*onebot.Bot, 0)
-	for _, bot := range c.scheduler.Engine.Bots {
-		bots = append(bots, bot)
-	}
-	return bots
+	return c.scheduler.Engine.GetBots()
 }
 
 func (c *Context) GetKeyword() string {

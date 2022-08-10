@@ -2,6 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
@@ -30,7 +31,7 @@ import (
 func RecipeQuery(c *scheduler.Context) {
 
 	if strings.TrimSpace(c.PretreatedMessage) == "" {
-		_, _ = c.Reply(chefHelp())
+		_, _ = c.Reply(recipeHelp())
 		return
 	}
 
@@ -38,7 +39,7 @@ func RecipeQuery(c *scheduler.Context) {
 	page := 1
 	var note string
 	recipes := make([]database.Recipe, 0)
-	err := database.DB.Find(&recipes)
+	err := dao.DB.Find(&recipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
@@ -207,13 +208,13 @@ func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]data
 		materialOrigin = []string{}
 	}
 	if len(materialOrigin) > 0 {
-		err := database.DB.In("origin", materialOrigin).Find(&dbMaterials)
+		err := dao.DB.In("origin", materialOrigin).Find(&dbMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return nil, e.SystemErrorNote
 		}
 	} else {
-		err := database.DB.Where("name like ?", "%"+material+"%").Find(&dbMaterials)
+		err := dao.DB.Where("name like ?", "%"+material+"%").Find(&dbMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return nil, e.SystemErrorNote
@@ -236,7 +237,7 @@ func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]data
 		materialsId = append(materialsId, dbMaterial.MaterialId)
 	}
 	recipeMaterials := make([]database.RecipeMaterial, 0)
-	err := database.DB.In("material_id", materialsId).Find(&recipeMaterials)
+	err := dao.DB.In("material_id", materialsId).Find(&recipeMaterials)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		return nil, e.SystemErrorNote
@@ -363,7 +364,7 @@ func filterRecipeByGuest(recipes []database.Recipe, guest string) ([]database.Re
 	}
 	// 根据贵客名找出对应的菜谱
 	guestGifts := make([]database.GuestGift, 0)
-	err := database.DB.Where("guest_name like ?", "%"+guest+"%").Find(&guestGifts)
+	err := dao.DB.Where("guest_name like ?", "%"+guest+"%").Find(&guestGifts)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		return nil, e.SystemErrorNote
@@ -423,7 +424,7 @@ func filterRecipesByAntique(recipes []database.Recipe, antique string) ([]databa
 	}
 	// 根据符文礼物名找出对应的菜谱
 	guestGifts := make([]database.GuestGift, 0)
-	err := database.DB.Where("antique like ?", "%"+antique+"%").Find(&guestGifts)
+	err := dao.DB.Where("antique like ?", "%"+antique+"%").Find(&guestGifts)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		return nil, e.SystemErrorNote
@@ -663,14 +664,14 @@ func echoRecipeMessage(recipe database.Recipe) string {
 		// 食材数据
 		materials := ""
 		recipeMaterials := make([]database.RecipeMaterial, 0)
-		err := database.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
+		err := dao.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return e.SystemErrorNote
 		}
 		for _, recipeMaterial := range recipeMaterials {
 			material := new(database.Material)
-			has, err := database.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
+			has, err := dao.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
 			if err != nil {
 				logger.Error("查询数据库出错!", err)
 				return e.SystemErrorNote
@@ -684,7 +685,7 @@ func echoRecipeMessage(recipe database.Recipe) string {
 		// 贵客礼物数据
 		giftInfo := ""
 		guestGifts := make([]database.GuestGift, 0)
-		err = database.DB.Where("recipe = ?", recipe.Name).Find(&guestGifts)
+		err = dao.DB.Where("recipe = ?", recipe.Name).Find(&guestGifts)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return e.SystemErrorNote
@@ -1018,14 +1019,14 @@ func RecipeInfoToImage(recipes []database.Recipe, imgURL string, imgCSS *gamedat
 		// 输出食材
 		materials := ""
 		recipeMaterials := make([]database.RecipeMaterial, 0)
-		err = database.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
+		err = dao.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return err
 		}
 		for _, recipeMaterial := range recipeMaterials {
 			material := new(database.Material)
-			has, err := database.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
+			has, err := dao.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
 			if err != nil {
 				logger.Error("查询数据库出错!", err)
 				return err
@@ -1043,7 +1044,7 @@ func RecipeInfoToImage(recipes []database.Recipe, imgURL string, imgCSS *gamedat
 		}
 		// 输出贵客礼物
 		guestGifts := make([]database.GuestGift, 0)
-		err = database.DB.Where("recipe = ?", recipe.Name).Find(&guestGifts)
+		err = dao.DB.Where("recipe = ?", recipe.Name).Find(&guestGifts)
 		if err != nil {
 			logger.Error("查询数据库出错!", err)
 			return err
