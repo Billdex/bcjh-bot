@@ -1,0 +1,35 @@
+[server]
+port = 5800
+
+[bot]
+# 私聊消息最大长度，用于查询列表时候的分页
+private_msg_max_len = 20
+# 群聊消息最大长度
+group_msg_max_len = 10
+# 兑换码消息最大长度
+exchange_msg_max_len = 3
+# 管理员账号，要配置多个时用半角逗号分隔
+admin = 123456789
+
+# 数据库相关配置
+[database]
+# 是否开启本地数据库，开启后将在程序目录自动创建一个数据库文件。关闭则根据后续配置连接 mysql
+use_local = true
+# use_local 为false时会读取以下数据库连接配置
+host = 127.0.0.1:3306
+database = bcjh
+user = bcjh
+password =
+
+# 静态资源路径
+[resource]
+image = ./resource/image/
+font = ./resource/font/
+shortcut = ./resource/shortcut/
+
+# 日志相关配置
+[log]
+# 日志级别: DEBUG, INFO, WARN, ERROR, PANIC, FATAL
+level = INFO
+# 日志输出路径
+out_path = ./logs/bcjh-bot.log

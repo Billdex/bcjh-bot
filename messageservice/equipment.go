@@ -2,6 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
@@ -30,7 +31,7 @@ import (
 
 func EquipmentQuery(c *scheduler.Context) {
 	if strings.TrimSpace(c.PretreatedMessage) == "" {
-		_, _ = c.Reply(recipeHelp())
+		_, _ = c.Reply(equipmentHelp())
 		return
 	}
 
@@ -38,7 +39,7 @@ func EquipmentQuery(c *scheduler.Context) {
 	page := 1
 	var note string
 	equips := make([]database.Equip, 0)
-	err := database.DB.Find(&equips)
+	err := dao.DB.Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
@@ -143,7 +144,7 @@ func filterEquipsBySkill(equips []database.Equip, skill string) ([]database.Equi
 	}
 	result := make([]database.Equip, 0)
 	skills := make(map[int]database.Skill)
-	err := database.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
+	err := dao.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		return result, e.SystemErrorNote
@@ -276,7 +277,7 @@ func echoEquipMessage(equip database.Equip) string {
 		skills := ""
 		for p, skillId := range equip.Skills {
 			skill := new(database.Skill)
-			has, err := database.DB.Where("skill_id = ?", skillId).Get(skill)
+			has, err := dao.DB.Where("skill_id = ?", skillId).Get(skill)
 			if err != nil {
 				logger.Error("查询数据库出错!", err)
 				return e.SystemErrorNote
@@ -415,7 +416,7 @@ func EquipmentInfoToImage(equips []database.Equip, imgURL string, imgCSS *gameda
 		// 输出技法效果数据
 		c.SetFontSize(float64(fontSize))
 		skills := make([]database.Skill, 0)
-		err = database.DB.In("skill_id", equip.Skills).Find(&skills)
+		err = dao.DB.In("skill_id", equip.Skills).Find(&skills)
 		if err != nil {
 			return err
 		}

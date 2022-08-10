@@ -1,7 +1,7 @@
 package messageservice
 
 import (
-	"bcjh-bot/global"
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/e"
@@ -18,16 +18,14 @@ func Tarot(c *scheduler.Context) {
 	timeSeed -= int64(now.Hour() * 3600)
 	timeSeed -= int64(now.Minute() * 60)
 	timeSeed -= int64(now.Second())
-	total, err := database.DB.Count(&database.Tarot{})
+	total, err := dao.DB.Count(&database.Tarot{})
 	if err != nil {
 		logger.Error("查询数据库出错", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
-	global.RandLock.Lock()
-	rand.Seed(c.GetSenderId() + timeSeed)
-	tarotId := rand.Int63n(total) + 1
-	global.RandLock.Unlock()
+	selfRand := rand.New(rand.NewSource(c.GetSenderId() + timeSeed))
+	tarotId := selfRand.Int63n(total) + 1
 	if (tarotId == 139 || tarotId == 161) && c.GetSenderId() != 1726688182 {
 		tarotId = 137
 	}
@@ -36,7 +34,7 @@ func Tarot(c *scheduler.Context) {
 		tarotId = 140
 	}
 	tarot := new(database.Tarot)
-	_, err = database.DB.Where("id = ?", tarotId).Get(tarot)
+	_, err = dao.DB.Where("id = ?", tarotId).Get(tarot)
 	if err != nil {
 		logger.Error("查询数据库出错", err)
 		_, _ = c.Reply(e.SystemErrorNote)
@@ -79,7 +77,7 @@ func ForceTarot(c *scheduler.Context) {
 		return
 	}
 	tarotList := make([]database.Tarot, 0)
-	err = database.DB.Where("score = ?", num).Find(&tarotList)
+	err = dao.DB.Where("score = ?", num).Find(&tarotList)
 	if err != nil || len(tarotList) == 0 {
 		_, _ = c.Reply("改命失败")
 		return

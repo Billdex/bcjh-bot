@@ -1,13 +1,9 @@
 package global
 
 import (
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/util/logger"
-	"sync"
-)
-
-var (
-	RandLock sync.Mutex
 )
 
 func init() {
@@ -15,7 +11,7 @@ func init() {
 }
 
 func IsSuperAdmin(qq int64) bool {
-	has, err := database.DB.Exist(&database.Admin{
+	has, err := dao.DB.Exist(&database.Admin{
 		QQ: qq,
 	})
 	if err != nil {

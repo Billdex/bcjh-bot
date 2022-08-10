@@ -2,6 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/config"
+	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
@@ -230,7 +231,7 @@ func LaboratoryHelp() string {
 // 攻略功能指引
 func strategyHelp() string {
 	strategies := make([]database.Strategy, 0)
-	err := database.DB.Find(&strategies)
+	err := dao.DB.Find(&strategies)
 	if err != nil {
 		return e.SystemErrorNote
 	}
