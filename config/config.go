@@ -39,7 +39,6 @@ type resourceConfig struct {
 
 // logConfig 日志配置
 type logConfig struct {
-	Style   string `ini:"style"`    // 日志风格，可用 console 或 json
 	Level   string `ini:"level"`    // 日志级别
 	OutPath string `ini:"out_path"` // 日志输出路径
 }
@@ -79,7 +78,6 @@ func InitConfig(path string) error {
 			Shortcut: "./resource/shortcut/",
 		},
 		Log: logConfig{
-			Style:   "CONSOLE",
 			Level:   "INFO",
 			OutPath: "./logs/bcjh-bot.log",
 		},

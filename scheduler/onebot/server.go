@@ -2,7 +2,7 @@ package onebot
 
 import (
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -39,11 +39,11 @@ func (s *Server) Serve(handler Handler) error {
 			return
 		}
 		onCloseHandler := func(code int, message string) {
-			log.Infof("Bot %d 断开连接\n", botId)
+			log.Printf("Bot %d 断开连接\n", botId)
 			delete(s.Bots, botId)
 		}
 		s.Bots[botId] = NewBot(botId, c, handler, onCloseHandler, false)
-		log.Infof("Bot %d 已建立连接\n", botId)
+		log.Printf("Bot %d 已建立连接\n", botId)
 		return
 	})
 	return http.ListenAndServe(s.Port, nil)

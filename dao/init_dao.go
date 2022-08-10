@@ -29,7 +29,7 @@ func InitDatabase() error {
 		DB, err = xorm.NewEngine("mysql", dsn)
 	}
 	if err != nil {
-		return fmt.Errorf("初始化数据库连接失败 %v", err)
+		return fmt.Errorf("连接数据库失败 %v", err)
 	}
 
 	DB.SetMaxIdleConns(8)
