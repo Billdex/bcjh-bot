@@ -7,6 +7,7 @@ import (
 
 func Register(s *scheduler.Scheduler) {
 	g := s.Group("#").Alias("＃")
+	g.Use(Recovery)
 	g.Use(QueryLog)
 	g.Use(CheckBotState)
 	g.Use(CheckBlackList)
