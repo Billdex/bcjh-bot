@@ -1,5 +1,4 @@
 .idea/
 data.min.json
 tmp/
-go.sum
 .DS_Store
