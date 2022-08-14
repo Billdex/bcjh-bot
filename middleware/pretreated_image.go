@@ -11,6 +11,7 @@ import (
 	"regexp"
 )
 
+// PretreatedImage 图片预处理下载，转换为base64格式
 func PretreatedImage(c *scheduler.Context) {
 	msg := c.PretreatedMessage
 	imgList := c.GetImageList()

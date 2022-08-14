@@ -130,6 +130,11 @@ func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef,
 	}
 	result := make([]database.Chef, 0)
 	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		logger.Error("查询正则格式有误", err)
+		return nil, "查询格式有误"
+	}
 	// 单独增加在售礼包查询
 	if origin == "仅礼包" || origin == "在售礼包" {
 		for i := range chefs {
@@ -139,7 +144,6 @@ func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef,
 		}
 	} else {
 		for i := range chefs {
-			re := regexp.MustCompile(pattern)
 			if re.MatchString(chefs[i].Origin) {
 				result = append(result, chefs[i])
 			}
@@ -185,8 +189,12 @@ func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, str
 	numId, err := strconv.Atoi(name)
 	if err != nil {
 		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			logger.Error("查询正则格式有误", err)
+			return nil, "查询格式有误"
+		}
 		for i := range chefs {
-			re := regexp.MustCompile(pattern)
 			if re.MatchString(chefs[i].Name) {
 				result = append(result, chefs[i])
 			}

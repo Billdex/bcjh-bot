@@ -60,6 +60,13 @@ func (c *Context) GetBot() *onebot.Bot {
 	return c.bot
 }
 
+func (c *Context) GetBotId() int64 {
+	if c.bot != nil {
+		return c.bot.BotId
+	}
+	return 0
+}
+
 func (c *Context) GetLinkBotList() []*onebot.Bot {
 	return c.scheduler.Engine.GetBots()
 }

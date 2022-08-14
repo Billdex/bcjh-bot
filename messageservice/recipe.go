@@ -452,8 +452,12 @@ func filterRecipesByUpgradeAntique(recipes []database.Recipe, antique string) ([
 	}
 	result := make([]database.Recipe, 0)
 	pattern := ".*" + strings.ReplaceAll(antique, "%", ".*") + ".*"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		logger.Error("查询正则格式有误", err)
+		return nil, "查询格式有误"
+	}
 	for i := range recipes {
-		re := regexp.MustCompile(pattern)
 		if re.MatchString(recipes[i].Gift) {
 			result = append(result, recipes[i])
 		}
@@ -468,8 +472,12 @@ func filterRecipesByOrigin(recipes []database.Recipe, origin string) ([]database
 	}
 	result := make([]database.Recipe, 0)
 	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		logger.Error("查询正则格式有误", err)
+		return nil, "查询格式有误"
+	}
 	for i := range recipes {
-		re := regexp.MustCompile(pattern)
 		if re.MatchString(recipes[i].Origin) {
 			result = append(result, recipes[i])
 		}
@@ -513,8 +521,12 @@ func filterRecipesByName(recipes []database.Recipe, name string) ([]database.Rec
 	numId, err := strconv.Atoi(name)
 	if err != nil {
 		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			logger.Error("查询正则格式有误", err)
+			return nil, "查询格式有误"
+		}
 		for i := range recipes {
-			re := regexp.MustCompile(pattern)
 			if re.MatchString(recipes[i].Name) {
 				result = append(result, recipes[i])
 			}

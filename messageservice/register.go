@@ -7,18 +7,19 @@ import (
 
 func Register(s *scheduler.Scheduler) {
 	g := s.Group("#").Alias("＃")
+	g.Use(Recovery)
 	g.Use(QueryLog)
 	g.Use(CheckBotState)
 	g.Use(CheckBlackList)
 	// 管理功能
-	g.Bind("开机", MustAdmin, EnableBotInGroup)
-	g.Bind("关机", MustAdmin, DisableBotInGroup)
+	g.Bind("开机", MustAtSelf, MustAdmin, EnableBotInGroup)
+	g.Bind("关机", MustAtSelf, MustAdmin, DisableBotInGroup)
+	g.Bind("允许私聊", MustAtSelf, MustSuperAdmin, AllowPrivate).Alias("开启私聊")
+	g.Bind("禁用私聊", MustAtSelf, MustSuperAdmin, DisablePrivate).Alias("关闭私聊", "禁止私聊")
 	g.Bind("启用", MustAdmin, EnablePluginInGroup)
 	g.Bind("停用", MustAdmin, DisablePluginInGroup)
 	g.Bind("ban", MustAdmin, BanUser)
 	g.Bind("allow", MustAdmin, AllowUser)
-	g.Bind("允许私聊", MustSuperAdmin, AllowPrivate).Alias("开启私聊")
-	g.Bind("禁用私聊", MustSuperAdmin, DisablePrivate).Alias("关闭私聊", "禁止私聊")
 	g.Bind("更新", MustSuperAdmin, UpdateData)
 	g.Bind("公告", MustSuperAdmin, CheckPluginState(true), PretreatedImage, PublicNotice)
 	g.Bind("改命", MustSuperAdmin, ForceTarot).Alias("转运")
