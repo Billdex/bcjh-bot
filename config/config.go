@@ -134,6 +134,4 @@ func changeResourceToAbsPath() {
 	if err == nil {
 		AppConfig.Resource.Shortcut = path
 	}
-
-	fmt.Printf("%#+v", AppConfig.Resource)
 }
