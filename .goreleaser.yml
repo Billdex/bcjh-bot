@@ -1,0 +1,6 @@
+archives:
+  -
+    files:
+      - LICENSE
+      - README.md
+      - resource/*
