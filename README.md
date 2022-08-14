@@ -16,11 +16,11 @@
 
 ## 数据源说明
 
-数据源来自 **L 大佬的 爆炒江湖图鉴网** ：https://foodgame.gitee.io
+数据源来自 **L 大佬的 爆炒江湖图鉴网** ：https://foodgame.github.io
 
 ## 致谢
 
-- 感谢[L图鉴网](https://foodgame.gitee.io)与[白菜菊花](https://bcjh.xyz)的数据接口，这是查询程序内所有游戏数据来源的基础。
+- 感谢[L图鉴网](https://foodgame.github.io)与[白菜菊花](https://bcjh.xyz)的数据接口，这是查询程序内所有游戏数据来源的基础。
 - 感谢[Mrs4s/go-cqhttp](https://github.com/Mrs4s/go-cqhttp)提供的轻量QQ客户端程序，这是这个QQ机器人项目得以运行的基础。
 - 感谢Boketto、闲时、小熊、梨大只提供的游戏数据
 - 感谢制作与贡献游戏攻略的大佬们
