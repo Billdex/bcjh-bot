@@ -1,4 +1,9 @@
 .idea/
-data.min.json
-tmp/
 .DS_Store
+tmp/
+logs/
+data.min.json
+config.ini
+bcjh-bot
+bcjh-bot.exe
+bot_data.db

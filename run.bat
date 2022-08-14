@@ -1,0 +1,1 @@
+start cmd /K bcjh-bot.exe
