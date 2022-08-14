@@ -23,7 +23,7 @@ type botConfig struct {
 
 // dbConfig 数据库相关的配置
 type dbConfig struct {
-	UseLocal bool   `int:"use_local"` // 是否使用本地储存，开启后将在程序目录创建一个 sqlite 数据库文件。如果不使用则读取下列配置连接 mysql
+	UseLocal bool   `ini:"use_local"` // 是否使用本地储存，开启后将在程序目录创建一个 sqlite 数据库文件。如果不使用则读取下列配置连接 mysql
 	Host     string `ini:"host"`      // 数据库 host，如果非域名默认端口，还需要带上端口号
 	Database string `ini:"database"`  // 数据库 database 名
 	User     string `ini:"user"`      // 登录 user
