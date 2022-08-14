@@ -103,8 +103,12 @@ func filterEquipsByName(equips []database.Equip, name string) ([]database.Equip,
 	numId, err := strconv.Atoi(name)
 	if err != nil {
 		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			logger.Error("查询正则格式有误", err)
+			return nil, "查询格式有误"
+		}
 		for i := range equips {
-			re := regexp.MustCompile(pattern)
 			if re.MatchString(equips[i].Name) {
 				result = append(result, equips[i])
 			}
@@ -127,8 +131,12 @@ func filterEquipsByOrigin(equips []database.Equip, origin string) ([]database.Eq
 	}
 	result := make([]database.Equip, 0)
 	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		logger.Error("查询正则格式有误", err)
+		return nil, "查询格式有误"
+	}
 	for i := range equips {
-		re := regexp.MustCompile(pattern)
 		if re.MatchString(equips[i].Origin) {
 			result = append(result, equips[i])
 		}
