@@ -33,7 +33,7 @@ windows 用户双击`run.bat` 脚本启动程序，请勿直接双击 `bcjh-bot.
 
 修改完配置文件后重新运行程序。
 
-各配置选项的详细说明请参考 [配置信息](./config.md)
+各配置选项的详细说明请参考 [配置信息](install/config.md)
 
 ### go-cqhttp
 
