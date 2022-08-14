@@ -21,8 +21,8 @@ import (
 const (
 	foodGameGithubURLBase = "https://foodgame.github.io"
 	foodGameGiteeURLBase  = "https://foodgame.gitee.io"
-	bcjhURLBase           = "https://bcjh.pages.dev"
-	bcjhxyzURLBase        = "https://bcjh.xyz"
+	bcjhCfPageURLBase     = "https://bcjh.pages.dev"
+	bcjhURLBase           = "https://bcjh.xyz"
 
 	dataURI        = "/data/data.min.json"
 	imageCSSURI    = "/css/image.css"
@@ -48,16 +48,16 @@ func UpdateData(c *scheduler.Context) {
 
 	var baseURL string
 	switch strings.TrimSpace(c.PretreatedMessage) {
-	case "github":
+	case "lgithub":
 		baseURL = foodGameGithubURLBase
-	case "gitee":
+	case "lgitee":
 		baseURL = foodGameGiteeURLBase
+	case "白菜菊花cf":
+		baseURL = bcjhCfPageURLBase
 	case "白菜菊花":
 		baseURL = bcjhURLBase
-	case "bcjhxyz":
-		baseURL = bcjhxyzURLBase
 	default:
-		baseURL = foodGameGithubURLBase
+		baseURL = bcjhCfPageURLBase
 	}
 	_, _ = c.Reply(fmt.Sprintf("开始导入数据, 数据源:\n%s", baseURL))
 	updateStart := time.Now().UnixNano()
