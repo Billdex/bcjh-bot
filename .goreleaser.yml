@@ -52,6 +52,19 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
+  - id: android
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    goos:
+      - android
+    goarch:
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
 
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
@@ -82,6 +95,15 @@ archives:
     builds:
       - darwin
     format: zip
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    files:
+      - LICENSE
+      - README.md
+      - resource/*
+  - id: android
+    builds:
+      - android
+    format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     files:
       - LICENSE
