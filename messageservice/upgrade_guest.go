@@ -23,7 +23,7 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 	page := 1
 	if len(args) == 2 {
 		if util.HasPrefixIn(args[1], "p", "P") {
-			num, err := strconv.Atoi(args[1][1:])
+			num, err := strconv.Atoi(strings.Trim(args[1][1:], "-"))
 			if err != nil {
 				logger.Error("分页参数转数字出错!", err)
 				_, _ = c.Reply("查询参数出错!")
