@@ -195,6 +195,9 @@ func filterChefsByName(chefs []database.Chef, name string) ([]database.Chef, str
 			return nil, "查询格式有误"
 		}
 		for i := range chefs {
+			if chefs[i].Name == name {
+				return []database.Chef{chefs[i]}, ""
+			}
 			if re.MatchString(chefs[i].Name) {
 				result = append(result, chefs[i])
 			}
