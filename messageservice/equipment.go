@@ -109,6 +109,9 @@ func filterEquipsByName(equips []database.Equip, name string) ([]database.Equip,
 			return nil, "查询格式有误"
 		}
 		for i := range equips {
+			if equips[i].Name == name {
+				return []database.Equip{equips[i]}, ""
+			}
 			if re.MatchString(equips[i].Name) {
 				result = append(result, equips[i])
 			}

@@ -107,7 +107,7 @@ func RecipeQuery(c *scheduler.Context) {
 				if len(condiments) > 1 {
 					recipes, note = filterRecipesByCondiment(recipes, condiments[1])
 				}
-			} else if util.HasPrefixIn(arg, "$") {
+			} else if util.HasPrefixIn(arg, "$", "＄", "￥") {
 				num, err := strconv.Atoi(arg[1:])
 				if err != nil {
 					note = "单价筛选参数有误"
@@ -527,6 +527,9 @@ func filterRecipesByName(recipes []database.Recipe, name string) ([]database.Rec
 			return nil, "查询格式有误"
 		}
 		for i := range recipes {
+			if recipes[i].Name == name {
+				return []database.Recipe{recipes[i]}, ""
+			}
 			if re.MatchString(recipes[i].Name) {
 				result = append(result, recipes[i])
 			}
