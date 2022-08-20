@@ -109,6 +109,10 @@ func StrategyQuery(c *scheduler.Context) {
 		logger.Debug("找到多条攻略:", strategies)
 		msg := "这些攻略你想看哪条呀?\n"
 		for _, strategy := range strategies {
+			if strategy.Keyword == arg {
+				msg = strategy.Value
+				break
+			}
 			msg += fmt.Sprintf("%s  ", strategy.Keyword)
 		}
 		_, _ = c.Reply(msg)
