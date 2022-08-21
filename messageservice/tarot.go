@@ -35,7 +35,7 @@ func Tarot(c *scheduler.Context) {
 	}
 	if tarot.Score == 99 && c.GetSenderId() != 1726688182 {
 		tarot = new(database.Tarot)
-		_, err = dao.DB.Where("score = ?", 97).OrderBy("id").Limit(1).Get(tarot)
+		_, err = dao.DB.Where("score = ?", selfRand.Int63n(98)).OrderBy("id").Limit(1).Get(tarot)
 		if err != nil {
 			logger.Error("查询数据库出错", err)
 			_, _ = c.Reply(e.SystemErrorNote)
