@@ -6,11 +6,16 @@ import (
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/logger"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	"image/png"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -285,6 +290,37 @@ func requestData(url string) (gamedata.GameData, error) {
 	}
 	err = json.Unmarshal(body, &gameData)
 	return gameData, err
+}
+
+// DownloadAndLoadImage 下载图鉴图片并导出 image.Image 对象
+func DownloadAndLoadImage(url string, path string) (image.Image, error) {
+	// 下载图片
+	r, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// 保存到文件
+	out, err := os.Create(path)
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(out, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	// 导出image实例
+	img, err := png.Decode(bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
 }
 
 // 更新厨师信息
