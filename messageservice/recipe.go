@@ -10,7 +10,6 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
-	"bytes"
 	"fmt"
 	"github.com/golang/freetype"
 	"github.com/nfnt/resize"
@@ -18,9 +17,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"regexp"
 	"sort"
@@ -807,7 +804,7 @@ func getRecipeInfoWithOrder(recipe database.Recipe, order string) string {
 	}
 }
 
-func RecipeInfoToImage(recipes []database.Recipe, imgURL string, imgCSS *gamedata.ImgCSS) error {
+func RecipeInfoToImage(recipes []database.Recipe, img image.Image, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 800          // 图鉴背景图片的高度
 	magnification := 5 // 截取的图像相比图鉴网原始图片的放大倍数
@@ -828,41 +825,17 @@ func RecipeInfoToImage(recipes []database.Recipe, imgURL string, imgCSS *gamedat
 	if err != nil {
 		return err
 	}
-	// 从图鉴网下载菜谱图鉴总图
+
 	resourceImgDir := config.AppConfig.Resource.Image
 	commonImgPath := resourceImgDir + "/common"
 	recipeImgPath := resourceImgDir + "/recipe"
-	galleryImagePath := recipeImgPath + "/recipe_gallery.png"
-	r, err := http.Get(imgURL)
-	if err != nil {
-		return err
-	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-	_ = r.Body.Close()
-	out, err := os.Create(galleryImagePath)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(out, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	_ = out.Close()
-
-	galleryImg, err := png.Decode(bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
 
 	// 放大菜谱图鉴图像
-	logger.Debugf("菜谱图片尺寸:%d*%d", galleryImg.Bounds().Dx(), galleryImg.Bounds().Dy())
-	galleryImg = resize.Resize(
-		uint(galleryImg.Bounds().Dx()*magnification/2.0),
-		uint(galleryImg.Bounds().Dy()*magnification/2.0),
-		galleryImg, resize.MitchellNetravali)
+	logger.Debugf("菜谱图片原始尺寸:%d*%d", img.Bounds().Dx(), img.Bounds().Dy())
+	galleryImg := resize.Resize(
+		uint(img.Bounds().Dx()*magnification/2.0),
+		uint(img.Bounds().Dy()*magnification/2.0),
+		img, resize.MitchellNetravali)
 
 	for _, recipe := range recipes {
 		// 绘制背景

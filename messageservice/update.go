@@ -1,6 +1,7 @@
 package messageservice
 
 import (
+	"bcjh-bot/config"
 	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
@@ -213,6 +214,31 @@ func UpdateData(c *scheduler.Context) {
 	logger.Infof("解析ImgCSS图片位置信息完毕, 耗时%s", stepTime)
 	msg += fmt.Sprintf("解析ImgCSS图片位置信息耗时%s\n", stepTime)
 
+	// 下载图鉴网厨师、菜谱、厨具图片数据
+	stepStart = time.Now()
+	imgResourceDir := config.AppConfig.Resource.Image
+	chefImage, err := DownloadAndLoadImage(baseURL+chefImageURI, fmt.Sprintf("%s/chef/chef_gallery.png", imgResourceDir))
+	if err != nil {
+		logger.Error("下载图鉴网厨师图片出错!", err)
+		_, _ = c.Reply("下载图鉴网厨师图片出错!")
+		return
+	}
+	recipeImage, err := DownloadAndLoadImage(baseURL+recipeImageURI, fmt.Sprintf("%s/recipe/recipe_gallery.png", imgResourceDir))
+	if err != nil {
+		logger.Error("下载图鉴网菜谱图片出错!", err)
+		_, _ = c.Reply("下载图鉴网菜谱图片出错!")
+		return
+	}
+	equipImage, err := DownloadAndLoadImage(baseURL+equipImageURI, fmt.Sprintf("%s/equip/equip_gallery.png", imgResourceDir))
+	if err != nil {
+		logger.Error("下载图鉴网厨具图片出错!", err)
+		_, _ = c.Reply("下载图鉴网厨具图片出错!")
+		return
+	}
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("下载图鉴网厨师、菜谱、厨具图片完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("下载图鉴网厨师、菜谱、厨具图片耗时%s\n", stepTime)
+
 	// 绘制厨师图鉴图片数据
 	stepStart = time.Now()
 	chefs := make([]database.Chef, 0)
@@ -222,7 +248,7 @@ func UpdateData(c *scheduler.Context) {
 		_, _ = c.Reply("绘制厨师图鉴图片出错!")
 		return
 	}
-	err = ChefInfoToImage(chefs, baseURL+chefImageURI, imgCSS)
+	err = ChefInfoToImage(chefs, chefImage, imgCSS)
 	if err != nil {
 		logger.Error("绘制厨师图鉴图片出错!", err)
 		_, _ = c.Reply("绘制厨师图鉴图片出错!")
@@ -241,7 +267,7 @@ func UpdateData(c *scheduler.Context) {
 		_, _ = c.Reply("绘制菜谱图鉴图片出错!")
 		return
 	}
-	err = RecipeInfoToImage(recipes, baseURL+recipeImageURI, imgCSS)
+	err = RecipeInfoToImage(recipes, recipeImage, imgCSS)
 	if err != nil {
 		logger.Error("绘制菜谱图鉴图片出错!", err)
 		_, _ = c.Reply("绘制菜谱图鉴图片出错!")
@@ -260,7 +286,7 @@ func UpdateData(c *scheduler.Context) {
 		_, _ = c.Reply("绘制厨具图鉴图片出错!")
 		return
 	}
-	err = EquipmentInfoToImage(equips, baseURL+equipImageURI, imgCSS)
+	err = EquipmentInfoToImage(equips, equipImage, imgCSS)
 	if err != nil {
 		logger.Error("绘制厨具图鉴图片出错!", err)
 		_, _ = c.Reply("绘制厨具图鉴图片出错!")
