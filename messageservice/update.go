@@ -9,7 +9,6 @@ import (
 	"bcjh-bot/util/logger"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -108,7 +107,7 @@ func UpdateData(c *scheduler.Context) {
 
 	// 更新菜谱数据
 	stepStart = time.Now()
-	err = updateRecipes(gameData.Recipes)
+	err = updateRecipes(gameData.Recipes, gameData.Combos)
 	if err != nil {
 		logger.Error("更新菜谱数据出错!", err)
 		_, _ = c.Reply("更新菜谱数据出错!")
@@ -117,18 +116,6 @@ func UpdateData(c *scheduler.Context) {
 	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
 	logger.Infof("更新菜谱数据完毕, 耗时%s", stepTime)
 	msg += fmt.Sprintf("更新菜谱数据耗时%s\n", stepTime)
-
-	// 更新合成菜谱数据
-	stepStart = time.Now()
-	err = updateCombos(gameData.Combos)
-	if err != nil {
-		logger.Error("更新后厨合成菜谱数据出错!", err)
-		_, _ = c.Reply("更新后厨合成菜谱数据出错!")
-		return
-	}
-	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
-	logger.Infof("更新后厨合成菜谱数据完毕, 耗时%s", stepTime)
-	msg += fmt.Sprintf("更新后厨合成菜谱数据耗时%s\n", stepTime)
 
 	// 更新贵客数据
 	stepStart = time.Now()
@@ -440,7 +427,7 @@ func updateEquips(equipsData []gamedata.EquipData) error {
 }
 
 // 更新菜谱信息
-func updateRecipes(recipesData []gamedata.RecipeData) error {
+func updateRecipes(recipesData []gamedata.RecipeData, combosData []gamedata.ComboData) error {
 	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
@@ -448,19 +435,40 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 		return err
 	}
 	// 删除菜谱数据
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Recipe).TableName())
+	sql := fmt.Sprintf("truncate table `%s`", new(database.Recipe).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
 		return err
 	}
 	// 删除菜谱-食材关系
-	sql = fmt.Sprintf("DELETE FROM `%s`", new(database.RecipeMaterial).TableName())
+	sql = fmt.Sprintf("truncate table `%s`", new(database.RecipeMaterial).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
 		return err
 	}
+
+	// 准备后厨合成菜数据
+	mIdToNameCombo := make(map[int]struct {
+		Name   string
+		Combos []string
+	})
+	for i := range recipesData {
+		mIdToNameCombo[recipesData[i].RecipeId] = struct {
+			Name   string
+			Combos []string
+		}{Name: recipesData[i].Name, Combos: []string{}}
+	}
+	for _, combo := range combosData {
+		for _, recipeId := range combo.Recipes {
+			nameComboData := mIdToNameCombo[recipeId]
+			nameComboData.Combos = append(nameComboData.Combos, mIdToNameCombo[combo.RecipeId].Name)
+			mIdToNameCombo[recipeId] = nameComboData
+		}
+	}
+
+	// 生成菜谱数据
 	recipes := make([]database.Recipe, 0)
 	materials := make([]database.RecipeMaterial, 0)
 	for _, recipeData := range recipesData {
@@ -485,7 +493,7 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 			Limit:          recipeData.Limit,
 			TotalTime:      recipeData.Time * recipeData.Limit,
 			Unlock:         recipeData.Unlock,
-			Combo:          "-",
+			Combo:          mIdToNameCombo[recipeData.RecipeId].Combos,
 		}
 		// 插入升阶贵客信息
 		guests := make([]string, 0)
@@ -516,46 +524,6 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 	if err != nil {
 		_ = session.Rollback()
 		return err
-	}
-	err = session.Commit()
-	return err
-}
-
-// 更新后厨合成菜信息
-func updateCombos(combosData []gamedata.ComboData) error {
-	session := dao.DB.NewSession()
-	defer session.Close()
-	err := session.Begin()
-	if err != nil {
-		return err
-	}
-	recipes := new(database.Recipe)
-	recipes.Combo = "-"
-	_, err = session.Where("combo <> ?", "-").Update(recipes)
-	if err != nil {
-		_ = session.Rollback()
-		return err
-	}
-	for _, combo := range combosData {
-		comboRecipe := new(database.Recipe)
-		has, err := session.Where("recipe_id = ?", combo.RecipeId).Get(comboRecipe)
-		if err != nil {
-			_ = session.Rollback()
-			return err
-		}
-		if !has {
-			_ = session.Rollback()
-			return errors.New(fmt.Sprintf("未查询到后厨合成菜谱%d信息", combo.RecipeId))
-		}
-		for _, recipeId := range combo.Recipes {
-			recipe := new(database.Recipe)
-			recipe.Combo = comboRecipe.Name
-			_, err = session.Where("recipe_id = ?", recipeId).Update(recipe)
-			if err != nil {
-				_ = session.Rollback()
-				return err
-			}
-		}
 	}
 	err = session.Commit()
 	return err

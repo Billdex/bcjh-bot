@@ -734,7 +734,7 @@ func echoRecipeMessage(recipe database.Recipe) string {
 		msg += fmt.Sprintf("食材: %s\n", materials)
 		msg += fmt.Sprintf("耗材效率: %d/h\n", recipe.MaterialEfficiency)
 		msg += fmt.Sprintf("可解锁: %s\n", recipe.Unlock)
-		msg += fmt.Sprintf("可合成: %s\n", recipe.Combo)
+		msg += fmt.Sprintf("可合成: %s\n", strings.Join(recipe.Combo, ","))
 		msg += fmt.Sprintf("神级符文: %s\n", recipe.Gift)
 		msg += fmt.Sprintf("贵客礼物: %s\n", giftInfo)
 		msg += fmt.Sprintf("升阶贵客: %s", guests)
@@ -1095,10 +1095,10 @@ func RecipeInfoToImage(recipes []database.Recipe, img image.Image, imgCSS *gamed
 
 		// 输出可合成
 		var combo string
-		if recipe.Combo == "-" {
+		if len(recipe.Combo) == 0 {
 			combo = "无"
 		} else {
-			combo = recipe.Combo
+			combo = strings.Join(recipe.Combo, ",")
 		}
 		pt = freetype.Pt(490, 734+fontSize)
 		_, err = c.DrawString(fmt.Sprintf("%s", combo), pt)
