@@ -55,7 +55,7 @@ func ComboQuery(c *scheduler.Context) {
 	comboRecipeName = recipes[0].Name
 
 	preRecipes := make([]database.Recipe, 0)
-	err = dao.DB.Where("combo = ?", comboRecipeName).Find(&preRecipes)
+	err = dao.DB.Where("combo like ?", "%\""+comboRecipeName+"\"%").Find(&preRecipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)

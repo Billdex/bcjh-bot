@@ -10,7 +10,6 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/golang/freetype"
@@ -19,9 +18,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"regexp"
 	"sort"
@@ -308,7 +305,7 @@ func echoEquipMessage(equip database.Equip) string {
 	return msg
 }
 
-func EquipmentInfoToImage(equips []database.Equip, imgURL string, imgCSS *gamedata.ImgCSS) error {
+func EquipmentInfoToImage(equips []database.Equip, img image.Image, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 300          // 图鉴背景图片的高度
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
@@ -333,38 +330,13 @@ func EquipmentInfoToImage(equips []database.Equip, imgURL string, imgCSS *gameda
 	resourceImgDir := config.AppConfig.Resource.Image
 	commonImgPath := resourceImgDir + "/common"
 	equipImgPath := resourceImgDir + "/equip"
-	galleryImagePath := equipImgPath + "/equip_gallery.png"
-	r, err := http.Get(imgURL)
-	if err != nil {
-		return err
-	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-	_ = r.Body.Close()
-
-	out, err := os.Create(galleryImagePath)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(out, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	_ = out.Close()
-
-	galleryImg, err := png.Decode(bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
 
 	// 放大厨具图鉴图像
-	logger.Debugf("厨具图片尺寸:%d*%d", galleryImg.Bounds().Dx(), galleryImg.Bounds().Dy())
-	galleryImg = resize.Resize(
-		uint(galleryImg.Bounds().Dx()*magnification/2),
-		uint(galleryImg.Bounds().Dy()*magnification/2),
-		galleryImg, resize.Bilinear)
+	logger.Debugf("厨具图片原始尺寸:%d*%d", img.Bounds().Dx(), img.Bounds().Dy())
+	galleryImg := resize.Resize(
+		uint(img.Bounds().Dx()*magnification/2),
+		uint(img.Bounds().Dy()*magnification/2),
+		img, resize.Bilinear)
 
 	for _, equip := range equips {
 		// 绘制背景色

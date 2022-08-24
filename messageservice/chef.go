@@ -10,7 +10,6 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
-	"bytes"
 	"fmt"
 	"github.com/golang/freetype"
 	"github.com/nfnt/resize"
@@ -18,9 +17,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"regexp"
 	"sort"
@@ -372,7 +369,7 @@ func getChefInfoWithOrder(chef database.Chef, order string) string {
 	}
 }
 
-func ChefInfoToImage(chefs []database.Chef, imgURL string, imgCSS *gamedata.ImgCSS) error {
+func ChefInfoToImage(chefs []database.Chef, img image.Image, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 800          // 图鉴背景图片的高度
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
@@ -393,39 +390,16 @@ func ChefInfoToImage(chefs []database.Chef, imgURL string, imgCSS *gamedata.ImgC
 		return err
 	}
 	fontColor := color.RGBA{A: 255}
-	// 从图鉴网下载头像图鉴总图
+
 	resourceImgDir := config.AppConfig.Resource.Image
 	chefImgPath := resourceImgDir + "/chef"
-	galleryImagePath := chefImgPath + "/chef_gallery.png"
-	r, err := http.Get(imgURL)
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-
-	out, err := os.Create(galleryImagePath)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(out, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-
-	galleryImg, err := png.Decode(bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
 
 	// 放大厨师图鉴图像
-	galleryImg = resize.Resize(
-		uint(galleryImg.Bounds().Dx()*magnification/2.0),
-		uint(galleryImg.Bounds().Dy()*magnification/2.0),
-		galleryImg, resize.Bilinear)
+	logger.Debugf("厨师图片原始尺寸:%d*%d", img.Bounds().Dx(), img.Bounds().Dy())
+	galleryImg := resize.Resize(
+		uint(img.Bounds().Dx()*magnification/2.0),
+		uint(img.Bounds().Dy()*magnification/2.0),
+		img, resize.Bilinear)
 
 	for _, chef := range chefs {
 		condiment := 0

@@ -10,7 +10,6 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
-	"bytes"
 	"fmt"
 	"github.com/golang/freetype"
 	"github.com/nfnt/resize"
@@ -18,9 +17,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"regexp"
 	"sort"
@@ -737,7 +734,7 @@ func echoRecipeMessage(recipe database.Recipe) string {
 		msg += fmt.Sprintf("食材: %s\n", materials)
 		msg += fmt.Sprintf("耗材效率: %d/h\n", recipe.MaterialEfficiency)
 		msg += fmt.Sprintf("可解锁: %s\n", recipe.Unlock)
-		msg += fmt.Sprintf("可合成: %s\n", recipe.Combo)
+		msg += fmt.Sprintf("可合成: %s\n", strings.Join(recipe.Combo, ","))
 		msg += fmt.Sprintf("神级符文: %s\n", recipe.Gift)
 		msg += fmt.Sprintf("贵客礼物: %s\n", giftInfo)
 		msg += fmt.Sprintf("升阶贵客: %s", guests)
@@ -807,7 +804,7 @@ func getRecipeInfoWithOrder(recipe database.Recipe, order string) string {
 	}
 }
 
-func RecipeInfoToImage(recipes []database.Recipe, imgURL string, imgCSS *gamedata.ImgCSS) error {
+func RecipeInfoToImage(recipes []database.Recipe, img image.Image, imgCSS *gamedata.ImgCSS) error {
 	dx := 800          // 图鉴背景图片的宽度
 	dy := 800          // 图鉴背景图片的高度
 	magnification := 5 // 截取的图像相比图鉴网原始图片的放大倍数
@@ -828,41 +825,17 @@ func RecipeInfoToImage(recipes []database.Recipe, imgURL string, imgCSS *gamedat
 	if err != nil {
 		return err
 	}
-	// 从图鉴网下载菜谱图鉴总图
+
 	resourceImgDir := config.AppConfig.Resource.Image
 	commonImgPath := resourceImgDir + "/common"
 	recipeImgPath := resourceImgDir + "/recipe"
-	galleryImagePath := recipeImgPath + "/recipe_gallery.png"
-	r, err := http.Get(imgURL)
-	if err != nil {
-		return err
-	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-	_ = r.Body.Close()
-	out, err := os.Create(galleryImagePath)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(out, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	_ = out.Close()
-
-	galleryImg, err := png.Decode(bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
 
 	// 放大菜谱图鉴图像
-	logger.Debugf("菜谱图片尺寸:%d*%d", galleryImg.Bounds().Dx(), galleryImg.Bounds().Dy())
-	galleryImg = resize.Resize(
-		uint(galleryImg.Bounds().Dx()*magnification/2.0),
-		uint(galleryImg.Bounds().Dy()*magnification/2.0),
-		galleryImg, resize.MitchellNetravali)
+	logger.Debugf("菜谱图片原始尺寸:%d*%d", img.Bounds().Dx(), img.Bounds().Dy())
+	galleryImg := resize.Resize(
+		uint(img.Bounds().Dx()*magnification/2.0),
+		uint(img.Bounds().Dy()*magnification/2.0),
+		img, resize.MitchellNetravali)
 
 	for _, recipe := range recipes {
 		// 绘制背景
@@ -1122,10 +1095,10 @@ func RecipeInfoToImage(recipes []database.Recipe, imgURL string, imgCSS *gamedat
 
 		// 输出可合成
 		var combo string
-		if recipe.Combo == "-" {
+		if len(recipe.Combo) == 0 {
 			combo = "无"
 		} else {
-			combo = recipe.Combo
+			combo = strings.Join(recipe.Combo, ",")
 		}
 		pt = freetype.Pt(490, 734+fontSize)
 		_, err = c.DrawString(fmt.Sprintf("%s", combo), pt)

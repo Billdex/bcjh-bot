@@ -1,16 +1,21 @@
 package messageservice
 
 import (
+	"bcjh-bot/config"
 	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/logger"
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"image"
+	"image/png"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -35,7 +40,7 @@ var updateState = false
 var updateMux sync.Mutex
 
 func UpdateData(c *scheduler.Context) {
-	// 防止在未更新完毕的情况下调用更新
+	// 防止在未更新完毕的情况下再次调用更新
 	updateMux.Lock()
 	if updateState == true {
 		_, _ = c.Reply("数据正在更新中")
@@ -60,215 +65,228 @@ func UpdateData(c *scheduler.Context) {
 		baseURL = bcjhCfPageURLBase
 	}
 	_, _ = c.Reply(fmt.Sprintf("开始导入数据, 数据源:\n%s", baseURL))
-	updateStart := time.Now().UnixNano()
+	updateStart := time.Now()
+	msg := ""
 
-	start := time.Now().UnixNano()
+	// 获取图鉴网数据
+	stepStart := time.Now()
 	gameData, err := requestData(baseURL + dataURI)
 	if err != nil {
 		logger.Error("获取图鉴网数据失败!", err)
 		_, _ = c.Reply("获取图鉴网数据失败!")
 		return
 	}
-	requestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("获取图鉴网数据完毕, 耗时%s", requestConsume)
+	stepTime := time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("获取图鉴网数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("获取图鉴网数据耗时%s\n", stepTime)
 
 	// 更新数据
 	// 更新厨师数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	err = updateChefs(gameData.Chefs)
 	if err != nil {
 		logger.Error("更新厨师数据出错!", err)
 		_, _ = c.Reply("更新厨师数据出错!")
 		return
 	}
-	chefConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新厨师数据完毕, 耗时%s", chefConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新厨师数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新厨师数据耗时%s\n", stepTime)
 
 	// 更新厨具数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	err = updateEquips(gameData.Equips)
 	if err != nil {
 		logger.Error("更新厨具数据出错!", err)
 		_, _ = c.Reply("更新厨具数据出错!")
 		return
 	}
-	equipConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新厨具数据完毕, 耗时%s", equipConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新厨具数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新厨具数据耗时%s\n", stepTime)
 
 	// 更新菜谱数据
-	start = time.Now().UnixNano()
-	err = updateRecipes(gameData.Recipes)
+	stepStart = time.Now()
+	err = updateRecipes(gameData.Recipes, gameData.Combos)
 	if err != nil {
 		logger.Error("更新菜谱数据出错!", err)
 		_, _ = c.Reply("更新菜谱数据出错!")
 		return
 	}
-	recipeConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新菜谱数据完毕, 耗时%s", recipeConsume)
-
-	// 更新合成菜谱数据
-	start = time.Now().UnixNano()
-	err = updateCombos(gameData.Combos)
-	if err != nil {
-		logger.Error("更新后厨合成菜谱数据出错!", err)
-		_, _ = c.Reply("更新后厨合成菜谱数据出错!")
-		return
-	}
-	comboConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新后厨合成菜谱数据完毕, 耗时%s", comboConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新菜谱数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新菜谱数据耗时%s\n", stepTime)
 
 	// 更新贵客数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	err = updateGuests(gameData.Guests)
 	if err != nil {
 		logger.Error("更新贵客数据出错!", err)
 		_, _ = c.Reply("更新贵客数据出错!")
 		return
 	}
-	guestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新贵客数据完毕, 耗时%s", guestConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新贵客数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新贵客数据耗时%s\n", stepTime)
 
 	// 更新食材数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	err = updateMaterials(gameData.Materials)
 	if err != nil {
 		logger.Error("更新食材数据出错!", err)
 		_, _ = c.Reply("更新食材数据出错!")
 		return
 	}
-	materialConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新食材数据完毕, 耗时%s", materialConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新食材数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新食材数据耗时%s\n", stepTime)
 
 	// 更新技能数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	err = updateSkills(gameData.Skills)
 	if err != nil {
 		logger.Error("更新技能数据出错!", err)
 		_, _ = c.Reply("更新技能数据出错!")
 		return
 	}
-	skillConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新技能数据完毕, 耗时%s", skillConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新技能数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新技能数据耗时%s\n", stepTime)
 
 	// 更新装修家具数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	err = updateDecorations(gameData.Decorations)
 	if err != nil {
 		logger.Error("更新装修家具数据出错!", err)
 		_, _ = c.Reply("更新装修家具数据出错!")
 		return
 	}
-	DecorationConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新装修家具数据完毕, 耗时%s", DecorationConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新装修家具数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新装修家具数据耗时%s\n", stepTime)
 
 	// 更新调料数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	err = updateCondiments(gameData.Condiments)
 	if err != nil {
 		logger.Error("更新调料数据出错!", err)
 		_, _ = c.Reply("更新调料数据出错!")
 		return
 	}
-	CondimentConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新调料数据完毕, 耗时%s", CondimentConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新调料数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新调料数据耗时%s\n", stepTime)
 
 	// 更新任务数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	err = updateQuests(gameData.Quests)
 	if err != nil {
 		logger.Error("更新任务数据出错!", err)
 		_, _ = c.Reply("更新任务数据出错!")
 		return
 	}
-	QuestConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新任务数据完毕, 耗时%s", QuestConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("更新任务数据完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("更新任务数据耗时%s\n", stepTime)
 
 	// 解析ImgCSS数据
-	start = time.Now().UnixNano()
+	stepStart = time.Now()
 	imgCSS, err := ResolvingImgCSS(baseURL + imageCSSURI)
 	if err != nil {
 		logger.Error("解析ImgCSS出错!", err)
 		_, _ = c.Reply("解析ImgCSS出错!")
 		return
 	}
-	imgCSSConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("解析ImgCSS完毕, 耗时%s", imgCSSConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("解析ImgCSS图片位置信息完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("解析ImgCSS图片位置信息耗时%s\n", stepTime)
 
-	// 更新厨师图鉴图片数据
-	start = time.Now().UnixNano()
+	// 下载图鉴网厨师、菜谱、厨具图片数据
+	stepStart = time.Now()
+	imgResourceDir := config.AppConfig.Resource.Image
+	chefImage, err := DownloadAndLoadImage(baseURL+chefImageURI, fmt.Sprintf("%s/chef/chef_gallery.png", imgResourceDir))
+	if err != nil {
+		logger.Error("下载图鉴网厨师图片出错!", err)
+		_, _ = c.Reply("下载图鉴网厨师图片出错!")
+		return
+	}
+	recipeImage, err := DownloadAndLoadImage(baseURL+recipeImageURI, fmt.Sprintf("%s/recipe/recipe_gallery.png", imgResourceDir))
+	if err != nil {
+		logger.Error("下载图鉴网菜谱图片出错!", err)
+		_, _ = c.Reply("下载图鉴网菜谱图片出错!")
+		return
+	}
+	equipImage, err := DownloadAndLoadImage(baseURL+equipImageURI, fmt.Sprintf("%s/equip/equip_gallery.png", imgResourceDir))
+	if err != nil {
+		logger.Error("下载图鉴网厨具图片出错!", err)
+		_, _ = c.Reply("下载图鉴网厨具图片出错!")
+		return
+	}
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("下载图鉴网厨师、菜谱、厨具图片完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("下载图鉴网厨师、菜谱、厨具图片耗时%s\n", stepTime)
+
+	// 绘制厨师图鉴图片数据
+	stepStart = time.Now()
 	chefs := make([]database.Chef, 0)
 	err = dao.DB.Asc("gallery_id").Find(&chefs)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply("更新厨师图鉴图片数据出错!")
+		_, _ = c.Reply("绘制厨师图鉴图片出错!")
 		return
 	}
-	err = ChefInfoToImage(chefs, baseURL+chefImageURI, imgCSS)
+	err = ChefInfoToImage(chefs, chefImage, imgCSS)
 	if err != nil {
-		logger.Error("更新厨师图鉴图片数据出错!", err)
-		_, _ = c.Reply("更新厨师图鉴图片数据出错!")
+		logger.Error("绘制厨师图鉴图片出错!", err)
+		_, _ = c.Reply("绘制厨师图鉴图片出错!")
 		return
 	}
-	chefImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新厨师图鉴图片数据完毕, 耗时%s", chefImgConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("绘制厨师图鉴图片完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("绘制厨师图鉴图片耗时%s\n", stepTime)
 
-	// 更新菜谱图鉴图片数据
-	start = time.Now().UnixNano()
+	// 绘制菜谱图鉴图片数据
+	stepStart = time.Now()
 	recipes := make([]database.Recipe, 0)
 	err = dao.DB.Asc("gallery_id").Find(&recipes)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply("更新菜谱图鉴图片数据出错!")
+		_, _ = c.Reply("绘制菜谱图鉴图片出错!")
 		return
 	}
-	err = RecipeInfoToImage(recipes, baseURL+recipeImageURI, imgCSS)
+	err = RecipeInfoToImage(recipes, recipeImage, imgCSS)
 	if err != nil {
-		logger.Error("更新菜谱图鉴图片数据出错!", err)
-		_, _ = c.Reply("更新菜谱图鉴图片数据出错!")
+		logger.Error("绘制菜谱图鉴图片出错!", err)
+		_, _ = c.Reply("绘制菜谱图鉴图片出错!")
 		return
 	}
-	recipeImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新菜谱图鉴图片数据完毕, 耗时%s", recipeImgConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("绘制菜谱图鉴图片完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("绘制菜谱图鉴图片耗时%s\n", stepTime)
 
-	// 更新厨具图鉴图片数据
-	start = time.Now().UnixNano()
+	// 绘制厨具图鉴图片数据
+	stepStart = time.Now()
 	equips := make([]database.Equip, 0)
 	err = dao.DB.Asc("gallery_id").Find(&equips)
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply("更新厨具图鉴图片数据出错!")
+		_, _ = c.Reply("绘制厨具图鉴图片出错!")
 		return
 	}
-	err = EquipmentInfoToImage(equips, baseURL+equipImageURI, imgCSS)
+	err = EquipmentInfoToImage(equips, equipImage, imgCSS)
 	if err != nil {
-		logger.Error("更新厨具图鉴图片数据出错!", err)
-		_, _ = c.Reply("更新厨具图鉴图片数据出错!")
+		logger.Error("绘制厨具图鉴图片出错!", err)
+		_, _ = c.Reply("绘制厨具图鉴图片出错!")
 		return
 	}
-	equipImgConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-start)/1e9)
-	logger.Infof("更新厨具图鉴图片数据完毕, 耗时%s", equipImgConsume)
+	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+	logger.Infof("绘制厨具图鉴图片完毕, 耗时%s", stepTime)
+	msg += fmt.Sprintf("绘制厨具图鉴图片耗时%s", stepTime)
 
 	// 发送成功消息
 	logger.Info("更新数据完毕")
-	var strBdr = strings.Builder{}
-	updateConsume := fmt.Sprintf("%.2fs", (float64)(time.Now().UnixNano()-updateStart)/1e9)
-	strBdr.WriteString(fmt.Sprintf("更新数据完毕, 累计耗时%s\n", updateConsume))
-	strBdr.WriteString(fmt.Sprintf("抓取图鉴网数据耗时%s\n", requestConsume))
-	strBdr.WriteString(fmt.Sprintf("更新厨师数据耗时%s\n", chefConsume))
-	strBdr.WriteString(fmt.Sprintf("更新厨具数据耗时%s\n", equipConsume))
-	strBdr.WriteString(fmt.Sprintf("更新菜谱数据耗时%s\n", recipeConsume))
-	strBdr.WriteString(fmt.Sprintf("更新后厨合成菜谱数据耗时%s\n", comboConsume))
-	strBdr.WriteString(fmt.Sprintf("更新贵客数据耗时%s\n", guestConsume))
-	strBdr.WriteString(fmt.Sprintf("更新食材数据耗时%s\n", materialConsume))
-	strBdr.WriteString(fmt.Sprintf("更新技能数据耗时%s\n", skillConsume))
-	strBdr.WriteString(fmt.Sprintf("更新装修家具数据耗时%s\n", DecorationConsume))
-	strBdr.WriteString(fmt.Sprintf("更新调料数据耗时%s\n", CondimentConsume))
-	strBdr.WriteString(fmt.Sprintf("更新任务数据耗时%s\n", QuestConsume))
-	strBdr.WriteString(fmt.Sprintf("解析ImgCSS数据耗时%s\n", imgCSSConsume))
-	strBdr.WriteString(fmt.Sprintf("更新厨师图鉴图片数据耗时%s\n", chefImgConsume))
-	strBdr.WriteString(fmt.Sprintf("更新菜谱图鉴图片数据耗时%s\n", recipeImgConsume))
-	strBdr.WriteString(fmt.Sprintf("更新厨具图鉴图片数据耗时%s", equipImgConsume))
-	_, _ = c.Reply(strBdr.String())
+	msg = fmt.Sprintf("更新数据完毕, 累计耗时%s\n", time.Now().Sub(updateStart).Round(time.Millisecond).String()) + msg
+	_, _ = c.Reply(msg)
 }
 
 // 从图鉴网爬取数据
@@ -285,6 +303,37 @@ func requestData(url string) (gamedata.GameData, error) {
 	}
 	err = json.Unmarshal(body, &gameData)
 	return gameData, err
+}
+
+// DownloadAndLoadImage 下载图鉴图片并导出 image.Image 对象
+func DownloadAndLoadImage(url string, path string) (image.Image, error) {
+	// 下载图片
+	r, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// 保存到文件
+	out, err := os.Create(path)
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(out, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	// 导出image实例
+	img, err := png.Decode(bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
 }
 
 // 更新厨师信息
@@ -378,7 +427,7 @@ func updateEquips(equipsData []gamedata.EquipData) error {
 }
 
 // 更新菜谱信息
-func updateRecipes(recipesData []gamedata.RecipeData) error {
+func updateRecipes(recipesData []gamedata.RecipeData, combosData []gamedata.ComboData) error {
 	session := dao.DB.NewSession()
 	defer session.Close()
 	err := session.Begin()
@@ -386,19 +435,40 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 		return err
 	}
 	// 删除菜谱数据
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Recipe).TableName())
+	sql := fmt.Sprintf("truncate table `%s`", new(database.Recipe).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
 		return err
 	}
 	// 删除菜谱-食材关系
-	sql = fmt.Sprintf("DELETE FROM `%s`", new(database.RecipeMaterial).TableName())
+	sql = fmt.Sprintf("truncate table `%s`", new(database.RecipeMaterial).TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
 		return err
 	}
+
+	// 准备后厨合成菜数据
+	mIdToNameCombo := make(map[int]struct {
+		Name   string
+		Combos []string
+	})
+	for i := range recipesData {
+		mIdToNameCombo[recipesData[i].RecipeId] = struct {
+			Name   string
+			Combos []string
+		}{Name: recipesData[i].Name, Combos: []string{}}
+	}
+	for _, combo := range combosData {
+		for _, recipeId := range combo.Recipes {
+			nameComboData := mIdToNameCombo[recipeId]
+			nameComboData.Combos = append(nameComboData.Combos, mIdToNameCombo[combo.RecipeId].Name)
+			mIdToNameCombo[recipeId] = nameComboData
+		}
+	}
+
+	// 生成菜谱数据
 	recipes := make([]database.Recipe, 0)
 	materials := make([]database.RecipeMaterial, 0)
 	for _, recipeData := range recipesData {
@@ -423,7 +493,7 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 			Limit:          recipeData.Limit,
 			TotalTime:      recipeData.Time * recipeData.Limit,
 			Unlock:         recipeData.Unlock,
-			Combo:          "-",
+			Combo:          mIdToNameCombo[recipeData.RecipeId].Combos,
 		}
 		// 插入升阶贵客信息
 		guests := make([]string, 0)
@@ -454,46 +524,6 @@ func updateRecipes(recipesData []gamedata.RecipeData) error {
 	if err != nil {
 		_ = session.Rollback()
 		return err
-	}
-	err = session.Commit()
-	return err
-}
-
-// 更新后厨合成菜信息
-func updateCombos(combosData []gamedata.ComboData) error {
-	session := dao.DB.NewSession()
-	defer session.Close()
-	err := session.Begin()
-	if err != nil {
-		return err
-	}
-	recipes := new(database.Recipe)
-	recipes.Combo = "-"
-	_, err = session.Where("combo <> ?", "-").Update(recipes)
-	if err != nil {
-		_ = session.Rollback()
-		return err
-	}
-	for _, combo := range combosData {
-		comboRecipe := new(database.Recipe)
-		has, err := session.Where("recipe_id = ?", combo.RecipeId).Get(comboRecipe)
-		if err != nil {
-			_ = session.Rollback()
-			return err
-		}
-		if !has {
-			_ = session.Rollback()
-			return errors.New(fmt.Sprintf("未查询到后厨合成菜谱%d信息", combo.RecipeId))
-		}
-		for _, recipeId := range combo.Recipes {
-			recipe := new(database.Recipe)
-			recipe.Combo = comboRecipe.Name
-			_, err = session.Where("recipe_id = ?", recipeId).Update(recipe)
-			if err != nil {
-				_ = session.Rollback()
-				return err
-			}
-		}
 	}
 	err = session.Commit()
 	return err

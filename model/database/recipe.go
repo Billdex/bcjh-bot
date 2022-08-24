@@ -23,7 +23,7 @@ type Recipe struct {
 	Limit              int      `xorm:"limit"`               // 每组数量
 	TotalTime          int      `xorm:"total_time"`          // 每组时间(秒)
 	Unlock             string   `xorm:"unlock"`              // 可解锁
-	Combo              string   `xorm:"combo"`               // 可合成
+	Combo              []string `xorm:"combo"`               // 可合成
 }
 
 func (Recipe) TableName() string {

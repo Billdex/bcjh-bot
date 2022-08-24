@@ -94,5 +94,4 @@ func GetDirAllSqlFile(dir string) ([]string, error) {
 func MergeRepeatSpace(s string) string {
 	reg := regexp.MustCompile("\\s+")
 	return reg.ReplaceAllString(s, " ")
-
 }
