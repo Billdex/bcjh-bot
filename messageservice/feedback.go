@@ -7,12 +7,6 @@ import (
 	"bcjh-bot/util/logger"
 )
 
-const (
-	close = iota
-	open
-	finish
-)
-
 func Feedback(c *scheduler.Context) {
 	if c.PretreatedMessage == "" {
 		_, _ = c.Reply("请填写反馈内容")
@@ -22,7 +16,7 @@ func Feedback(c *scheduler.Context) {
 	feedback.Sender = c.GetSenderId()
 	feedback.Nickname = c.GetSenderNickname()
 	feedback.Message = c.PretreatedMessage
-	feedback.Status = open
+	feedback.Status = database.FeedbackStatusOpen
 	affected, err := dao.DB.Insert(feedback)
 	if err != nil {
 		logger.Error("插入数据库出错:", err)
