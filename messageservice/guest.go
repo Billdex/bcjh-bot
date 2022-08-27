@@ -42,7 +42,15 @@ func GuestQuery(c *scheduler.Context) {
 		argType = "guest_name"
 	}
 
-	// 查询到多个贵客时返回贵客列表
+	// 遍历查询结果，如果有多个符合的结果但有某项完全匹配，则直接以该完全匹配的数据为准
+	for _, guest := range guests {
+		if guest.GuestName == arg {
+			guests = []database.Guest{guest}
+			break
+		}
+	}
+
+	// 上述检查后仍匹配到到多个贵客时返回贵客列表
 	if len(guests) > 1 {
 		msg := "查询到以下贵客"
 		for i, guest := range guests {
