@@ -12,6 +12,7 @@ import (
 	"bcjh-bot/util/logger"
 	"fmt"
 	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 	"github.com/nfnt/resize"
 	"image"
 	"image/color"
@@ -369,18 +370,151 @@ func getChefInfoWithOrder(chef database.Chef, order string) string {
 	}
 }
 
-func ChefInfoToImage(chefs []database.Chef, img image.Image, imgCSS *gamedata.ImgCSS) error {
-	dx := 800          // 图鉴背景图片的宽度
-	dy := 800          // 图鉴背景图片的高度
-	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
-	titleSize := 50    // 标题字体尺寸
-	fontSize := 36     // 内容字体尺寸
-	fontDPI := 72.0    // dpi
+// GenerateChefImage 根据厨师数据生成图鉴图片
+func GenerateChefImage(chef database.ChefData, font *truetype.Font, bgImg image.Image, genderImg image.Image, rarityImg image.Image) (image.Image, error) {
+	dx := 800       // 图鉴背景图片的宽度
+	dy := 800       // 图鉴背景图片的高度
+	titleSize := 50 // 标题字体尺寸
+	fontSize := 36  // 内容字体尺寸
+	fontDPI := 72.0 // dpi
 
-	// 获取字体文件
+	img := image.NewRGBA(image.Rect(0, 0, dx, dy))
+	// 绘制背景
+	draw.Draw(img, img.Bounds(), bgImg, bgImg.Bounds().Min, draw.Src)
+
+	c := freetype.NewContext()
+	c.SetDPI(fontDPI)
+	c.SetFont(font)
+	c.SetClip(img.Bounds())
+	c.SetDst(img)
+	c.SetSrc(image.NewUniform(color.RGBA{A: 255}))
+	c.SetFontSize(float64(titleSize))
+
+	// 输出厨师头像, 双线性插值算法会对边缘造成影响，去除一点边框
+	draw.Draw(img,
+		image.Rect(50+2, 118+2, 50+200-2, 118+200-2),
+		chef.Avatar,
+		image.Point{X: 2, Y: 2},
+		draw.Over)
+
+	// 输出图鉴ID与厨师名
+	_, err := c.DrawString(chef.Name, freetype.Pt(165, 22+titleSize))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.DrawString(fmt.Sprintf("%03d", chef.ChefId), freetype.Pt(45, 18+titleSize))
+	if err != nil {
+		return nil, err
+	}
+	c.SetFontSize(float64(25))
+	_, err = c.DrawString(fmt.Sprintf("(%03d,%03d)", chef.ChefId-2, chef.ChefId-1), freetype.Pt(30, 70+25))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出性别
+	draw.Draw(img,
+		image.Rect(490, 30, 490+44, 30+44),
+		genderImg,
+		image.Point{},
+		draw.Over)
+
+	// 输出稀有度
+	draw.Draw(img,
+		image.Rect(545, 30, 545+240, 30+44),
+		rarityImg,
+		image.Point{},
+		draw.Over)
+
+	c.SetFontSize(float64(fontSize))
+	// 输出技法数据
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Stirfry), freetype.Pt(365, 104+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Bake), freetype.Pt(536, 104+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Boil), freetype.Pt(705, 104+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Steam), freetype.Pt(365, 164+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Fry), freetype.Pt(536, 164+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Cut), freetype.Pt(705, 164+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出采集数据
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Meat), freetype.Pt(365, 230+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Flour), freetype.Pt(536, 230+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Vegetable), freetype.Pt(365, 290+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.Fish), freetype.Pt(536, 290+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出调料数据
+	_, err = c.DrawString(fmt.Sprintf("%d", chef.GetCondimentValue()), freetype.Pt(705, 290+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出来源数据
+	_, err = c.DrawString(fmt.Sprintf("%s", chef.Origin), freetype.Pt(150, 365+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出技能数据
+	_, err = c.DrawString(fmt.Sprintf("%s", chef.Skill), freetype.Pt(150, 435+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出修炼效果数据
+	_, err = c.DrawString(fmt.Sprintf("%s", chef.GetUltimateSkill()), freetype.Pt(150, 505+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出修炼任务数据
+	goals := chef.GetUltimateGoals()
+	for i, goal := range goals {
+		pt := freetype.Pt(120, 625+i*50+fontSize)
+		_, err = c.DrawString(goal, pt)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return img, nil
+}
+
+// GenerateAllChefsImages 生成所有厨师的图鉴图片
+func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCSS *gamedata.ImgCSS) error {
+	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数，图鉴网图片imgCSS给的数据时缩小版图片记录的位置，下载的图片为高清版尺寸为两倍，因此后续计算中取不同的计算倍数
+
+	// 载入字体文件
 	resourceFontDir := config.AppConfig.Resource.Font
 	fontFile := resourceFontDir + "/yuan500W.ttf"
-	//读字体数据
 	fontBytes, err := ioutil.ReadFile(fontFile)
 	if err != nil {
 		return err
@@ -389,229 +523,102 @@ func ChefInfoToImage(chefs []database.Chef, img image.Image, imgCSS *gamedata.Im
 	if err != nil {
 		return err
 	}
-	fontColor := color.RGBA{A: 255}
 
 	resourceImgDir := config.AppConfig.Resource.Image
 	chefImgPath := resourceImgDir + "/chef"
+	commonImgPath := resourceImgDir + "/common"
 
 	// 放大厨师图鉴图像
-	logger.Debugf("厨师图片原始尺寸:%d*%d", img.Bounds().Dx(), img.Bounds().Dy())
-	galleryImg := resize.Resize(
-		uint(img.Bounds().Dx()*magnification/2.0),
-		uint(img.Bounds().Dy()*magnification/2.0),
-		img, resize.Bilinear)
+	logger.Debugf("厨师图片原始尺寸:%d*%d", galleryImg.Bounds().Dx(), galleryImg.Bounds().Dy())
+	galleryImg = resize.Resize(
+		uint(galleryImg.Bounds().Dx()*magnification/2.0),
+		uint(galleryImg.Bounds().Dy()*magnification/2.0),
+		galleryImg, resize.Bilinear)
 
-	for _, chef := range chefs {
-		condiment := 0
-		condimentType := "Sweet"
-		if chef.Sweet > 0 {
-			condiment = chef.Sweet
-			condimentType = "Sweet"
-		} else if chef.Sour > 0 {
-			condiment = chef.Sour
-			condimentType = "Sour"
-		} else if chef.Spicy > 0 {
-			condiment = chef.Spicy
-			condimentType = "Spicy"
-		} else if chef.Salty > 0 {
-			condiment = chef.Salty
-			condimentType = "Salty"
-		} else if chef.Bitter > 0 {
-			condiment = chef.Bitter
-			condimentType = "Bitter"
-		} else if chef.Tasty > 0 {
-			condiment = chef.Tasty
-			condimentType = "Tasty"
-		}
+	// 载入厨师背景图片
+	mBgImages := make(map[string]image.Image)
+	for _, condimentType := range []string{"Sweet", "Sour", "Spicy", "Salty", "Bitter", "Tasty"} {
 		bgFile, err := os.Open(fmt.Sprintf("%s/chef_%s.png", chefImgPath, condimentType))
 		if err != nil {
 			return err
 		}
-		img := image.NewRGBA(image.Rect(0, 0, dx, dy))
+		img := image.NewRGBA(image.Rect(0, 0, 800, 800))
 		bg, _ := png.Decode(bgFile)
-		bgFile.Close()
-
+		_ = bgFile.Close()
 		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Src)
+		mBgImages[condimentType] = img
+	}
 
-		c := freetype.NewContext()
-		c.SetDPI(fontDPI)
-		c.SetFont(font)
-		c.SetClip(img.Bounds())
-		c.SetDst(img)
-		c.SetSrc(image.NewUniform(fontColor))
-		c.SetFontSize(float64(titleSize))
+	// 载入厨师性别图片
+	mGenderImages := make(map[int]image.Image)
+	for _, gender := range []int{0, 1, 2} {
+		genderFile, err := os.Open(fmt.Sprintf("%s/gender_%d.png", chefImgPath, gender))
+		if err != nil {
+			return err
+		}
+		img := image.NewRGBA(image.Rect(0, 0, 44, 44))
+		bg, _ := png.Decode(genderFile)
+		_ = genderFile.Close()
+		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Over)
+		mGenderImages[gender] = img
+	}
 
-		// 输出厨师头像, 双线性插值算法会对边缘造成影响，去除一点边框
+	// 载入稀有度图片
+	mRarityImages := make(map[int]image.Image)
+	for _, rarity := range []int{1, 2, 3, 4, 5} {
+		rarityFile, err := os.Open(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
+		if err != nil {
+			return err
+		}
+		img := image.NewRGBA(image.Rect(0, 0, 240, 44))
+		bg, _ := png.Decode(rarityFile)
+		_ = rarityFile.Close()
+		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Over)
+		mRarityImages[rarity] = img
+	}
+
+	// 逐个绘制厨师图片
+	for _, chef := range chefs {
+		// 载入与计算厨师信息
 		chefImgInfo := imgCSS.ChefImg[chef.ChefId]
 		avatarStartX := chefImgInfo.X * magnification
 		avatarStartY := chefImgInfo.Y * magnification
-		draw.Draw(img,
-			image.Rect(50+2, 118+2, 50+200-2, 118+200-2),
+		avatar := image.NewRGBA(image.Rect(0, 0, 200, 200))
+		draw.Draw(avatar,
+			image.Rect(0, 0, 200, 200),
 			galleryImg,
-			image.Point{X: avatarStartX + 2, Y: avatarStartY + 2},
+			image.Point{X: avatarStartX, Y: avatarStartY},
 			draw.Over)
-
-		// 输出图鉴ID与厨师名
-		pt := freetype.Pt(165, 22+titleSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", chef.Name), pt)
+		skill, err := dao.GetSkillById(chef.SkillId)
 		if err != nil {
-			return err
+			logger.Errorf("查询厨师 %s 技能数据失败, 技能id %d, err: %v", chef.Name, chef.SkillId, err)
+			continue
 		}
-
-		pt = freetype.Pt(45, 18+titleSize)
-		_, err = c.DrawString(fmt.Sprintf("%03d", chef.ChefId), pt)
+		ultimateSkill, err := dao.GetSkillById(chef.UltimateSkill)
 		if err != nil {
-			return err
+			logger.Errorf("查询厨师 %s 修炼技能数据失败, 技能id %d, err: %v", chef.Name, chef.UltimateSkill, err)
+			continue
 		}
-		c.SetFontSize(float64(25))
-		pt = freetype.Pt(30, 70+25)
-		_, err = c.DrawString(fmt.Sprintf("(%03d,%03d)", chef.ChefId-2, chef.ChefId-1), pt)
+		goalSkills, err := dao.GetQuestsByIds(chef.UltimateGoals)
 		if err != nil {
-			return err
+			logger.Errorf("查询厨师 %s 修炼任务失败, err: %v", chef.Name, err)
+			continue
 		}
-
-		// 输出性别
-		genderFile, err := os.Open(fmt.Sprintf("%s/gender_%d.png", chefImgPath, chef.Gender))
+		goals := make([]string, len(goalSkills))
+		for i := range goalSkills {
+			goals[i] = goalSkills[i].Goal
+		}
+		chefData := database.ChefData{
+			Chef:          chef,
+			Avatar:        avatar,
+			Skill:         skill.Description,
+			UltimateGoals: goals,
+			UltimateSkill: ultimateSkill.Description,
+		}
+		// 绘制厨师图片
+		img, err := GenerateChefImage(chefData, font, mBgImages[chefData.GetCondimentType()], mGenderImages[chefData.Gender], mRarityImages[chefData.Rarity])
 		if err != nil {
-			return err
-		}
-		genderImg, _ := png.Decode(genderFile)
-		genderFile.Close()
-		draw.Draw(img,
-			image.Rect(490, 30, 490+44, 30+44),
-			genderImg,
-			image.Point{},
-			draw.Over)
-
-		// 输出稀有度
-		rarityFile, err := os.Open(fmt.Sprintf("%s/rarity_%d.png", chefImgPath, chef.Rarity))
-		if err != nil {
-			return err
-		}
-		rarityImg, _ := png.Decode(rarityFile)
-		rarityFile.Close()
-		draw.Draw(img,
-			image.Rect(545, 30, 545+240, 30+44),
-			rarityImg,
-			image.Point{},
-			draw.Over)
-
-		c.SetFontSize(float64(fontSize))
-		// 输出技法数据
-		pt = freetype.Pt(365, 104+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Stirfry), pt)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(536, 104+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Bake), pt)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(705, 104+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Boil), pt)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(365, 164+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Steam), pt)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(536, 164+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Fry), pt)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(705, 164+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Cut), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出采集数据
-		pt = freetype.Pt(365, 230+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Meat), pt)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(536, 230+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Flour), pt)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(365, 290+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Vegetable), pt)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(536, 290+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", chef.Fish), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出调料数据
-		pt = freetype.Pt(705, 290+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", condiment), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出来源数据
-		pt = freetype.Pt(150, 365+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", chef.Origin), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出技法数据
-		skill := new(database.Skill)
-		_, err = dao.DB.Where("skill_id = ?", chef.SkillId).Get(skill)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(150, 435+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", skill.Description), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出修炼效果数据
-		ultimateSkill := new(database.Skill)
-		_, err = dao.DB.Where("skill_id = ?", chef.UltimateSkill).Get(ultimateSkill)
-		if err != nil {
-			return err
-		}
-		pt = freetype.Pt(150, 505+fontSize)
-		if ultimateSkill.Description == "" {
-			ultimateSkill.Description = "暂无"
-		}
-		_, err = c.DrawString(fmt.Sprintf("%s", ultimateSkill.Description), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出修炼任务数据
-		ultimateGoals := make([]database.Quest, 0)
-		err = dao.DB.In("quest_id", chef.UltimateGoals).Find(&ultimateGoals)
-		if err != nil {
-			return err
-		}
-		for i := 0; i < 3; i++ {
-			pt = freetype.Pt(120, 625+i*50+fontSize)
-			if len(ultimateGoals)-1 < i {
-				_, err = c.DrawString(fmt.Sprintf("暂无"), pt)
-				if err != nil {
-					return err
-				}
-			} else {
-				_, err = c.DrawString(fmt.Sprintf("%s", ultimateGoals[i].Goal), pt)
-				if err != nil {
-					return err
-				}
-
-			}
+			return fmt.Errorf("绘制厨师 %s 的数据出错 %v", chef.Name, err)
 		}
 
 		// 以PNG格式保存文件
@@ -623,7 +630,7 @@ func ChefInfoToImage(chefs []database.Chef, img image.Image, imgCSS *gamedata.Im
 		if err != nil {
 			return err
 		}
-		dst.Close()
+		_ = dst.Close()
 	}
 	return nil
 }

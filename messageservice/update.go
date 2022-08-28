@@ -235,7 +235,7 @@ func UpdateData(c *scheduler.Context) {
 		_, _ = c.Reply("绘制厨师图鉴图片出错!")
 		return
 	}
-	err = ChefInfoToImage(chefs, chefImage, imgCSS)
+	err = GenerateAllChefsImages(chefs, chefImage, imgCSS)
 	if err != nil {
 		logger.Error("绘制厨师图鉴图片出错!", err)
 		_, _ = c.Reply("绘制厨师图鉴图片出错!")
@@ -344,7 +344,7 @@ func updateChefs(chefsData []gamedata.ChefData) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Chef).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.Chef{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
@@ -400,7 +400,7 @@ func updateEquips(equipsData []gamedata.EquipData) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Equip).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.Equip{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
@@ -435,14 +435,14 @@ func updateRecipes(recipesData []gamedata.RecipeData, combosData []gamedata.Comb
 		return err
 	}
 	// 删除菜谱数据
-	sql := fmt.Sprintf("truncate table `%s`", new(database.Recipe).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.Recipe{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
 		return err
 	}
 	// 删除菜谱-食材关系
-	sql = fmt.Sprintf("truncate table `%s`", new(database.RecipeMaterial).TableName())
+	sql = fmt.Sprintf("DELETE FROM `%s`", database.RecipeMaterial{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
@@ -537,7 +537,7 @@ func updateGuests(guestsData []gamedata.GuestData) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.GuestGift).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.GuestGift{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
@@ -597,7 +597,7 @@ func updateMaterials(materialsData []gamedata.MaterialData) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Material).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.Material{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
@@ -627,7 +627,7 @@ func updateSkills(skillsData []gamedata.SkillData) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Skill).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.Skill{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
@@ -669,7 +669,7 @@ func updateDecorations(decorationsData []gamedata.Decoration) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Decoration).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.Decoration{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
@@ -709,7 +709,7 @@ func updateCondiments(condimentsData []gamedata.Condiment) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Condiment).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.Condiment{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
@@ -743,7 +743,7 @@ func updateQuests(questsData []gamedata.QuestData) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("DELETE FROM `%s`", new(database.Quest).TableName())
+	sql := fmt.Sprintf("DELETE FROM `%s`", database.Quest{}.TableName())
 	_, err = session.Exec(sql)
 	if err != nil {
 		_ = session.Rollback()
