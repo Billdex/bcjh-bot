@@ -273,7 +273,7 @@ func UpdateData(c *scheduler.Context) {
 		_, _ = c.Reply("绘制厨具图鉴图片出错!")
 		return
 	}
-	err = EquipmentInfoToImage(equips, equipImage, imgCSS)
+	err = GenerateAllEquipmentsImages(equips, equipImage, imgCSS)
 	if err != nil {
 		logger.Error("绘制厨具图鉴图片出错!", err)
 		_, _ = c.Reply("绘制厨具图鉴图片出错!")

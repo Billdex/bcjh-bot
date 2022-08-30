@@ -1,5 +1,7 @@
 package database
 
+import "image"
+
 type Equip struct {
 	EquipId   int    `xorm:"equip_id"`   // 厨具ID
 	Name      string `xorm:"name"`       // 厨具名称
@@ -11,4 +13,10 @@ type Equip struct {
 
 func (Equip) TableName() string {
 	return "equip"
+}
+
+type EquipData struct {
+	Equip
+	Avatar image.Image
+	Skills []Skill
 }
