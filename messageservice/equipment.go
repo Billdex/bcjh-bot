@@ -307,17 +307,14 @@ func echoEquipMessage(equip database.Equip) string {
 
 // GenerateEquipmentImage 根据厨具数据生成单个厨具图鉴图片
 func GenerateEquipmentImage(equip database.EquipData, font *truetype.Font, bgImg image.Image, rarityImg image.Image, mSkillImages map[string]image.Image) (image.Image, error) {
-	dx := 800       // 图鉴背景图片的宽度
-	dy := 300       // 图鉴背景图片的高度
 	titleSize := 42 // 标题字体尺寸
 	fontSize := 28  // 内容字体尺寸
-	fontDPI := 72.0 // dpi
 
-	img := image.NewRGBA(image.Rect(0, 0, dx, dy))
+	img := image.NewRGBA(image.Rect(0, 0, 800, 300))
 	draw.Draw(img, img.Bounds(), bgImg, bgImg.Bounds().Min, draw.Src)
 
 	c := freetype.NewContext()
-	c.SetDPI(fontDPI)
+	c.SetDPI(72)
 	c.SetFont(font)
 	c.SetClip(img.Bounds())
 	c.SetDst(img)

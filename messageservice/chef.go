@@ -372,18 +372,15 @@ func getChefInfoWithOrder(chef database.Chef, order string) string {
 
 // GenerateChefImage 根据厨师数据生成图鉴图片
 func GenerateChefImage(chef database.ChefData, font *truetype.Font, bgImg image.Image, genderImg image.Image, rarityImg image.Image) (image.Image, error) {
-	dx := 800       // 图鉴背景图片的宽度
-	dy := 800       // 图鉴背景图片的高度
 	titleSize := 50 // 标题字体尺寸
 	fontSize := 36  // 内容字体尺寸
-	fontDPI := 72.0 // dpi
 
-	img := image.NewRGBA(image.Rect(0, 0, dx, dy))
+	img := image.NewRGBA(image.Rect(0, 0, 800, 800))
 	// 绘制背景
 	draw.Draw(img, img.Bounds(), bgImg, bgImg.Bounds().Min, draw.Src)
 
 	c := freetype.NewContext()
-	c.SetDPI(fontDPI)
+	c.SetDPI(72)
 	c.SetFont(font)
 	c.SetClip(img.Bounds())
 	c.SetDst(img)

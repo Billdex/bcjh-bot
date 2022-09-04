@@ -254,7 +254,7 @@ func UpdateData(c *scheduler.Context) {
 		_, _ = c.Reply("绘制菜谱图鉴图片出错!")
 		return
 	}
-	err = RecipeInfoToImage(recipes, recipeImage, imgCSS)
+	err = GenerateAllRecipesImages(recipes, recipeImage, imgCSS)
 	if err != nil {
 		logger.Error("绘制菜谱图鉴图片出错!", err)
 		_, _ = c.Reply("绘制菜谱图鉴图片出错!")
