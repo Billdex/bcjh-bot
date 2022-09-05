@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"image"
 	"image/png"
 	"io"
@@ -202,86 +203,100 @@ func UpdateData(c *scheduler.Context) {
 	msg += fmt.Sprintf("解析ImgCSS图片位置信息耗时%s\n", stepTime)
 
 	// 下载图鉴网厨师、菜谱、厨具图片数据
-	stepStart = time.Now()
 	imgResourceDir := config.AppConfig.Resource.Image
-	chefImage, err := DownloadAndLoadImage(baseURL+chefImageURI, fmt.Sprintf("%s/chef/chef_gallery.png", imgResourceDir))
+	stepStart = time.Now()
+	var chefImage image.Image
+	var recipeImage image.Image
+	var equipImage image.Image
+	var eg errgroup.Group
+	eg.Go(func() error {
+		chefImage, err = DownloadAndLoadImage(baseURL+chefImageURI, fmt.Sprintf("%s/chef/chef_gallery.png", imgResourceDir))
+		if err != nil {
+			return fmt.Errorf("下载图鉴网厨师图片出错! %v", err)
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		recipeImage, err = DownloadAndLoadImage(baseURL+recipeImageURI, fmt.Sprintf("%s/recipe/recipe_gallery.png", imgResourceDir))
+		if err != nil {
+			return fmt.Errorf("下载图鉴网菜谱图片出错! %v", err)
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		equipImage, err = DownloadAndLoadImage(baseURL+equipImageURI, fmt.Sprintf("%s/equip/equip_gallery.png", imgResourceDir))
+		if err != nil {
+			return fmt.Errorf("下载图鉴网厨具图片出错! %v", err)
+		}
+		return nil
+	})
+	err = eg.Wait()
 	if err != nil {
-		logger.Error("下载图鉴网厨师图片出错!", err)
-		_, _ = c.Reply("下载图鉴网厨师图片出错!")
+		logger.Error(err)
+		_, _ = c.Reply(err.Error())
 		return
 	}
-	recipeImage, err := DownloadAndLoadImage(baseURL+recipeImageURI, fmt.Sprintf("%s/recipe/recipe_gallery.png", imgResourceDir))
-	if err != nil {
-		logger.Error("下载图鉴网菜谱图片出错!", err)
-		_, _ = c.Reply("下载图鉴网菜谱图片出错!")
-		return
-	}
-	equipImage, err := DownloadAndLoadImage(baseURL+equipImageURI, fmt.Sprintf("%s/equip/equip_gallery.png", imgResourceDir))
-	if err != nil {
-		logger.Error("下载图鉴网厨具图片出错!", err)
-		_, _ = c.Reply("下载图鉴网厨具图片出错!")
-		return
-	}
+
 	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
 	logger.Infof("下载图鉴网厨师、菜谱、厨具图片完毕, 耗时%s", stepTime)
 	msg += fmt.Sprintf("下载图鉴网厨师、菜谱、厨具图片耗时%s\n", stepTime)
 
 	// 绘制厨师图鉴图片数据
-	stepStart = time.Now()
-	chefs := make([]database.Chef, 0)
-	err = dao.DB.Asc("gallery_id").Find(&chefs)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply("绘制厨师图鉴图片出错!")
-		return
-	}
-	err = GenerateAllChefsImages(chefs, chefImage, imgCSS)
-	if err != nil {
-		logger.Error("绘制厨师图鉴图片出错!", err)
-		_, _ = c.Reply("绘制厨师图鉴图片出错!")
-		return
-	}
-	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
-	logger.Infof("绘制厨师图鉴图片完毕, 耗时%s", stepTime)
-	msg += fmt.Sprintf("绘制厨师图鉴图片耗时%s\n", stepTime)
+	eg.Go(func() error {
+		stepStart := time.Now()
+		chefs, err := dao.FindAllChefs()
+		if err != nil {
+			return fmt.Errorf("绘制厨师图鉴图片出错! %v", err)
+		}
+		err = GenerateAllChefsImages(chefs, chefImage, imgCSS)
+		if err != nil {
+			return fmt.Errorf("绘制厨师图鉴图片出错! %v", err)
+		}
+		stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+		logger.Infof("绘制厨师图鉴图片完毕, 耗时%s", stepTime)
+		msg += fmt.Sprintf("绘制厨师图鉴图片耗时%s\n", stepTime)
+		return nil
+	})
 
 	// 绘制菜谱图鉴图片数据
-	stepStart = time.Now()
-	recipes := make([]database.Recipe, 0)
-	err = dao.DB.Asc("gallery_id").Find(&recipes)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply("绘制菜谱图鉴图片出错!")
-		return
-	}
-	err = GenerateAllRecipesImages(recipes, recipeImage, imgCSS)
-	if err != nil {
-		logger.Error("绘制菜谱图鉴图片出错!", err)
-		_, _ = c.Reply("绘制菜谱图鉴图片出错!")
-		return
-	}
-	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
-	logger.Infof("绘制菜谱图鉴图片完毕, 耗时%s", stepTime)
-	msg += fmt.Sprintf("绘制菜谱图鉴图片耗时%s\n", stepTime)
+	eg.Go(func() error {
+		stepStart := time.Now()
+		recipes, err := dao.FindAllRecipes()
+		if err != nil {
+			return fmt.Errorf("绘制菜谱图鉴图片出错! %v", err)
+		}
+		err = GenerateAllRecipesImages(recipes, recipeImage, imgCSS)
+		if err != nil {
+			return fmt.Errorf("绘制菜谱图鉴图片出错! %v", err)
+		}
+		stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+		logger.Infof("绘制菜谱图鉴图片完毕, 耗时%s", stepTime)
+		msg += fmt.Sprintf("绘制菜谱图鉴图片耗时%s\n", stepTime)
+		return nil
+	})
 
 	// 绘制厨具图鉴图片数据
-	stepStart = time.Now()
-	equips := make([]database.Equip, 0)
-	err = dao.DB.Asc("gallery_id").Find(&equips)
+	eg.Go(func() error {
+		stepStart := time.Now()
+		equips, err := dao.FindAllEquips()
+		if err != nil {
+			return fmt.Errorf("绘制厨具图鉴图片出错! %v", err)
+		}
+		err = GenerateAllEquipmentsImages(equips, equipImage, imgCSS)
+		if err != nil {
+			return fmt.Errorf("绘制厨具图鉴图片出错! %v", err)
+		}
+		stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
+		logger.Infof("绘制厨具图鉴图片完毕, 耗时%s", stepTime)
+		msg += fmt.Sprintf("绘制厨具图鉴图片耗时%s", stepTime)
+		return nil
+	})
+	err = eg.Wait()
 	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply("绘制厨具图鉴图片出错!")
+		logger.Error(err)
+		_, _ = c.Reply(err.Error())
 		return
 	}
-	err = GenerateAllEquipmentsImages(equips, equipImage, imgCSS)
-	if err != nil {
-		logger.Error("绘制厨具图鉴图片出错!", err)
-		_, _ = c.Reply("绘制厨具图鉴图片出错!")
-		return
-	}
-	stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
-	logger.Infof("绘制厨具图鉴图片完毕, 耗时%s", stepTime)
-	msg += fmt.Sprintf("绘制厨具图鉴图片耗时%s", stepTime)
 
 	// 发送成功消息
 	logger.Info("更新数据完毕")
