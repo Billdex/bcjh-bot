@@ -288,7 +288,7 @@ func UpdateData(c *scheduler.Context) {
 		}
 		stepTime = time.Now().Sub(stepStart).Round(time.Millisecond).String()
 		logger.Infof("绘制厨具图鉴图片完毕, 耗时%s", stepTime)
-		msg += fmt.Sprintf("绘制厨具图鉴图片耗时%s", stepTime)
+		msg += fmt.Sprintf("绘制厨具图鉴图片耗时%s\n", stepTime)
 		return nil
 	})
 	err = eg.Wait()
@@ -301,6 +301,7 @@ func UpdateData(c *scheduler.Context) {
 	// 发送成功消息
 	logger.Info("更新数据完毕")
 	msg = fmt.Sprintf("更新数据完毕, 累计耗时%s\n", time.Now().Sub(updateStart).Round(time.Millisecond).String()) + msg
+	msg = strings.TrimSuffix(msg, "\n") // 去除结尾的换行
 	_, _ = c.Reply(msg)
 }
 
