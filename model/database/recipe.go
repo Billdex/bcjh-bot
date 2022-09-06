@@ -1,5 +1,9 @@
 package database
 
+import (
+	"image"
+)
+
 type Recipe struct {
 	RecipeId           int      `xorm:"pk recipe_id"`        // 菜谱ID
 	Name               string   `xorm:"name"`                // 菜名
@@ -28,4 +32,31 @@ type Recipe struct {
 
 func (Recipe) TableName() string {
 	return "recipe"
+}
+
+func (recipe Recipe) GetSkillValueMap() map[string]int {
+	m := map[string]int{
+		"stirfry": recipe.Stirfry,
+		"bake":    recipe.Bake,
+		"boil":    recipe.Boil,
+		"steam":   recipe.Steam,
+		"fry":     recipe.Fry,
+		"cut":     recipe.Cut,
+	}
+	return m
+}
+
+// RecipeData 用于绘制厨师图片数据信息的模型
+type RecipeData struct {
+	Recipe
+	Avatar     image.Image
+	Skills     []RecipeSkillData
+	GuestGifts []GuestGift
+	Materials  []RecipeMaterial
+}
+
+type RecipeSkillData struct {
+	Type  string
+	Value int
+	Image image.Image
 }

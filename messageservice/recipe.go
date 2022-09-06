@@ -12,13 +12,11 @@ import (
 	"bcjh-bot/util/logger"
 	"fmt"
 	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	"image/draw"
-	"image/png"
-	"io/ioutil"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -804,24 +802,176 @@ func getRecipeInfoWithOrder(recipe database.Recipe, order string) string {
 	}
 }
 
-func RecipeInfoToImage(recipes []database.Recipe, img image.Image, imgCSS *gamedata.ImgCSS) error {
-	dx := 800          // 图鉴背景图片的宽度
-	dy := 800          // 图鉴背景图片的高度
-	magnification := 5 // 截取的图像相比图鉴网原始图片的放大倍数
-	titleSize := 48    // 标题字体尺寸
-	fontSize := 32     // 内容字体尺寸
-	fontDPI := 72.0    // dpi
+func GenerateRecipeImage(recipe database.RecipeData, font *truetype.Font, bgImg image.Image, rarityImg image.Image, condimentImg image.Image) (image.Image, error) {
+	titleSize := 48 // 标题字体尺寸
+	fontSize := 32  // 内容字体尺寸
 
-	// 需要使用的字体文件
-	resourceFontDir := config.AppConfig.Resource.Font
-	fontPath := "yuan500W.ttf"
-	fontFile := fmt.Sprintf("%s/%s", resourceFontDir, fontPath)
-	//读字体数据
-	fontBytes, err := ioutil.ReadFile(fontFile)
+	img := image.NewRGBA(image.Rect(0, 0, 800, 800))
+	draw.Draw(img, img.Bounds(), bgImg, bgImg.Bounds().Min, draw.Src)
+
+	c := freetype.NewContext()
+	c.SetDPI(72)
+	c.SetFont(font)
+	c.SetClip(img.Bounds())
+	c.SetDst(img)
+	fontColor := color.RGBA{A: 255}
+	c.SetSrc(image.NewUniform(fontColor))
+
+	// 输出图鉴ID与菜谱名
+	c.SetFontSize(float64(titleSize))
+	_, err := c.DrawString(fmt.Sprintf("%s %s", recipe.GalleryId, recipe.Name), freetype.Pt(25, 30+titleSize))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	font, err := freetype.ParseFont(fontBytes)
+
+	// 输出菜谱图鉴图片
+	width := recipe.Avatar.Bounds().Dx()
+	height := recipe.Avatar.Bounds().Dy()
+	draw.Draw(img,
+		image.Rect(70+200/2-width/2, 100+200/2-height/2, 70+200/2+width/2, 100+200/2+height/2),
+		recipe.Avatar,
+		image.Point{},
+		draw.Over)
+
+	// 输出稀有度
+	draw.Draw(img,
+		image.Rect(50, 310, 50+240, 310+44),
+		rarityImg,
+		image.Point{},
+		draw.Over)
+
+	// 输出单价信息
+	fontColor = color.RGBA{R: 45, G: 45, B: 45, A: 255}
+	c.SetSrc(image.NewUniform(fontColor))
+	c.SetFontSize(float64(fontSize))
+	_, err = c.DrawString(fmt.Sprintf("%d", recipe.Price), freetype.Pt(435, 105+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	fontColor = color.RGBA{R: 120, G: 120, B: 120, A: 255}
+	c.SetSrc(image.NewUniform(fontColor))
+	_, err = c.DrawString(fmt.Sprintf("+%d", recipe.ExPrice), freetype.Pt(515, 105+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	fontColor = color.RGBA{R: 45, G: 45, B: 45, A: 255}
+	c.SetSrc(image.NewUniform(fontColor))
+	// 输出金币效率
+	_, err = c.DrawString(fmt.Sprintf("%d / h", recipe.GoldEfficiency), freetype.Pt(626, 105+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	// 输出份数
+	_, err = c.DrawString(fmt.Sprintf("%d 份 / 组", recipe.Limit), freetype.Pt(627, 175+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	// 输出单份制作时间
+	_, err = c.DrawString(fmt.Sprintf("%s", util.FormatSecondToString(recipe.Time)), freetype.Pt(435, 175+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	// 输出整组制作总时间
+	_, err = c.DrawString(fmt.Sprintf("%s", util.FormatSecondToString(recipe.TotalTime)), freetype.Pt(435, 245+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	// 输出调料
+	draw.Draw(img,
+		image.Rect(370, 310, 370+61, 310+53),
+		condimentImg,
+		image.Point{},
+		draw.Over)
+
+	// 输出技法
+	for i, skill := range recipe.Skills {
+		draw.Draw(img,
+			image.Rect(460+i*170, 310, 460+i*170+140, 310+53),
+			skill.Image,
+			image.Point{},
+			draw.Over)
+		_, err = c.DrawString(fmt.Sprintf("%d", skill.Value), freetype.Pt(525+i*170, 315+fontSize))
+		if err != nil {
+			return nil, err
+		}
+	}
+	// 输出食材
+	materials := make([]string, len(recipe.Materials))
+	for i, material := range recipe.Materials {
+		materials[i] = fmt.Sprintf("%s*%d", material.MaterialName, material.Quantity)
+
+	}
+	_, err = c.DrawString(fmt.Sprintf("%s", strings.Join(materials, " ")), freetype.Pt(170, 388+fontSize))
+	if err != nil {
+		return nil, err
+	}
+	// 输出贵客礼物
+	giftInfo := "无"
+	if len(recipe.GuestGifts) != 0 {
+		gifts := make([]string, len(recipe.GuestGifts))
+		for i, gift := range recipe.GuestGifts {
+			gifts[i] = fmt.Sprintf("%s-%s", gift.GuestName, gift.Antique)
+		}
+		giftInfo = strings.Join(gifts, ", ")
+	}
+	_, err = c.DrawString(fmt.Sprintf("%s", giftInfo), freetype.Pt(170, 448+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出来源
+	_, err = c.DrawString(fmt.Sprintf("%s", recipe.Origin), freetype.Pt(170, 508+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出升阶贵客
+	for p, guest := range recipe.Guests {
+		if guest == "" {
+			guest = "未知"
+		}
+		_, err = c.DrawString(fmt.Sprintf("%s", guest), freetype.Pt(85, 620+p*54+fontSize))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 输出耗材效率
+	_, err = c.DrawString(fmt.Sprintf("%d / h", recipe.MaterialEfficiency), freetype.Pt(525, 576+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	//输出神级奖励
+	reward := recipe.Gift
+	if recipe.Gift == "-" {
+		reward = recipe.Unlock
+	}
+	_, err = c.DrawString(fmt.Sprintf("%s", reward), freetype.Pt(525, 655+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	// 输出可合成的后厨菜数据
+	var combo string
+	if len(recipe.Combo) == 0 {
+		combo = "无"
+	} else {
+		combo = strings.Join(recipe.Combo, ",")
+	}
+	_, err = c.DrawString(fmt.Sprintf("%s", combo), freetype.Pt(490, 734+fontSize))
+	if err != nil {
+		return nil, err
+	}
+
+	return img, nil
+}
+
+func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image, imgCSS *gamedata.ImgCSS) error {
+	magnification := 5 // 截取的图像相比图鉴网原始图片的放大倍数
+
+	// 载入字体文件
+	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
 		return err
 	}
@@ -831,291 +981,103 @@ func RecipeInfoToImage(recipes []database.Recipe, img image.Image, imgCSS *gamed
 	recipeImgPath := resourceImgDir + "/recipe"
 
 	// 放大菜谱图鉴图像
-	logger.Debugf("菜谱图片原始尺寸:%d*%d", img.Bounds().Dx(), img.Bounds().Dy())
-	galleryImg := resize.Resize(
-		uint(img.Bounds().Dx()*magnification/2.0),
-		uint(img.Bounds().Dy()*magnification/2.0),
-		img, resize.MitchellNetravali)
+	logger.Debugf("菜谱图片原始尺寸:%d*%d", galleryImg.Bounds().Dx(), galleryImg.Bounds().Dy())
+	galleryImg = resize.Resize(
+		uint(galleryImg.Bounds().Dx()*magnification/2.0),
+		uint(galleryImg.Bounds().Dy()*magnification/2.0),
+		galleryImg, resize.MitchellNetravali)
+
+	// 加载背景图片
+	bgImg, err := util.LoadPngImageFile(fmt.Sprintf("%s/recipe_bg.png", recipeImgPath))
+	if err != nil {
+		return err
+	}
+
+	// 载入稀有度图片
+	mRarityImages := make(map[int]image.Image)
+	for _, rarity := range []int{1, 2, 3, 4, 5} {
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
+		if err != nil {
+			return err
+		}
+		mRarityImages[rarity] = img
+	}
+
+	// 载入技法数值图片
+	mSkillImages := make(map[string]image.Image)
+	for _, skill := range []string{"stirfry", "bake", "boil", "steam", "fry", "cut"} {
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/icon_%s_value.png", commonImgPath, skill))
+		if err != nil {
+			return err
+		}
+		mSkillImages[skill] = img
+	}
+
+	// 载入调料属性图片
+	mCondimentImages := make(map[string]image.Image)
+	for _, condiment := range []string{"sweet", "sour", "spicy", "salty", "bitter", "tasty"} {
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/icon_%s.png", commonImgPath, condiment))
+		if err != nil {
+			return err
+		}
+		mCondimentImages[condiment] = img
+	}
 
 	for _, recipe := range recipes {
-		// 绘制背景
-		bgFile, err := os.Open(fmt.Sprintf("%s/recipe_bg.png", recipeImgPath))
-		if err != nil {
-			return err
-		}
-		img := image.NewRGBA(image.Rect(0, 0, dx, dy))
-		bg, _ := png.Decode(bgFile)
-		_ = bgFile.Close()
-		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Src)
-
-		c := freetype.NewContext()
-		c.SetDPI(fontDPI)
-		c.SetFont(font)
-		c.SetClip(img.Bounds())
-		c.SetDst(img)
-		fontColor := color.RGBA{A: 255}
-		c.SetSrc(image.NewUniform(fontColor))
-
-		// 输出图鉴ID与菜谱名
-		c.SetFontSize(float64(titleSize))
-		pt := freetype.Pt(25, 30+titleSize)
-		_, err = c.DrawString(fmt.Sprintf("%s %s", recipe.GalleryId, recipe.Name), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出菜谱图鉴图片
+		// 载入与计算菜谱信息
 		recipeImgInfo := imgCSS.RecipeImg[recipe.RecipeId]
 		avatarStartX := recipeImgInfo.X * magnification
 		avatarStartY := recipeImgInfo.Y * magnification
 		avatarWidth := recipeImgInfo.Width * magnification
 		avatarHeight := recipeImgInfo.Height * magnification
-		draw.Draw(img,
-			image.Rect(70+200/2-avatarWidth/2, 100+200/2-avatarHeight/2, 70+200/2+avatarWidth/2, 100+200/2+avatarHeight/2),
+		avatar := image.NewRGBA(image.Rect(0, 0, avatarWidth, avatarHeight))
+		draw.Draw(avatar,
+			image.Rect(0, 0, avatarWidth, avatarHeight),
 			galleryImg,
 			image.Point{X: avatarStartX, Y: avatarStartY},
 			draw.Over)
 
-		// 输出稀有度
-		rarityFile, err := os.Open(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, recipe.Rarity))
-		if err != nil {
-			return err
-		}
-		rarityImg, _ := png.Decode(rarityFile)
-		_ = rarityFile.Close()
-		draw.Draw(img,
-			image.Rect(50, 310, 50+240, 310+44),
-			rarityImg,
-			image.Point{},
-			draw.Over)
-
-		// 输出单价信息
-		fontColor = color.RGBA{R: 45, G: 45, B: 45, A: 255}
-		c.SetSrc(image.NewUniform(fontColor))
-		c.SetFontSize(float64(fontSize))
-		pt = freetype.Pt(435, 105+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d", recipe.Price), pt)
-		if err != nil {
-			return err
-		}
-		fontColor = color.RGBA{R: 120, G: 120, B: 120, A: 255}
-		c.SetSrc(image.NewUniform(fontColor))
-		pt = freetype.Pt(515, 105+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("+%d", recipe.ExPrice), pt)
-		if err != nil {
-			return err
-		}
-		fontColor = color.RGBA{R: 45, G: 45, B: 45, A: 255}
-		c.SetSrc(image.NewUniform(fontColor))
-		// 输出金币效率
-		pt = freetype.Pt(626, 105+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d / h", recipe.GoldEfficiency), pt)
-		if err != nil {
-			return err
-		}
-		// 输出份数
-		pt = freetype.Pt(627, 175+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d 份 / 组", recipe.Limit), pt)
-		if err != nil {
-			return err
-		}
-		// 输出单时间
-		pt = freetype.Pt(435, 175+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", util.FormatSecondToString(recipe.Time)), pt)
-		if err != nil {
-			return err
-		}
-		// 输出总时间
-		pt = freetype.Pt(435, 245+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", util.FormatSecondToString(recipe.TotalTime)), pt)
-		if err != nil {
-			return err
-		}
-		// 输出调料
-		condimentFile, err := os.Open(fmt.Sprintf("%s/icon_%s.png", commonImgPath, strings.ToLower(recipe.Condiment)))
-		if err != nil {
-			return err
-		}
-		condimentImg, _ := png.Decode(condimentFile)
-		_ = condimentFile.Close()
-		draw.Draw(img,
-			image.Rect(370, 310, 370+61, 310+53),
-			condimentImg,
-			image.Point{},
-			draw.Over)
-
-		// 输出技法
-		type skillInfo struct {
-			Type  string
-			Value int
-		}
-		skills := make([]skillInfo, 0)
-		if recipe.Stirfry > 0 {
-			skills = append(skills, skillInfo{
-				Type:  "stirfry",
-				Value: recipe.Stirfry,
-			})
-		}
-		if recipe.Bake > 0 {
-			skills = append(skills, skillInfo{
-				Type:  "bake",
-				Value: recipe.Bake,
-			})
-		}
-		if recipe.Boil > 0 {
-			skills = append(skills, skillInfo{
-				Type:  "boil",
-				Value: recipe.Boil,
-			})
-		}
-		if recipe.Steam > 0 {
-			skills = append(skills, skillInfo{
-				Type:  "steam",
-				Value: recipe.Steam,
-			})
-		}
-		if recipe.Fry > 0 {
-			skills = append(skills, skillInfo{
-				Type:  "fry",
-				Value: recipe.Fry,
-			})
-		}
-		if recipe.Cut > 0 {
-			skills = append(skills, skillInfo{
-				Type:  "cut",
-				Value: recipe.Cut,
-			})
-		}
-		for i, skill := range skills {
-			skillFile, err := os.Open(fmt.Sprintf("%s/icon_%s_value.png", commonImgPath, skill.Type))
-			if err != nil {
-				return err
-			}
-			skillImg, _ := png.Decode(skillFile)
-			_ = skillFile.Close()
-			draw.Draw(img,
-				image.Rect(460+i*170, 310, 460+i*170+140, 310+53),
-				skillImg,
-				image.Point{},
-				draw.Over)
-			pt = freetype.Pt(525+i*170, 315+fontSize)
-			_, err = c.DrawString(fmt.Sprintf("%d", skill.Value), pt)
-			if err != nil {
-				return err
-			}
-		}
-		// 输出食材
-		materials := ""
-		recipeMaterials := make([]database.RecipeMaterial, 0)
-		err = dao.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			return err
-		}
-		for _, recipeMaterial := range recipeMaterials {
-			material := new(database.Material)
-			has, err := dao.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
-			if err != nil {
-				logger.Error("查询数据库出错!", err)
-				return err
-			}
-			if !has {
-				logger.Warnf("菜谱%d数据缺失", recipeMaterial.MaterialId)
-			} else {
-				materials += fmt.Sprintf("%s*%d ", material.Name, recipeMaterial.Quantity)
-			}
-		}
-		pt = freetype.Pt(170, 388+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", materials), pt)
-		if err != nil {
-			return err
-		}
-		// 输出贵客礼物
-		guestGifts := make([]database.GuestGift, 0)
-		err = dao.DB.Where("recipe = ?", recipe.Name).Find(&guestGifts)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			return err
-		}
-		giftInfo := ""
-		if len(guestGifts) == 0 {
-			giftInfo = "无"
-		} else {
-			for _, gift := range guestGifts {
-				if giftInfo != "" {
-					giftInfo += ", "
-				}
-				giftInfo += fmt.Sprintf("%s-%s", gift.GuestName, gift.Antique)
-			}
-		}
-		pt = freetype.Pt(170, 448+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", giftInfo), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出来源
-		pt = freetype.Pt(170, 508+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", recipe.Origin), pt)
-		if err != nil {
-			return err
-		}
-
-		// 输出升阶贵客
-		for p, guest := range recipe.Guests {
-			if guest == "" {
-				guest = "未知"
-			}
-			pt = freetype.Pt(85, 620+p*54+fontSize)
-			_, err = c.DrawString(fmt.Sprintf("%s", guest), pt)
-			if err != nil {
-				return err
+		skills := make([]database.RecipeSkillData, 0)
+		for skill, value := range recipe.GetSkillValueMap() {
+			if value != 0 {
+				skills = append(skills, database.RecipeSkillData{
+					Type:  skill,
+					Value: value,
+					Image: mSkillImages[skill],
+				})
 			}
 		}
 
-		// 输出耗材效率
-		pt = freetype.Pt(525, 576+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%d / h", recipe.MaterialEfficiency), pt)
+		guestGifts, err := dao.FindGuestGiftsByRecipeName(recipe.Name)
 		if err != nil {
-			return err
+			logger.Errorf("查询菜谱 %s 的贵客礼物数据出错 %v", recipe.GalleryId, err)
+			continue
 		}
 
-		//输出神级奖励
-		reward := "-"
-		if recipe.Gift == "-" {
-			reward = recipe.Unlock
-		} else {
-			reward = recipe.Gift
-		}
-		pt = freetype.Pt(525, 655+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", reward), pt)
+		materials, err := dao.FindRecipeMaterialByRecipeGalleryId(recipe.GalleryId, true)
 		if err != nil {
-			return err
+			logger.Errorf("查询菜谱 %s 的食材数据出错 %v", recipe.GalleryId, err)
+			continue
 		}
 
-		// 输出可合成
-		var combo string
-		if len(recipe.Combo) == 0 {
-			combo = "无"
-		} else {
-			combo = strings.Join(recipe.Combo, ",")
+		recipeData := database.RecipeData{
+			Recipe:     recipe,
+			Avatar:     avatar,
+			Skills:     skills,
+			GuestGifts: guestGifts,
+			Materials:  materials,
 		}
-		pt = freetype.Pt(490, 734+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", combo), pt)
+
+		img, err := GenerateRecipeImage(recipeData, font, bgImg, mRarityImages[recipe.Rarity], mCondimentImages[strings.ToLower(recipe.Condiment)])
 		if err != nil {
-			return err
+			return fmt.Errorf("绘制菜谱 %s 的数据出错 %v", recipe.GalleryId, err)
 		}
 
 		// 以PNG格式保存文件
-		dst, err := os.Create(fmt.Sprintf("%s/recipe_%s.png", recipeImgPath, recipe.GalleryId))
+		err = util.SavePngImage(fmt.Sprintf("%s/recipe_%s.png", recipeImgPath, recipe.GalleryId), img)
 		if err != nil {
-			return err
+			return fmt.Errorf("保存菜谱 %s 图鉴图片出错 %v", recipe.GalleryId, err)
 		}
-		err = png.Encode(dst, img)
-		if err != nil {
-			return err
-		}
-		dst.Close()
 	}
 	return nil
 }

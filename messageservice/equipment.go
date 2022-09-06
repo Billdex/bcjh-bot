@@ -10,16 +10,13 @@ import (
 	"bcjh-bot/util"
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
-	"errors"
 	"fmt"
 	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	"image/draw"
-	"image/png"
-	"io/ioutil"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -305,185 +302,163 @@ func echoEquipMessage(equip database.Equip) string {
 	return msg
 }
 
-func EquipmentInfoToImage(equips []database.Equip, img image.Image, imgCSS *gamedata.ImgCSS) error {
-	dx := 800          // 图鉴背景图片的宽度
-	dy := 300          // 图鉴背景图片的高度
-	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
-	titleSize := 42    // 标题字体尺寸
-	fontSize := 28     // 内容字体尺寸
-	fontDPI := 72.0    // dpi
-	// 需要使用的字体文件
-	resourceFontDir := config.AppConfig.Resource.Font
-	fontPath := "yuan500W.ttf"
-	fontFile := fmt.Sprintf("%s/%s", resourceFontDir, fontPath)
-	//读字体数据
-	fontBytes, err := ioutil.ReadFile(fontFile)
+// GenerateEquipmentImage 根据厨具数据生成单个厨具图鉴图片
+func GenerateEquipmentImage(equip database.EquipData, font *truetype.Font, bgImg image.Image, rarityImg image.Image, mSkillImages map[string]image.Image) (image.Image, error) {
+	titleSize := 42 // 标题字体尺寸
+	fontSize := 28  // 内容字体尺寸
+
+	img := image.NewRGBA(image.Rect(0, 0, 800, 300))
+	draw.Draw(img, img.Bounds(), bgImg, bgImg.Bounds().Min, draw.Src)
+
+	c := freetype.NewContext()
+	c.SetDPI(72)
+	c.SetFont(font)
+	c.SetClip(img.Bounds())
+	c.SetDst(img)
+	c.SetSrc(image.NewUniform(color.RGBA{A: 255}))
+
+	//	绘制ID与厨具名
+	c.SetFontSize(float64(titleSize))
+	_, err := c.DrawString(fmt.Sprintf("%s %s", equip.GalleryId, equip.Name), freetype.Pt(30, 16+titleSize))
+
+	// 绘制稀有度
+	draw.Draw(img,
+		image.Rect(530, 16, 530+240, 16+44),
+		rarityImg,
+		image.Point{},
+		draw.Over)
+
+	//	绘制厨具图鉴图片
+	width := equip.Avatar.Bounds().Dx()
+	height := equip.Avatar.Bounds().Dy()
+	draw.Draw(img,
+		image.Rect(30+210/2-width/2, 75+210/2-height/2, 30+210/2+width/2, 75+210/2+height/2),
+		equip.Avatar,
+		image.Point{},
+		draw.Over)
+
+	//	输出来源数据
+	c.SetFontSize(float64(32))
+	_, err = c.DrawString(fmt.Sprintf("%s", equip.Origin), freetype.Pt(350, 75+32))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	font, err := freetype.ParseFont(fontBytes)
+
+	// 输出技法效果数据
+	c.SetFontSize(float64(fontSize))
+	for i, skill := range equip.Skills {
+		skillImg, ok := mSkillImages[skill.Effects[0].Type]
+		if !ok {
+			skillImg = mSkillImages["Skill"]
+		}
+		draw.Draw(img,
+			image.Rect(270, 136+i*50, 270+60, 136+i*50+40),
+			skillImg,
+			image.Point{},
+			draw.Over)
+		_, err = c.DrawString(fmt.Sprintf("%s", skill.Description), freetype.Pt(320, 138+i*50+fontSize))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return img, nil
+}
+
+func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image, imgCSS *gamedata.ImgCSS) error {
+	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
+	// 加载字体文件
+	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
 		return err
 	}
 
-	// 从图鉴网下载厨具图鉴总图
 	resourceImgDir := config.AppConfig.Resource.Image
 	commonImgPath := resourceImgDir + "/common"
 	equipImgPath := resourceImgDir + "/equip"
 
 	// 放大厨具图鉴图像
-	logger.Debugf("厨具图片原始尺寸:%d*%d", img.Bounds().Dx(), img.Bounds().Dy())
-	galleryImg := resize.Resize(
-		uint(img.Bounds().Dx()*magnification/2),
-		uint(img.Bounds().Dy()*magnification/2),
-		img, resize.Bilinear)
+	logger.Debugf("厨具图片原始尺寸:%d*%d", galleryImg.Bounds().Dx(), galleryImg.Bounds().Dy())
+	galleryImg = resize.Resize(
+		uint(galleryImg.Bounds().Dx()*magnification/2),
+		uint(galleryImg.Bounds().Dy()*magnification/2),
+		galleryImg, resize.Bilinear)
+
+	// 载入背景图片
+	bgImg, err := util.LoadPngImageFile(fmt.Sprintf("%s/equip_bg.png", equipImgPath))
+	if err != nil {
+		return err
+	}
+
+	// 载入稀有度图片
+	mRarityImages := make(map[int]image.Image)
+	for _, rarity := range []int{1, 2, 3} {
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
+		if err != nil {
+			return err
+		}
+		mRarityImages[rarity] = img
+	}
+
+	// 载入技能效果图标
+	mSkillImages, err := loadSkillIcons(commonImgPath)
+	if err != nil {
+		return err
+	}
 
 	for _, equip := range equips {
-		// 绘制背景色
-		bgFile, err := os.Open(fmt.Sprintf("%s/equip_bg.png", equipImgPath))
-		if err != nil {
-			return err
-		}
-		img := image.NewRGBA(image.Rect(0, 0, dx, dy))
-		bg, _ := png.Decode(bgFile)
-		_ = bgFile.Close()
-
-		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Src)
-
-		c := freetype.NewContext()
-		c.SetDPI(fontDPI)
-		c.SetFont(font)
-		c.SetClip(img.Bounds())
-		c.SetDst(img)
-		fontColor := color.RGBA{A: 255}
-		c.SetSrc(image.NewUniform(fontColor))
-
-		//	绘制ID与厨具名
-		c.SetFontSize(float64(titleSize))
-		pt := freetype.Pt(30, 16+titleSize)
-		_, err = c.DrawString(fmt.Sprintf("%s %s", equip.GalleryId, equip.Name), pt)
-
-		// 绘制稀有度
-		rarityFile, err := os.Open(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, equip.Rarity))
-		if err != nil {
-			return err
-		}
-		rarityImg, _ := png.Decode(rarityFile)
-		_ = rarityFile.Close()
-		draw.Draw(img,
-			image.Rect(530, 16, 530+240, 16+44),
-			rarityImg,
-			image.Point{},
-			draw.Over)
-
-		//	绘制厨具图鉴图片
+		// 计算与载入厨具信息
 		equipImgInfo := imgCSS.EquipImg[equip.EquipId]
 		avatarStartX := equipImgInfo.X * magnification
 		avatarStartY := equipImgInfo.Y * magnification
 		avatarWidth := equipImgInfo.Width * magnification
 		avatarHeight := equipImgInfo.Height * magnification
-		draw.Draw(img,
-			image.Rect(30+210/2-avatarWidth/2, 75+210/2-avatarHeight/2, 30+210/2+avatarWidth/2, 75+210/2+avatarHeight/2),
+
+		avatar := image.NewRGBA(image.Rect(0, 0, avatarWidth, avatarHeight))
+		draw.Draw(avatar,
+			image.Rect(0, 0, avatarWidth, avatarHeight),
 			galleryImg,
 			image.Point{X: avatarStartX, Y: avatarStartY},
 			draw.Over)
 
-		//	输出来源数据
-		c.SetFontSize(float64(32))
-		pt = freetype.Pt(350, 75+32)
-		_, err = c.DrawString(fmt.Sprintf("%s", equip.Origin), pt)
+		skills, err := dao.GetSkillsByIds(equip.Skills)
 		if err != nil {
-			return err
+			logger.Errorf("查询厨具 %s 技能数据失败, 技能id %v, err: %v", equip.Name, equip.Skills, err)
+			continue
 		}
 
-		// 输出技法效果数据
-		c.SetFontSize(float64(fontSize))
-		skills := make([]database.Skill, 0)
-		err = dao.DB.In("skill_id", equip.Skills).Find(&skills)
-		if err != nil {
-			return err
+		equipData := database.EquipData{
+			Equip:  equip,
+			Avatar: avatar,
+			Skills: skills,
 		}
-		for i, skill := range skills {
-			iconImgName, err := getSkillIcon(skill)
-			iconFile, err := os.Open(fmt.Sprintf("%s/%s", commonImgPath, iconImgName))
-			if err != nil {
-				return err
-			}
-			rarityImg, _ := png.Decode(iconFile)
-			_ = iconFile.Close()
-			rarityImg = resize.Resize(0, 40, rarityImg, resize.MitchellNetravali)
-			draw.Draw(img,
-				image.Rect(270, 136+i*50, 270+60, 136+i*50+40),
-				rarityImg,
-				image.Point{},
-				draw.Over)
-			pt = freetype.Pt(320, 138+i*50+fontSize)
-			_, err = c.DrawString(fmt.Sprintf("%s", skill.Description), pt)
-			if err != nil {
-				return err
-			}
+
+		img, err := GenerateEquipmentImage(equipData, font, bgImg, mRarityImages[equip.Rarity], mSkillImages)
+		if err != nil {
+			return fmt.Errorf("绘制厨具 %s 的数据出错 %v", equip.Name, err)
 		}
 
 		// 以PNG格式保存文件
-		dst, err := os.Create(fmt.Sprintf("%s/equip_%s.png", equipImgPath, equip.GalleryId))
+		err = util.SavePngImage(fmt.Sprintf("%s/equip_%s.png", equipImgPath, equip.GalleryId), img)
 		if err != nil {
-			return err
+			return fmt.Errorf("保存厨具 %s 图鉴图片出错 %v", equip.GalleryId, err)
 		}
-		err = png.Encode(dst, img)
-		if err != nil {
-			return err
-		}
-		dst.Close()
 	}
 	return nil
 }
 
-func getSkillIcon(skill database.Skill) (string, error) {
-	if len(skill.Effects) == 0 {
-		return "", errors.New(fmt.Sprintf("技能 %d 数据有误!", skill.SkillId))
-	} else if len(skill.Effects) == 1 {
-		var iconImgName string
-		switch skill.Effects[0].Type {
-		case "Stirfry", "UseStirfry":
-			iconImgName = "icon_stirfry.png"
-		case "Bake", "UseBake":
-			iconImgName = "icon_bake.png"
-		case "Boil", "UseBoil":
-			iconImgName = "icon_boil.png"
-		case "Steam", "UseSteam":
-			iconImgName = "icon_steam.png"
-		case "Fry", "UseFry":
-			iconImgName = "icon_fry.png"
-		case "Knife", "UseKnife":
-			iconImgName = "icon_cut.png"
-		case "Sweet", "UseSweet":
-			iconImgName = "icon_sweet.png"
-		case "Sour", "UseSour":
-			iconImgName = "icon_sour.png"
-		case "Spicy", "UseSpicy":
-			iconImgName = "icon_spicy.png"
-		case "Salty", "UseSalty":
-			iconImgName = "icon_salty.png"
-		case "Bitter", "UseBitter":
-			iconImgName = "icon_bitter.png"
-		case "Tasty", "UseTasty":
-			iconImgName = "icon_tasty.png"
-		case "Meat", "UseMeat":
-			iconImgName = "icon_meat.png"
-		case "Creation", "UseCreation":
-			iconImgName = "icon_flour.png"
-		case "Vegetable", "UseVegetable":
-			iconImgName = "icon_vegetable.png"
-		case "Fish", "UseFish":
-			iconImgName = "icon_fish.png"
-		case "OpenTime":
-			iconImgName = "icon_time.png"
-		default:
-			iconImgName = "icon_skill.png"
+// loadSkillIcons 加载技能效果图标
+func loadSkillIcons(basePath string) (map[string]image.Image, error) {
+	m := make(map[string]image.Image)
+	for _, skill := range []string{
+		"Stirfry", "Bake", "Boil", "Steam", "Fry", "Knife", "Sweet", "Sour", "Spicy", "Salty",
+		"Bitter", "Tasty", "Meat", "Creation", "Vegetable", "Fish", "OpenTime", "Skill"} {
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/icon_%s.png", basePath, strings.ToLower(skill)))
+		if err != nil {
+			return nil, err
 		}
-		return iconImgName, nil
-	} else {
-		return "icon_skill.png", nil
+		img = resize.Resize(0, 40, img, resize.MitchellNetravali)
+		m[skill] = img
+		m["Use"+skill] = img
 	}
-
+	return m, nil
 }
