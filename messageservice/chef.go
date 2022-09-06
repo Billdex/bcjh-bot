@@ -17,9 +17,6 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	"image/png"
-	"io/ioutil"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -496,8 +493,7 @@ func GenerateChefImage(chef database.ChefData, font *truetype.Font, bgImg image.
 	// 输出修炼任务数据
 	goals := chef.GetUltimateGoals()
 	for i, goal := range goals {
-		pt := freetype.Pt(120, 625+i*50+fontSize)
-		_, err = c.DrawString(goal, pt)
+		_, err = c.DrawString(goal, freetype.Pt(120, 625+i*50+fontSize))
 		if err != nil {
 			return nil, err
 		}
@@ -510,13 +506,7 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数，图鉴网图片imgCSS给的数据时缩小版图片记录的位置，下载的图片为高清版尺寸为两倍，因此后续计算中取不同的计算倍数
 
 	// 载入字体文件
-	resourceFontDir := config.AppConfig.Resource.Font
-	fontFile := resourceFontDir + "/yuan500W.ttf"
-	fontBytes, err := ioutil.ReadFile(fontFile)
-	if err != nil {
-		return err
-	}
-	font, err := freetype.ParseFont(fontBytes)
+	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
 		return err
 	}
@@ -535,42 +525,30 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 	// 载入厨师背景图片
 	mBgImages := make(map[string]image.Image)
 	for _, condimentType := range []string{"Sweet", "Sour", "Spicy", "Salty", "Bitter", "Tasty"} {
-		bgFile, err := os.Open(fmt.Sprintf("%s/chef_%s.png", chefImgPath, condimentType))
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/chef_%s.png", chefImgPath, condimentType))
 		if err != nil {
 			return err
 		}
-		img := image.NewRGBA(image.Rect(0, 0, 800, 800))
-		bg, _ := png.Decode(bgFile)
-		_ = bgFile.Close()
-		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Src)
 		mBgImages[condimentType] = img
 	}
 
 	// 载入厨师性别图片
 	mGenderImages := make(map[int]image.Image)
 	for _, gender := range []int{0, 1, 2} {
-		genderFile, err := os.Open(fmt.Sprintf("%s/gender_%d.png", chefImgPath, gender))
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/gender_%d.png", chefImgPath, gender))
 		if err != nil {
 			return err
 		}
-		img := image.NewRGBA(image.Rect(0, 0, 44, 44))
-		bg, _ := png.Decode(genderFile)
-		_ = genderFile.Close()
-		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Over)
 		mGenderImages[gender] = img
 	}
 
 	// 载入稀有度图片
 	mRarityImages := make(map[int]image.Image)
 	for _, rarity := range []int{1, 2, 3, 4, 5} {
-		rarityFile, err := os.Open(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
 		if err != nil {
 			return err
 		}
-		img := image.NewRGBA(image.Rect(0, 0, 240, 44))
-		bg, _ := png.Decode(rarityFile)
-		_ = rarityFile.Close()
-		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Over)
 		mRarityImages[rarity] = img
 	}
 
@@ -619,15 +597,10 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 		}
 
 		// 以PNG格式保存文件
-		dst, err := os.Create(fmt.Sprintf("%s/chef_%s.png", chefImgPath, chef.GalleryId))
+		err = util.SavePngImage(fmt.Sprintf("%s/chef_%s.png", chefImgPath, chef.GalleryId), img)
 		if err != nil {
-			return err
+			return fmt.Errorf("保存厨师 %s 图鉴图片出错 %v", chef.GalleryId, err)
 		}
-		err = png.Encode(dst, img)
-		if err != nil {
-			return err
-		}
-		_ = dst.Close()
 	}
 	return nil
 }

@@ -971,8 +971,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	magnification := 5 // 截取的图像相比图鉴网原始图片的放大倍数
 
 	// 载入字体文件
-	fontPath := fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf")
-	font, err := util.LoadFontFile(fontPath)
+	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
 		return err
 	}
@@ -989,8 +988,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 		galleryImg, resize.MitchellNetravali)
 
 	// 加载背景图片
-	bgPath := fmt.Sprintf("%s/recipe_bg.png", recipeImgPath)
-	bgImg, err := util.LoadImageFile(bgPath, 800, 800, draw.Src)
+	bgImg, err := util.LoadPngImageFile(fmt.Sprintf("%s/recipe_bg.png", recipeImgPath))
 	if err != nil {
 		return err
 	}
@@ -998,8 +996,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	// 载入稀有度图片
 	mRarityImages := make(map[int]image.Image)
 	for _, rarity := range []int{1, 2, 3, 4, 5} {
-		path := fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity)
-		img, err := util.LoadImageFile(path, 240, 44, draw.Over)
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
 		if err != nil {
 			return err
 		}
@@ -1009,8 +1006,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	// 载入技法数值图片
 	mSkillImages := make(map[string]image.Image)
 	for _, skill := range []string{"stirfry", "bake", "boil", "steam", "fry", "cut"} {
-		path := fmt.Sprintf("%s/icon_%s_value.png", commonImgPath, skill)
-		img, err := util.LoadImageFile(path, 140, 53, draw.Over)
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/icon_%s_value.png", commonImgPath, skill))
 		if err != nil {
 			return err
 		}
@@ -1020,8 +1016,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	// 载入调料属性图片
 	mCondimentImages := make(map[string]image.Image)
 	for _, condiment := range []string{"sweet", "sour", "spicy", "salty", "bitter", "tasty"} {
-		path := fmt.Sprintf("%s/icon_%s.png", commonImgPath, condiment)
-		img, err := util.LoadImageFile(path, 61, 53, draw.Over)
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/icon_%s.png", commonImgPath, condiment))
 		if err != nil {
 			return err
 		}

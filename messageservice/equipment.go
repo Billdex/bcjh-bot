@@ -17,9 +17,6 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	"image/png"
-	"io/ioutil"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -370,15 +367,7 @@ func GenerateEquipmentImage(equip database.EquipData, font *truetype.Font, bgImg
 func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image, imgCSS *gamedata.ImgCSS) error {
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
 	// 加载字体文件
-	resourceFontDir := config.AppConfig.Resource.Font
-	fontPath := "yuan500W.ttf"
-	fontFile := fmt.Sprintf("%s/%s", resourceFontDir, fontPath)
-	//读字体数据
-	fontBytes, err := ioutil.ReadFile(fontFile)
-	if err != nil {
-		return err
-	}
-	font, err := freetype.ParseFont(fontBytes)
+	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
 		return err
 	}
@@ -395,27 +384,18 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 		galleryImg, resize.Bilinear)
 
 	// 载入背景图片
-	bgFile, err := os.Open(fmt.Sprintf("%s/equip_bg.png", equipImgPath))
+	bgImg, err := util.LoadPngImageFile(fmt.Sprintf("%s/equip_bg.png", equipImgPath))
 	if err != nil {
 		return err
 	}
-	bgImg := image.NewRGBA(image.Rect(0, 0, 800, 300))
-	bg, _ := png.Decode(bgFile)
-	_ = bgFile.Close()
-
-	draw.Draw(bgImg, bgImg.Bounds(), bg, bg.Bounds().Min, draw.Src)
 
 	// 载入稀有度图片
 	mRarityImages := make(map[int]image.Image)
 	for _, rarity := range []int{1, 2, 3} {
-		rarityFile, err := os.Open(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
 		if err != nil {
 			return err
 		}
-		img := image.NewRGBA(image.Rect(0, 0, 240, 44))
-		bg, _ := png.Decode(rarityFile)
-		_ = rarityFile.Close()
-		draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Over)
 		mRarityImages[rarity] = img
 	}
 
@@ -458,15 +438,10 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 		}
 
 		// 以PNG格式保存文件
-		dst, err := os.Create(fmt.Sprintf("%s/equip_%s.png", equipImgPath, equip.GalleryId))
+		err = util.SavePngImage(fmt.Sprintf("%s/equip_%s.png", equipImgPath, equip.GalleryId), img)
 		if err != nil {
-			return err
+			return fmt.Errorf("保存厨具 %s 图鉴图片出错 %v", equip.GalleryId, err)
 		}
-		err = png.Encode(dst, img)
-		if err != nil {
-			return err
-		}
-		_ = dst.Close()
 	}
 	return nil
 }
@@ -477,12 +452,10 @@ func loadSkillIcons(basePath string) (map[string]image.Image, error) {
 	for _, skill := range []string{
 		"Stirfry", "Bake", "Boil", "Steam", "Fry", "Knife", "Sweet", "Sour", "Spicy", "Salty",
 		"Bitter", "Tasty", "Meat", "Creation", "Vegetable", "Fish", "OpenTime", "Skill"} {
-		iconFile, err := os.Open(fmt.Sprintf("%s/icon_%s.png", basePath, strings.ToLower(skill)))
+		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/icon_%s.png", basePath, strings.ToLower(skill)))
 		if err != nil {
 			return nil, err
 		}
-		img, _ := png.Decode(iconFile)
-		_ = iconFile.Close()
 		img = resize.Resize(0, 40, img, resize.MitchellNetravali)
 		m[skill] = img
 		m["Use"+skill] = img

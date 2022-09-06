@@ -4,7 +4,6 @@ import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"image"
-	"image/draw"
 	"image/png"
 	"io/ioutil"
 	"os"
@@ -23,18 +22,17 @@ func LoadFontFile(path string) (*truetype.Font, error) {
 	return font, nil
 }
 
-// LoadImageFile 载入图片文件
-func LoadImageFile(path string, width int, height int, op draw.Op) (image.Image, error) {
+// LoadPngImageFile 载入png格式的图片文件
+func LoadPngImageFile(path string) (image.Image, error) {
 	f, err := os.Open(path)
+	defer func() {
+		_ = f.Close()
+	}()
 	if err != nil {
 		return nil, err
 	}
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	fImg, _ := png.Decode(f)
-	_ = f.Close()
-
-	draw.Draw(img, img.Bounds(), fImg, fImg.Bounds().Min, op)
-	return img, nil
+	img, err := png.Decode(f)
+	return img, err
 }
 
 // SavePngImage 将图片按照 png 格式保存
