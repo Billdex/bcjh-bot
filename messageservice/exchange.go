@@ -14,7 +14,7 @@ import (
 )
 
 func ExchangeQuery(c *scheduler.Context) {
-	arg := strings.TrimSpace(c.PretreatedMessage)
+	arg := c.PretreatedMessage
 	num, err := strconv.Atoi(arg)
 	if err == nil {
 		// 参数为数字则查询最新的n条

@@ -15,7 +15,7 @@ var prefixCharacters = []string{"#", "＃"}
 
 func HelpGuide(c *scheduler.Context) {
 	var msg string
-	arg := strings.TrimSpace(c.PretreatedMessage)
+	arg := c.PretreatedMessage
 	if arg != "" {
 		switch arg {
 		case "帮助":

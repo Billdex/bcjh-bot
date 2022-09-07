@@ -6,12 +6,11 @@ import (
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/logger"
 	"fmt"
-	"strings"
 	"sync"
 )
 
 func QuickSearch(c *scheduler.Context) {
-	param := strings.TrimSpace(c.PretreatedMessage)
+	param := c.PretreatedMessage
 	if param == "" || param == "%" {
 		return
 	}

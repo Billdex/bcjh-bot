@@ -24,7 +24,7 @@ import (
 )
 
 func EquipmentQuery(c *scheduler.Context) {
-	if strings.TrimSpace(c.PretreatedMessage) == "" {
+	if c.PretreatedMessage == "" {
 		_, _ = c.Reply(equipmentHelp())
 		return
 	}
@@ -38,7 +38,7 @@ func EquipmentQuery(c *scheduler.Context) {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 	}
-	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
+	args := strings.Split(c.PretreatedMessage, " ")
 	for _, arg := range args {
 		if arg == "" {
 			continue

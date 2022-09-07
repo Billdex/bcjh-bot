@@ -13,7 +13,7 @@ import (
 )
 
 func StrategyQuery(c *scheduler.Context) {
-	arg := strings.TrimSpace(c.PretreatedMessage)
+	arg := c.PretreatedMessage
 
 	if arg == "" {
 		_, _ = c.Reply(strategyHelp())

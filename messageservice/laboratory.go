@@ -7,11 +7,10 @@ import (
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
-	"strings"
 )
 
 func LaboratoryQuery(c *scheduler.Context) {
-	arg := strings.TrimSpace(c.PretreatedMessage)
+	arg := c.PretreatedMessage
 
 	if arg == "" {
 		_, _ = c.Reply(LaboratoryHelp())

@@ -8,11 +8,10 @@ import (
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 func ComboQuery(c *scheduler.Context) {
-	arg := strings.TrimSpace(c.PretreatedMessage)
+	arg := c.PretreatedMessage
 
 	if arg == "" {
 		_, _ = c.Reply(comboHelp())

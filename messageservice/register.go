@@ -11,6 +11,7 @@ func Register(s *scheduler.Scheduler) {
 	g.Use(QueryLog)
 	g.Use(CheckBotState)
 	g.Use(CheckBlackList)
+	g.Use(MergeRepeatSpace)
 	// 管理功能
 	g.Bind("开机", MustAtSelf, MustAdmin, EnableBotInGroup)
 	g.Bind("关机", MustAtSelf, MustAdmin, DisableBotInGroup)
