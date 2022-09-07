@@ -53,7 +53,7 @@ func UpdateData(c *scheduler.Context) {
 	defer func() { updateState = false }()
 
 	var baseURL string
-	switch strings.TrimSpace(c.PretreatedMessage) {
+	switch c.PretreatedMessage {
 	case "lgithub":
 		baseURL = foodGameGithubURLBase
 	case "lgitee":

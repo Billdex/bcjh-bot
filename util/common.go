@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strings"
 )
 
@@ -89,9 +88,4 @@ func GetDirAllSqlFile(dir string) ([]string, error) {
 		}
 	}
 	return sqlFiles, nil
-}
-
-func MergeRepeatSpace(s string) string {
-	reg := regexp.MustCompile("\\s+")
-	return reg.ReplaceAllString(s, " ")
 }

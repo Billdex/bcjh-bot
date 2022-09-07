@@ -14,11 +14,11 @@ import (
 )
 
 func MaterialQuery(c *scheduler.Context) {
-	if strings.TrimSpace(c.PretreatedMessage) == "" {
+	if c.PretreatedMessage == "" {
 		_, _ = c.Reply(materialHelp())
 		return
 	}
-	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
+	args := strings.Split(c.PretreatedMessage, " ")
 	page := 1
 	if len(args) > 1 {
 		if strings.HasPrefix(args[1], "p") || strings.HasPrefix(args[1], "P") {

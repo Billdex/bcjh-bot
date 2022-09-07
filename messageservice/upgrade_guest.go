@@ -15,7 +15,7 @@ import (
 )
 
 func UpgradeGuestQuery(c *scheduler.Context) {
-	args := strings.Split(util.MergeRepeatSpace(strings.TrimSpace(c.PretreatedMessage)), " ")
+	args := strings.Split(c.PretreatedMessage, " ")
 	if args[0] == "" {
 		_, _ = c.Reply(upgradeGuestHelp())
 		return

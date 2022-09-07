@@ -5,7 +5,6 @@ import (
 	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
-	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"strings"
@@ -13,7 +12,7 @@ import (
 
 // 调料查询
 func CondimentQuery(c *scheduler.Context) {
-	args := strings.Split(util.MergeRepeatSpace(strings.TrimSpace(c.PretreatedMessage)), " ")
+	args := strings.Split(c.PretreatedMessage, " ")
 	if args[0] == "" {
 		_, _ = c.Reply(condimentHelp())
 		return

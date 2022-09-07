@@ -24,8 +24,7 @@ import (
 )
 
 func RecipeQuery(c *scheduler.Context) {
-
-	if strings.TrimSpace(c.PretreatedMessage) == "" {
+	if c.PretreatedMessage == "" {
 		_, _ = c.Reply(recipeHelp())
 		return
 	}
@@ -39,7 +38,7 @@ func RecipeQuery(c *scheduler.Context) {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 	}
-	args := strings.Split(strings.TrimSpace(c.PretreatedMessage), " ")
+	args := strings.Split(c.PretreatedMessage, " ")
 	argCount := 0
 	for _, arg := range args {
 		if arg == "" {
