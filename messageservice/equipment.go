@@ -347,8 +347,11 @@ func GenerateEquipmentImage(equip database.EquipData, font *truetype.Font, bgImg
 	// 输出技法效果数据
 	c.SetFontSize(float64(fontSize))
 	for i, skill := range equip.Skills {
-		skillImg, ok := mSkillImages[skill.Effects[0].Type]
-		if !ok {
+		var skillImg image.Image
+		if len(skill.Effects) == 1 {
+			skillImg = mSkillImages[skill.Effects[0].Type]
+		}
+		if skillImg == nil {
 			skillImg = mSkillImages["Skill"]
 		}
 		draw.Draw(img,
