@@ -24,11 +24,6 @@ import (
 )
 
 func EquipmentQuery(c *scheduler.Context) {
-	if c.PretreatedMessage == "" {
-		_, _ = c.Reply(equipmentHelp())
-		return
-	}
-
 	order := "稀有度"
 	page := 1
 	var note string

@@ -24,11 +24,6 @@ import (
 )
 
 func RecipeQuery(c *scheduler.Context) {
-	if c.PretreatedMessage == "" {
-		_, _ = c.Reply(recipeHelp())
-		return
-	}
-
 	order := "单时间"
 	page := 1
 	var note string
@@ -130,10 +125,6 @@ func RecipeQuery(c *scheduler.Context) {
 		argCount++
 	}
 
-	if argCount == 0 {
-		_, _ = c.Reply(recipeHelp())
-		return
-	}
 	// 对菜谱查询结果排序
 	recipes, note = orderRecipes(recipes, order)
 	if note != "" {

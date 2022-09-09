@@ -13,10 +13,6 @@ import (
 // 调料查询
 func CondimentQuery(c *scheduler.Context) {
 	args := strings.Split(c.PretreatedMessage, " ")
-	if args[0] == "" {
-		_, _ = c.Reply(condimentHelp())
-		return
-	}
 
 	// 建立会话
 	Session := dao.DB.Select("*")

@@ -14,10 +14,6 @@ import (
 )
 
 func MaterialQuery(c *scheduler.Context) {
-	if c.PretreatedMessage == "" {
-		_, _ = c.Reply(materialHelp())
-		return
-	}
 	args := strings.Split(c.PretreatedMessage, " ")
 	page := 1
 	if len(args) > 1 {

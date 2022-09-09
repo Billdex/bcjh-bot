@@ -16,10 +16,6 @@ import (
 
 func UpgradeGuestQuery(c *scheduler.Context) {
 	args := strings.Split(c.PretreatedMessage, " ")
-	if args[0] == "" {
-		_, _ = c.Reply(upgradeGuestHelp())
-		return
-	}
 	page := 1
 	if len(args) == 2 {
 		if util.HasPrefixIn(args[1], "p", "P") {

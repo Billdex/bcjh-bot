@@ -15,11 +15,6 @@ import (
 func StrategyQuery(c *scheduler.Context) {
 	arg := c.PretreatedMessage
 
-	if arg == "" {
-		_, _ = c.Reply(strategyHelp())
-		return
-	}
-
 	if util.HasPrefixIn(arg, "新增", "添加") {
 		if !global.IsSuperAdmin(c.GetSenderId()) {
 			_, _ = c.Reply(e.PermissionDeniedNote)

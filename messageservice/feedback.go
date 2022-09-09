@@ -14,10 +14,6 @@ const (
 )
 
 func Feedback(c *scheduler.Context) {
-	if c.PretreatedMessage == "" {
-		_, _ = c.Reply("请填写反馈内容")
-		return
-	}
 	feedback := new(database.Feedback)
 	feedback.Sender = c.GetSenderId()
 	feedback.Nickname = c.GetSenderNickname()
