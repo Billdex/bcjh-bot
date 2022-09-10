@@ -1,11 +1,9 @@
 package messageservice
 
 import (
-	"bcjh-bot/config"
 	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
-	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/e"
 	"fmt"
 	"strings"
@@ -14,45 +12,7 @@ import (
 var prefixCharacters = []string{"#", "＃"}
 
 func HelpGuide(c *scheduler.Context) {
-	var msg string
-	arg := c.PretreatedMessage
-	if arg != "" {
-		switch arg {
-		case "帮助":
-			msg = introHelp()
-		case "反馈":
-			msg = feedbackHelp()
-		case "图鉴网":
-			msg = galleryWebsiteHelp()
-		case "游戏术语", "术语", "黑话":
-			msg = termHelp()
-		case "厨师", "厨子":
-			msg = chefHelp()
-		case "厨具":
-			msg = equipmentHelp()
-		case "菜谱":
-			msg = recipeHelp()
-		case "调料":
-			msg = condimentHelp()
-		case "贵客":
-			msg = guestHelp()
-		case "符文":
-			msg = antiqueHelp()
-		case "任务":
-			msg = questHelp()
-		case "碰瓷", "升阶贵客":
-			msg = upgradeGuestHelp()
-		case "后厨", "合成":
-			msg = comboHelp()
-		case "攻略":
-			msg = strategyHelp()
-		default:
-			msg = introHelp()
-		}
-	} else {
-		msg = introHelp()
-	}
-	_, _ = c.Reply(msg)
+	_, _ = c.Reply(introHelp())
 }
 
 // 功能指引
@@ -79,23 +39,6 @@ func feedbackHelp() string {
 	msg += fmt.Sprintf("「%s反馈 问题描述或建议」\n", prefixCharacters[0])
 	msg += fmt.Sprintf("如果比较紧急可以私聊我们:\n")
 	msg += fmt.Sprintf("QQ:591404144(罗觉觉)或646792290(汪汪泥)")
-	return msg
-}
-
-// 图鉴网功能指引
-func galleryWebsiteHelp() string {
-	var msg string
-	msg += fmt.Sprintf("【图鉴网-网址查询】\n")
-	msg += fmt.Sprintf("给出L图鉴网与手机版图鉴网地址，方便记不住网址的小可爱快速访问。")
-	return msg
-}
-
-// 游戏术语
-func termHelp() string {
-	var msg string
-	termImagePath := config.AppConfig.Resource.Shortcut + "/游戏术语.jpg"
-	CQImage := onebot.GetCQImage(termImagePath, "file")
-	msg += fmt.Sprintf("%s", CQImage)
 	return msg
 }
 
@@ -209,18 +152,18 @@ func upgradeGuestHelp() string {
 func comboHelp() string {
 	prefix := prefixCharacters[0]
 	sb := strings.Builder{}
-	sb.WriteString("【后厨合成菜谱查询\n")
+	sb.WriteString("【后厨合成菜谱查询】\n")
 	sb.WriteString(fmt.Sprintf("查询后厨合成菜的前置菜谱:\n"))
 	sb.WriteString(fmt.Sprintf("示例:『%s后厨 BBQ烧烤』", prefix))
 	return sb.String()
 }
 
-// 实验室前置功能指引
+// LaboratoryHelp 实验室前置功能指引
 func LaboratoryHelp() string {
 	prefix := prefixCharacters[0]
 	sb := strings.Builder{}
-	sb.WriteString("【实验室菜谱查询\n")
-	sb.WriteString(fmt.Sprintf("查询实验室菜谱的前置材料:\n"))
+	sb.WriteString("【实验室菜谱查询】\n")
+	sb.WriteString(fmt.Sprintf("查询实验室菜谱的前置材料, 暂未收录厨具数据\n"))
 	sb.WriteString(fmt.Sprintf("示例:『%s实验室 猪肉脯』", prefix))
 	return sb.String()
 }

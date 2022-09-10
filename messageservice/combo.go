@@ -11,14 +11,7 @@ import (
 )
 
 func ComboQuery(c *scheduler.Context) {
-	arg := c.PretreatedMessage
-
-	if arg == "" {
-		_, _ = c.Reply(comboHelp())
-		return
-	}
-
-	comboRecipeName := arg
+	comboRecipeName := c.PretreatedMessage
 
 	// 判断菜名是否唯一
 	recipes := make([]database.Recipe, 0)

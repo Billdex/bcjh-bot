@@ -16,11 +16,6 @@ import (
 
 func AntiqueQuery(c *scheduler.Context) {
 	args := strings.Split(c.PretreatedMessage, " ")
-	if args[0] == "" {
-		_, _ = c.Reply(antiqueHelp())
-		return
-	}
-
 	antique := args[0]
 
 	guests := make([]database.GuestGift, 0)

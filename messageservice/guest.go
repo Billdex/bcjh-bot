@@ -14,11 +14,6 @@ import (
 
 func GuestQuery(c *scheduler.Context) {
 	arg := c.PretreatedMessage
-	if arg == "" {
-		_, _ = c.Reply(guestHelp())
-		return
-	}
-
 	argType := "guest_id"
 	guests := make([]database.Guest, 0)
 	numId, err := strconv.Atoi(arg)

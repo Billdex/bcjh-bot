@@ -12,11 +12,6 @@ import (
 func LaboratoryQuery(c *scheduler.Context) {
 	arg := c.PretreatedMessage
 
-	if arg == "" {
-		_, _ = c.Reply(LaboratoryHelp())
-		return
-	}
-
 	targets := make([]database.Laboratory, 0)
 	err := dao.DB.Where("target_name like ?", "%"+arg+"%").Find(&targets)
 	if err != nil {

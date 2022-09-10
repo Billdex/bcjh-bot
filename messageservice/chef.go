@@ -24,11 +24,6 @@ import (
 )
 
 func ChefQuery(c *scheduler.Context) {
-	if c.PretreatedMessage == "" {
-		_, _ = c.Reply(chefHelp())
-		return
-	}
-
 	order := "稀有度"
 	page := 1
 	var note string
@@ -84,11 +79,6 @@ func ChefQuery(c *scheduler.Context) {
 			return
 		}
 		argCount++
-	}
-
-	if argCount == 0 {
-		_, _ = c.Reply(chefHelp())
-		return
 	}
 
 	// 对厨师查询结果排序
