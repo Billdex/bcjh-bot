@@ -418,7 +418,7 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 			image.Point{X: avatarStartX, Y: avatarStartY},
 			draw.Over)
 
-		skills, err := dao.GetSkillsByIds(equip.Skills)
+		skills, err := dao.FindSkillsByIds(equip.Skills)
 		if err != nil {
 			logger.Errorf("查询厨具 %s 技能数据失败, 技能id %v, err: %v", equip.Name, equip.Skills, err)
 			continue
