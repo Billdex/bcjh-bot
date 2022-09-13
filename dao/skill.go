@@ -2,7 +2,13 @@ package dao
 
 import "bcjh-bot/model/database"
 
-func GetSkillsByIds(ids []int) ([]database.Skill, error) {
+func FindAllSkills() ([]database.Skill, error) {
+	skills := make([]database.Skill, 0)
+	err := DB.Find(&skills)
+	return skills, err
+}
+
+func FindSkillsByIds(ids []int) ([]database.Skill, error) {
 	skills := make([]database.Skill, 0)
 	err := DB.In("skill_id", ids).Find(&skills)
 	return skills, err

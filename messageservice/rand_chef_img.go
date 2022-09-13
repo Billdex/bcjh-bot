@@ -6,23 +6,20 @@ import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
+	"bcjh-bot/util"
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/golang/freetype"
 	"github.com/nfnt/resize"
 	"image"
-	"image/color"
-	"image/draw"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -146,28 +143,45 @@ func RandChefImg(c *scheduler.Context) {
 		weekday = 7
 	}
 	timeSeed -= int64(weekday-1) * 3600 * 24
+	selfRand := rand.New(rand.NewSource(c.GetSenderId() + timeSeed))
 
 	event := c.GetGroupEvent()
-	skills := make([]database.Skill, 0)
-	err := dao.DB.Find(&skills)
+	skills, err := dao.FindAllSkills()
 	if err != nil || len(skills) == 0 {
 		logger.Error("数据库查询出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
-	selfRand := rand.New(rand.NewSource(c.GetSenderId() + timeSeed))
 	rarity := selfRand.Intn(5) + 1
-	chef := userChefInfo{
-		Name:   c.GetSenderNickname(),
-		Rarity: rarity,
-		Avatar: fmt.Sprintf("https://q1.qlogo.cn/g?b=qq&nk=%d&s=100", event.Sender.UserId),
-
-		Meat:      selfRand.Intn(rarity + 4),
-		Flour:     selfRand.Intn(rarity + 4),
-		Fish:      selfRand.Intn(rarity + 4),
-		Vegetable: selfRand.Intn(rarity + 4),
-
-		Skill: skills[selfRand.Intn(len(skills))].Description,
+	avatar, err := DownloadImage(fmt.Sprintf("https://q1.qlogo.cn/g?b=qq&nk=%d&s=100", event.Sender.UserId))
+	if err != nil {
+		logger.Error("下载图片出错!", err)
+		_, _ = c.Reply("获取用户头像失败啦")
+		return
+	}
+	avatar = resize.Resize(200, 200, avatar, resize.Bilinear)
+	groupInfo, err := c.GetBot().GetGroupInfo(c.GetGroupEvent().GroupId)
+	if err != nil {
+		logger.Error("获取群信息失败", err)
+		_, _ = c.Reply("生成图鉴失败")
+		return
+	}
+	var name = c.GetSenderNickname()
+	if len([]rune(name)) > 10 {
+		name = string([]rune(name)[:10])
+	}
+	chef := database.ChefData{
+		Chef: database.Chef{
+			Name:      name,
+			Rarity:    rarity,
+			Origin:    groupInfo.GroupName,
+			Meat:      selfRand.Intn(rarity + 4),
+			Flour:     selfRand.Intn(rarity + 4),
+			Fish:      selfRand.Intn(rarity + 4),
+			Vegetable: selfRand.Intn(rarity + 4),
+		},
+		Avatar: avatar,
+		Skill:  skills[selfRand.Intn(len(skills))].Description,
 		UltimateGoals: []string{
 			practiceTaskList1[selfRand.Intn(len(practiceTaskList1))](rarity),
 			practiceTaskList2[selfRand.Intn(len(practiceTaskList2))](rarity),
@@ -175,6 +189,7 @@ func RandChefImg(c *scheduler.Context) {
 		},
 		UltimateSkill: practiceSkillList[selfRand.Intn(len(practiceSkillList))](rarity),
 	}
+
 	for chef.Stirfry < 15+60*rarity && chef.Bake < 15+60*rarity && chef.Boil < 15+60*rarity &&
 		chef.Steam < 15+60*rarity && chef.Fry < 15+60*rarity && chef.Cut < 15+60*rarity {
 		chef.Stirfry = selfRand.Intn(15*rarity*rarity - 2*rarity + 120)
@@ -203,17 +218,6 @@ func RandChefImg(c *scheduler.Context) {
 	}
 
 	// 数值调整
-	groupInfo, err := c.GetBot().GetGroupInfo(c.GetGroupEvent().GroupId)
-	if err != nil {
-		logger.Error("获取群信息失败", err)
-		_, _ = c.Reply("生成图鉴失败")
-		return
-	}
-	chef.Origin = groupInfo.GroupName
-	nameRune := []rune(c.GetSenderNickname())
-	if len(nameRune) > 10 {
-		chef.Name = string(nameRune[:10])
-	}
 	if chef.Stirfry < rarity*18 {
 		chef.Stirfry = 0
 	}
@@ -246,80 +250,46 @@ func RandChefImg(c *scheduler.Context) {
 		chef.Vegetable = 0
 	}
 
-	bytesImg, err := createRandChefImg(chef)
+	// 载入一些资源文件
+	// 载入字体文件
+	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
-		logger.Error("绘制图片出错", err)
+		logger.Error("加载字体失败", err)
+		_, _ = c.Reply(e.SystemErrorNote)
+		return
+	}
+	// 载入背景图片
+	bgImg, err := util.LoadPngImageFile(fmt.Sprintf("%s/chef/chef_%s.png", config.AppConfig.Resource.Image, chef.GetCondimentType()))
+	if err != nil {
+		logger.Error("加载背景图片失败", err)
+		_, _ = c.Reply(e.SystemErrorNote)
+		return
+	}
+	// 载入稀有度图片
+	rarityImg, err := util.LoadPngImageFile(fmt.Sprintf("%s/chef/rarity_%d.png", config.AppConfig.Resource.Image, chef.Rarity))
+	if err != nil {
+		logger.Error("加载稀有度图片失败", err)
+		_, _ = c.Reply(e.SystemErrorNote)
+		return
+	}
+	// 绘制结果
+	img, err := GenerateChefImage(chef, font, bgImg, nil, rarityImg)
+	buf := new(bytes.Buffer)
+	err = png.Encode(buf, img)
+	if err != nil {
+		logger.Error("图片转buffer失败", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
 
-	base64Img := base64.StdEncoding.EncodeToString(bytesImg)
+	base64Img := base64.StdEncoding.EncodeToString(buf.Bytes())
 	cqImg := onebot.GetCQImage(base64Img, "base64")
 	_, _ = c.Reply(cqImg)
 }
 
-func createRandChefImg(chef userChefInfo) ([]byte, error) {
-	dx := 800       // 图鉴背景图片的宽度
-	dy := 800       // 图鉴背景图片的高度
-	titleSize := 50 // 标题字体尺寸
-	fontSize := 36  // 内容字体尺寸
-	fontDPI := 72.0 // dpi
-
-	// 获取字体文件
-	resourceFontDir := config.AppConfig.Resource.Font
-	fontFile := resourceFontDir + "/yuan500W.ttf"
-	//读字体数据
-	fontBytes, err := ioutil.ReadFile(fontFile)
-	if err != nil {
-		return nil, err
-	}
-	font, err := freetype.ParseFont(fontBytes)
-	if err != nil {
-		return nil, err
-	}
-	fontColor := color.RGBA{A: 255}
-
-	condiment := 0
-	condimentType := "Sweet"
-	if chef.Sweet > 0 {
-		condiment = chef.Sweet
-		condimentType = "Sweet"
-	} else if chef.Sour > 0 {
-		condiment = chef.Sour
-		condimentType = "Sour"
-	} else if chef.Spicy > 0 {
-		condiment = chef.Spicy
-		condimentType = "Spicy"
-	} else if chef.Salty > 0 {
-		condiment = chef.Salty
-		condimentType = "Salty"
-	} else if chef.Bitter > 0 {
-		condiment = chef.Bitter
-		condimentType = "Bitter"
-	} else if chef.Tasty > 0 {
-		condiment = chef.Tasty
-		condimentType = "Tasty"
-	}
-	bgFile, err := os.Open(fmt.Sprintf("%s/chef/chef_%s.png", config.AppConfig.Resource.Image, condimentType))
-	if err != nil {
-		return nil, err
-	}
-	img := image.NewRGBA(image.Rect(0, 0, dx, dy))
-	bg, _ := png.Decode(bgFile)
-	bgFile.Close()
-
-	draw.Draw(img, img.Bounds(), bg, bg.Bounds().Min, draw.Src)
-
-	c := freetype.NewContext()
-	c.SetDPI(fontDPI)
-	c.SetFont(font)
-	c.SetClip(img.Bounds())
-	c.SetDst(img)
-	c.SetSrc(image.NewUniform(fontColor))
-	c.SetFontSize(float64(titleSize))
-
-	// 输出用户头像
-	r, err := http.Get(chef.Avatar)
+// DownloadImage 下载图片并导出image.Image 对象
+func DownloadImage(url string) (image.Image, error) {
+	r, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -328,143 +298,19 @@ func createRandChefImg(chef userChefInfo) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	avatarImg, err := jpeg.Decode(bytes.NewReader(body))
+
+	// 导出image实例
+	img, err := jpeg.Decode(bytes.NewReader(body))
 	if err != nil {
 		// 读取失败则再尝试用png读取
-		avatarImg, err = png.Decode(bytes.NewReader(body))
+		img, err = png.Decode(bytes.NewReader(body))
 		if err != nil {
 			// 再失败就试试gif
-			avatarImg, err = gif.Decode(bytes.NewReader(body))
+			img, err = gif.Decode(bytes.NewReader(body))
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-	avatarImg = resize.Resize(200, 200, avatarImg, resize.Bilinear)
-	draw.Draw(img,
-		image.Rect(50, 118, 50+200, 118+200),
-		avatarImg,
-		image.Point{X: 0, Y: 0},
-		draw.Over)
-
-	// 输出名字
-	pt := freetype.Pt(50, 22+titleSize)
-	_, err = c.DrawString(fmt.Sprintf("%s", chef.Name), pt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 输出稀有度
-	rarityFile, err := os.Open(fmt.Sprintf("%s/chef/rarity_%d.png", config.AppConfig.Resource.Image, chef.Rarity))
-	if err != nil {
-		return nil, err
-	}
-	defer rarityFile.Close()
-	rarityImg, _ := png.Decode(rarityFile)
-	rarityFile.Close()
-	draw.Draw(img,
-		image.Rect(545, 30, 545+240, 30+44),
-		rarityImg,
-		image.Point{},
-		draw.Over)
-
-	c.SetFontSize(float64(fontSize))
-	// 输出技法数据
-	pt = freetype.Pt(365, 104+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Stirfry), pt)
-	if err != nil {
-		return nil, err
-	}
-	pt = freetype.Pt(536, 104+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Bake), pt)
-	if err != nil {
-		return nil, err
-	}
-	pt = freetype.Pt(705, 104+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Boil), pt)
-	if err != nil {
-		return nil, err
-	}
-	pt = freetype.Pt(365, 164+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Steam), pt)
-	if err != nil {
-		return nil, err
-	}
-	pt = freetype.Pt(536, 164+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Fry), pt)
-	if err != nil {
-		return nil, err
-	}
-	pt = freetype.Pt(705, 164+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Cut), pt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 输出采集数据
-	pt = freetype.Pt(365, 230+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Meat), pt)
-	if err != nil {
-		return nil, err
-	}
-	pt = freetype.Pt(536, 230+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Flour), pt)
-	if err != nil {
-		return nil, err
-	}
-	pt = freetype.Pt(365, 290+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Vegetable), pt)
-	if err != nil {
-		return nil, err
-	}
-	pt = freetype.Pt(536, 290+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", chef.Fish), pt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 输出调料数据
-	pt = freetype.Pt(705, 290+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%d", condiment), pt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 输出来源数据
-	pt = freetype.Pt(150, 365+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%s", chef.Origin), pt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 输出技法数据
-	pt = freetype.Pt(150, 435+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%s", chef.Skill), pt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 输出修炼效果数据
-	pt = freetype.Pt(150, 505+fontSize)
-	_, err = c.DrawString(fmt.Sprintf("%s", chef.UltimateSkill), pt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 输出修炼任务数据
-	for i, task := range chef.UltimateGoals {
-		pt = freetype.Pt(120, 625+i*50+fontSize)
-		_, err = c.DrawString(fmt.Sprintf("%s", task), pt)
-		if err != nil {
-			return nil, err
-		}
-
-	}
-
-	buf := new(bytes.Buffer)
-	err = png.Encode(buf, img)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return img, nil
 }

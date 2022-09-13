@@ -382,27 +382,36 @@ func GenerateChefImage(chef database.ChefData, font *truetype.Font, bgImg image.
 		draw.Over)
 
 	// 输出图鉴ID与厨师名
-	_, err := c.DrawString(chef.Name, freetype.Pt(165, 22+titleSize))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = c.DrawString(fmt.Sprintf("%03d", chef.ChefId), freetype.Pt(45, 18+titleSize))
-	if err != nil {
-		return nil, err
-	}
-	c.SetFontSize(float64(25))
-	_, err = c.DrawString(fmt.Sprintf("(%03d,%03d)", chef.ChefId-2, chef.ChefId-1), freetype.Pt(30, 70+25))
-	if err != nil {
-		return nil, err
+	var err error
+	if chef.ChefId > 0 {
+		_, err = c.DrawString(chef.Name, freetype.Pt(165, 22+titleSize))
+		if err != nil {
+			return nil, err
+		}
+		_, err = c.DrawString(fmt.Sprintf("%03d", chef.ChefId), freetype.Pt(45, 18+titleSize))
+		if err != nil {
+			return nil, err
+		}
+		c.SetFontSize(float64(25))
+		_, err = c.DrawString(fmt.Sprintf("(%03d,%03d)", chef.ChefId-2, chef.ChefId-1), freetype.Pt(30, 70+25))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		_, err := c.DrawString(chef.Name, freetype.Pt(50, 22+titleSize))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// 输出性别
-	draw.Draw(img,
-		image.Rect(490, 30, 490+44, 30+44),
-		genderImg,
-		image.Point{},
-		draw.Over)
+	if genderImg != nil {
+		draw.Draw(img,
+			image.Rect(490, 30, 490+44, 30+44),
+			genderImg,
+			image.Point{},
+			draw.Over)
+	}
 
 	// 输出稀有度
 	draw.Draw(img,
