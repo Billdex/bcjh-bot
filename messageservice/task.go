@@ -12,15 +12,9 @@ import (
 	"strings"
 )
 
-// 任务查询
+// TaskQuery 任务查询
 func TaskQuery(c *scheduler.Context) {
-	var str string
-	for _, prefix := range []string{"#", "＃"} {
-		if strings.HasPrefix(c.GetRawMessage(), prefix) {
-			str = c.GetRawMessage()[len(prefix):]
-			break
-		}
-	}
+	str := c.GetKeyword() + c.PretreatedMessage
 	pattern := regexp.MustCompile(`^(任务)?\s*(主线|支线)?\s*(任务)?\s*-?\s*([0-9]+(\.[0-9]+)?)([-\s]+([0-9]+))?`)
 	allIndexes := pattern.FindAllSubmatchIndex([]byte(str), -1)
 	// logger.Debugf("%v", allIndexes)
