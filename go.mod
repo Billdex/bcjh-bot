@@ -17,6 +17,7 @@ require (
 )
 
 require (
+	github.com/allegro/bigcache/v3 v3.0.2 // indirect
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/goccy/go-json v0.9.10 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
