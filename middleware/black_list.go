@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"bcjh-bot/global"
+	"bcjh-bot/dao"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
+	"bcjh-bot/util/logger"
 )
 
 func CheckBlackList(c *scheduler.Context) {
@@ -11,7 +12,12 @@ func CheckBlackList(c *scheduler.Context) {
 		c.Next()
 		return
 	}
-	if allow := global.GetUserAllowState(c.GetSenderId(), c.GetGroupEvent().GroupId); allow {
+	allow, err := dao.GetUserAllowState(c.GetSenderId(), c.GetGroupId())
+	if err != nil {
+		logger.Errorf("获取用户 %d group %d allow state 出错 %v", c.GetSenderId(), c.GetGroupId(), err)
+		allow = true
+	}
+	if allow {
 		c.Next()
 		return
 	} else {
