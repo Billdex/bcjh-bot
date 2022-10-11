@@ -190,6 +190,9 @@ func UpdateData(c *scheduler.Context) {
 	logger.Infof("更新任务数据完毕, 耗时%s", stepTime)
 	msg += fmt.Sprintf("更新任务数据耗时%s\n", stepTime)
 
+	// 开始绘制之前清除所有缓存数据，防止数据不一致
+	ClearGameDataCache()
+
 	// 解析ImgCSS数据
 	stepStart = time.Now()
 	imgCSS, err := ResolvingImgCSS(baseURL + imageCSSURI)
@@ -862,4 +865,15 @@ func ResolvingImgCSS(cssURL string) (*gamedata.ImgCSS, error) {
 	}
 
 	return imgCSS, nil
+}
+
+// ClearGameDataCache 清除图鉴网相关的游戏数据缓存
+func ClearGameDataCache() {
+	dao.ClearChefsCache()
+	dao.ClearEquipsCache()
+	dao.ClearRecipesCache()
+	dao.ClearGuestGiftsCache()
+	dao.ClearMaterialsCache()
+	dao.ClearSkillsCache()
+	dao.ClearQuestsCache()
 }

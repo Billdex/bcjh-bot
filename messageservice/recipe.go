@@ -963,7 +963,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	// 载入字体文件
 	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
-		return err
+		return fmt.Errorf("载入字体文件失败 %v", err)
 	}
 
 	resourceImgDir := config.AppConfig.Resource.Image
@@ -980,7 +980,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	// 加载背景图片
 	bgImg, err := util.LoadPngImageFile(fmt.Sprintf("%s/recipe_bg.png", recipeImgPath))
 	if err != nil {
-		return err
+		return fmt.Errorf("载入菜谱背景图片失败 %v", err)
 	}
 
 	// 载入稀有度图片
@@ -988,7 +988,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	for _, rarity := range []int{1, 2, 3, 4, 5} {
 		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
 		if err != nil {
-			return err
+			return fmt.Errorf("载入稀有度图标失败 %v", err)
 		}
 		mRarityImages[rarity] = img
 	}
@@ -998,7 +998,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	for _, skill := range []string{"stirfry", "bake", "boil", "steam", "fry", "cut"} {
 		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/icon_%s_value.png", commonImgPath, skill))
 		if err != nil {
-			return err
+			return fmt.Errorf("载入技法图标失败 %v", err)
 		}
 		mSkillImages[skill] = img
 	}
@@ -1008,9 +1008,21 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 	for _, condiment := range []string{"sweet", "sour", "spicy", "salty", "bitter", "tasty"} {
 		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/icon_%s.png", commonImgPath, condiment))
 		if err != nil {
-			return err
+			return fmt.Errorf("载入调料图标失败 %v", err)
 		}
 		mCondimentImages[condiment] = img
+	}
+
+	// 载入菜谱和贵客礼物的关联关系
+	mRecipeGifts, err := dao.GetRecipeGuestGiftsMap()
+	if err != nil {
+		return fmt.Errorf("载入菜谱贵客礼物数据失败 %v", err)
+	}
+
+	// 载入菜谱食材关联关系
+	mRecipeMaterials, err := dao.GetRecipeMaterialsMap()
+	if err != nil {
+		return fmt.Errorf("载入菜谱食材数据失败 %v", err)
 	}
 
 	for _, recipe := range recipes {
@@ -1038,24 +1050,12 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 			}
 		}
 
-		guestGifts, err := dao.FindGuestGiftsByRecipeName(recipe.Name)
-		if err != nil {
-			logger.Errorf("查询菜谱 %s 的贵客礼物数据出错 %v", recipe.GalleryId, err)
-			continue
-		}
-
-		materials, err := dao.FindRecipeMaterialByRecipeGalleryId(recipe.GalleryId, true)
-		if err != nil {
-			logger.Errorf("查询菜谱 %s 的食材数据出错 %v", recipe.GalleryId, err)
-			continue
-		}
-
 		recipeData := database.RecipeData{
 			Recipe:     recipe,
 			Avatar:     avatar,
 			Skills:     skills,
-			GuestGifts: guestGifts,
-			Materials:  materials,
+			GuestGifts: mRecipeGifts[recipe.Name],
+			Materials:  mRecipeMaterials[recipe.GalleryId],
 		}
 
 		img, err := GenerateRecipeImage(recipeData, font, bgImg, mRarityImages[recipe.Rarity], mCondimentImages[strings.ToLower(recipe.Condiment)])

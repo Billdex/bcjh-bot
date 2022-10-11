@@ -2,14 +2,31 @@ package dao
 
 import "bcjh-bot/model/database"
 
-func GetQuestById(id int) (database.Quest, error) {
-	var quest database.Quest
-	_, err := DB.Where("quest_id = ?", id).Get(&quest)
-	return quest, err
+const CacheKeyQuestList = "quest_list"
+
+// ClearQuestsCache 清除任务数据缓存
+func ClearQuestsCache() {
+	Cache.Delete(CacheKeyQuestList)
 }
 
-func GetQuestsByIds(ids []int) ([]database.Quest, error) {
-	quests := make([]database.Quest, 0, len(ids))
-	err := DB.In("quest_id", ids).Find(&quests)
+// FindAllQuests 查询全部任务信息
+func FindAllQuests() ([]database.Quest, error) {
+	var quests []database.Quest
+	err := SimpleFindDataWithCache(CacheKeyQuestList, &quests, func(dest interface{}) error {
+		return DB.OrderBy("quest_id").Find(dest)
+	})
 	return quests, err
+}
+
+// GetQuestsMap 获取 map 格式的任务数据，key 为任务 id
+func GetQuestsMap() (map[int]database.Quest, error) {
+	quests, err := FindAllQuests()
+	if err != nil {
+		return nil, err
+	}
+	mResult := make(map[int]database.Quest)
+	for _, quest := range quests {
+		mResult[quest.QuestId] = quest
+	}
+	return mResult, nil
 }

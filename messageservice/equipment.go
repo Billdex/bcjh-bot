@@ -367,7 +367,7 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 	// 加载字体文件
 	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
-		return err
+		return fmt.Errorf("载入字体文件失败 %v", err)
 	}
 
 	resourceImgDir := config.AppConfig.Resource.Image
@@ -384,7 +384,7 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 	// 载入背景图片
 	bgImg, err := util.LoadPngImageFile(fmt.Sprintf("%s/equip_bg.png", equipImgPath))
 	if err != nil {
-		return err
+		return fmt.Errorf("载入厨具背景图片出错 %v", err)
 	}
 
 	// 载入稀有度图片
@@ -392,7 +392,7 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 	for _, rarity := range []int{1, 2, 3} {
 		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
 		if err != nil {
-			return err
+			return fmt.Errorf("载入稀有度图标出错 %v", err)
 		}
 		mRarityImages[rarity] = img
 	}
@@ -400,7 +400,13 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 	// 载入技能效果图标
 	mSkillImages, err := loadSkillIcons(commonImgPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("载入技能效果图表出错 %v", err)
+	}
+
+	// 载入技能数据
+	mSkills, err := dao.GetSkillsMap()
+	if err != nil {
+		return fmt.Errorf("载入技能数据出错 %v", err)
 	}
 
 	for _, equip := range equips {
@@ -418,10 +424,9 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 			image.Point{X: avatarStartX, Y: avatarStartY},
 			draw.Over)
 
-		skills, err := dao.FindSkillsByIds(equip.Skills)
-		if err != nil {
-			logger.Errorf("查询厨具 %s 技能数据失败, 技能id %v, err: %v", equip.Name, equip.Skills, err)
-			continue
+		skills := make([]database.Skill, 0, len(equip.Skills))
+		for _, skillId := range equip.Skills {
+			skills = append(skills, mSkills[skillId])
 		}
 
 		equipData := database.EquipData{

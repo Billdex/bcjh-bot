@@ -507,7 +507,7 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 	// 载入字体文件
 	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
 	if err != nil {
-		return err
+		return fmt.Errorf("载入字体文件失败 %v", err)
 	}
 
 	resourceImgDir := config.AppConfig.Resource.Image
@@ -526,7 +526,7 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 	for _, condimentType := range []string{"Sweet", "Sour", "Spicy", "Salty", "Bitter", "Tasty"} {
 		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/chef_%s.png", chefImgPath, condimentType))
 		if err != nil {
-			return err
+			return fmt.Errorf("载入厨师背景图片失败 %v", err)
 		}
 		mBgImages[condimentType] = img
 	}
@@ -536,7 +536,7 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 	for _, gender := range []int{0, 1, 2} {
 		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/gender_%d.png", chefImgPath, gender))
 		if err != nil {
-			return err
+			return fmt.Errorf("载入性别图标失败 %v", err)
 		}
 		mGenderImages[gender] = img
 	}
@@ -546,9 +546,21 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 	for _, rarity := range []int{1, 2, 3, 4, 5} {
 		img, err := util.LoadPngImageFile(fmt.Sprintf("%s/rarity_%d.png", commonImgPath, rarity))
 		if err != nil {
-			return err
+			return fmt.Errorf("载入稀有度图标失败 %v", err)
 		}
 		mRarityImages[rarity] = img
+	}
+
+	// 载入技能数据
+	mSkills, err := dao.GetSkillsMap()
+	if err != nil {
+		return fmt.Errorf("载入技能数据出错 %v", err)
+	}
+
+	// 载入任务数据
+	mQuests, err := dao.GetQuestsMap()
+	if err != nil {
+		return fmt.Errorf("载入任务数据出错 %v", err)
 	}
 
 	// 逐个绘制厨师图片
@@ -563,31 +575,16 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 			galleryImg,
 			image.Point{X: avatarStartX, Y: avatarStartY},
 			draw.Over)
-		skill, err := dao.GetSkillById(chef.SkillId)
-		if err != nil {
-			logger.Errorf("查询厨师 %s 技能数据失败, 技能id %d, err: %v", chef.Name, chef.SkillId, err)
-			continue
-		}
-		ultimateSkill, err := dao.GetSkillById(chef.UltimateSkill)
-		if err != nil {
-			logger.Errorf("查询厨师 %s 修炼技能数据失败, 技能id %d, err: %v", chef.Name, chef.UltimateSkill, err)
-			continue
-		}
-		goalSkills, err := dao.GetQuestsByIds(chef.UltimateGoals)
-		if err != nil {
-			logger.Errorf("查询厨师 %s 修炼任务失败, err: %v", chef.Name, err)
-			continue
-		}
-		goals := make([]string, len(goalSkills))
-		for i := range goalSkills {
-			goals[i] = goalSkills[i].Goal
+		goals := make([]string, len(chef.UltimateGoals))
+		for i := range chef.UltimateGoals {
+			goals[i] = mQuests[chef.UltimateGoals[i]].Goal
 		}
 		chefData := database.ChefData{
 			Chef:          chef,
 			Avatar:        avatar,
-			Skill:         skill.Description,
+			Skill:         mSkills[chef.SkillId].Description,
 			UltimateGoals: goals,
-			UltimateSkill: ultimateSkill.Description,
+			UltimateSkill: mSkills[chef.UltimateSkill].Description,
 		}
 		// 绘制厨师图片
 		img, err := GenerateChefImage(chefData, font, mBgImages[chefData.GetCondimentType()], mGenderImages[chefData.Gender], mRarityImages[chefData.Rarity])
