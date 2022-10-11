@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"bcjh-bot/global"
+	"bcjh-bot/dao"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 )
@@ -14,8 +14,8 @@ func CheckPluginState(defaultState bool) scheduler.HandleFunc {
 			return
 		}
 		event := c.GetGroupEvent()
-		if pluginName, ok := global.GetPluginName(c.GetKeyword()); ok {
-			if pluginOn, err := global.GetPluginState(event.GroupId, pluginName, defaultState); err != nil {
+		if pluginName, ok := dao.GetPluginName(c.GetKeyword()); ok {
+			if pluginOn, err := dao.GetPluginState(event.GroupId, pluginName, defaultState); err != nil {
 				c.Abort()
 				return
 			} else {

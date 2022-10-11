@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"bcjh-bot/dao"
-	"bcjh-bot/global"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/e"
@@ -41,7 +40,7 @@ func BanUser(c *scheduler.Context) {
 	successList := make([]int64, 0)
 	failList := make([]int64, 0)
 	for _, qq := range atList {
-		if global.IsSuperAdmin(qq) {
+		if dao.IsSuperAdmin(qq) {
 			_, _ = c.Reply(fmt.Sprintf(e.PermissionDeniedNote))
 		} else {
 			err := dao.SetUserBanTime(qq, c.GetGroupId(), endTime)

@@ -21,6 +21,7 @@ func InitDao() error {
 	if err := InitCache(); err != nil {
 		return err
 	}
+	initPluginAliasComparison()
 	return nil
 }
 

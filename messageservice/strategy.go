@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"bcjh-bot/dao"
-	"bcjh-bot/global"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util"
@@ -16,7 +15,7 @@ func StrategyQuery(c *scheduler.Context) {
 	arg := c.PretreatedMessage
 
 	if util.HasPrefixIn(arg, "新增", "添加") {
-		if !global.IsSuperAdmin(c.GetSenderId()) {
+		if !dao.IsSuperAdmin(c.GetSenderId()) {
 			_, _ = c.Reply(e.PermissionDeniedNote)
 			return
 		}
@@ -41,7 +40,7 @@ func StrategyQuery(c *scheduler.Context) {
 	}
 
 	if util.HasPrefixIn(arg, "更新", "修改") {
-		if !global.IsSuperAdmin(c.GetSenderId()) {
+		if !dao.IsSuperAdmin(c.GetSenderId()) {
 			_, _ = c.Reply(e.PermissionDeniedNote)
 			return
 		}
@@ -65,7 +64,7 @@ func StrategyQuery(c *scheduler.Context) {
 	}
 
 	if util.HasPrefixIn(arg, "删除", "移除") {
-		if !global.IsSuperAdmin(c.GetSenderId()) {
+		if !dao.IsSuperAdmin(c.GetSenderId()) {
 			_, _ = c.Reply(e.PermissionDeniedNote)
 			return
 		}

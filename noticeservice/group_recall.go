@@ -1,17 +1,17 @@
 package noticeservice
 
 import (
-	"bcjh-bot/global"
+	"bcjh-bot/dao"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/logger"
 	"fmt"
 )
 
 func ReplyRecallMessage(bot *onebot.Bot, event *onebot.NoticeEventGroupRecall) {
-	if botOn, err := global.GetBotState(bot.BotId, event.GroupId); err != nil || !botOn {
+	if botOn, err := dao.GetBotState(bot.BotId, event.GroupId); err != nil || !botOn {
 		return
 	}
-	if pluginOn, err := global.GetPluginState(event.GroupId, "防撤回", false); err != nil || !pluginOn {
+	if pluginOn, err := dao.GetPluginState(event.GroupId, "防撤回", false); err != nil || !pluginOn {
 		return
 	}
 

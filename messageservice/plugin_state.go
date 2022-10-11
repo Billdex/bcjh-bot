@@ -1,7 +1,7 @@
 package messageservice
 
 import (
-	"bcjh-bot/global"
+	"bcjh-bot/dao"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/logger"
@@ -12,9 +12,9 @@ func EnablePluginInGroup(c *scheduler.Context) {
 	if c.GetMessageType() != onebot.MessageTypeGroup || c.GetGroupEvent() == nil {
 		return
 	}
-	if pluginName, ok := global.GetPluginName(c.PretreatedMessage); ok {
+	if pluginName, ok := dao.GetPluginName(c.PretreatedMessage); ok {
 		event := c.GetGroupEvent()
-		if err := global.SetPluginState(event.GroupId, pluginName, true); err != nil {
+		if err := dao.SetPluginState(event.GroupId, pluginName, true); err != nil {
 			logger.Errorf("设置群内功能%s启动出错:%v", pluginName, err)
 			return
 		}
@@ -28,9 +28,9 @@ func DisablePluginInGroup(c *scheduler.Context) {
 	if c.GetMessageType() != onebot.MessageTypeGroup || c.GetGroupEvent() == nil {
 		return
 	}
-	if pluginName, ok := global.GetPluginName(c.PretreatedMessage); ok {
+	if pluginName, ok := dao.GetPluginName(c.PretreatedMessage); ok {
 		event := c.GetGroupEvent()
-		if err := global.SetPluginState(event.GroupId, pluginName, false); err != nil {
+		if err := dao.SetPluginState(event.GroupId, pluginName, false); err != nil {
 			logger.Errorf("设置群内功能%s关闭出错:%v", pluginName, err)
 			_, _ = c.Reply(fmt.Sprintf("%s功能关闭出错", pluginName))
 			return
