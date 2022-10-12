@@ -1,6 +1,8 @@
 package dao
 
-import "bcjh-bot/model/database"
+import (
+	"bcjh-bot/model/database"
+)
 
 const CacheKeyQuestList = "quest_list"
 
@@ -29,4 +31,23 @@ func GetQuestsMap() (map[int]database.Quest, error) {
 		mResult[quest.QuestId] = quest
 	}
 	return mResult, nil
+}
+
+// FindQuestsWithIds 根据 id 列表查询任务列表
+func FindQuestsWithIds(ids []int) ([]database.Quest, error) {
+	mIds := make(map[int]struct{}, len(ids))
+	for _, id := range ids {
+		mIds[id] = struct{}{}
+	}
+	quests, err := FindAllQuests()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]database.Quest, 0, len(ids))
+	for _, quest := range quests {
+		if _, ok := mIds[quest.QuestId]; ok {
+			result = append(result, quest)
+		}
+	}
+	return result, nil
 }

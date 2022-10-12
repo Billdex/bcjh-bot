@@ -63,6 +63,7 @@ func InitDatabase() error {
 // InitCache 初始化缓存
 func InitCache() error {
 	cacheCfg := bigcache.DefaultConfig(24 * time.Hour)
+	cacheCfg.Shards = 16
 	cacheCfg.HardMaxCacheSize = 64
 	cache, err := bigcache.NewBigCache(cacheCfg)
 	if err != nil {

@@ -1,6 +1,11 @@
 package dao
 
-import "bcjh-bot/model/database"
+import (
+	"bcjh-bot/model/database"
+	"fmt"
+	"regexp"
+	"strings"
+)
 
 const CacheKeySkillList = "skill_list"
 
@@ -29,4 +34,24 @@ func GetSkillsMap() (map[int]database.Skill, error) {
 		mResult[skill.SkillId] = skill
 	}
 	return mResult, nil
+}
+
+// SearchSkillsMapWithDescription 根据技能描述筛选技能, 返回格式为 map, key 为技能 id
+func SearchSkillsMapWithDescription(desc string) (map[int]database.Skill, error) {
+	pattern := strings.ReplaceAll(desc, "%", ".*")
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("技能描述格式有误 %v", err)
+	}
+	skills, err := FindAllSkills()
+	if err != nil {
+		return nil, fmt.Errorf("查询技能数据失败 %v", err)
+	}
+	m := make(map[int]database.Skill)
+	for _, skill := range skills {
+		if re.MatchString(skill.Description) {
+			m[skill.SkillId] = skill
+		}
+	}
+	return m, nil
 }
