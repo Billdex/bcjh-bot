@@ -2,6 +2,9 @@ package dao
 
 import (
 	"bcjh-bot/model/database"
+	"fmt"
+	"regexp"
+	"strings"
 )
 
 const (
@@ -24,6 +27,26 @@ func FindAllMaterials() ([]database.Material, error) {
 	return materials, err
 }
 
+// SearchMaterialsWithName 根据名称筛选食材列表
+func SearchMaterialsWithName(name string) ([]database.Material, error) {
+	pattern := strings.ReplaceAll(name, "%", ".*")
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("食材描述格式有误 %v", err)
+	}
+	materials, err := FindAllMaterials()
+	if err != nil {
+		return nil, fmt.Errorf("查询食材数据失败 %v", err)
+	}
+	result := make([]database.Material, 0)
+	for _, material := range materials {
+		if re.MatchString(material.Name) {
+			result = append(result, material)
+		}
+	}
+	return result, nil
+}
+
 // FindAllRecipeMaterials 获取所有菜谱食材数据
 func FindAllRecipeMaterials() ([]database.RecipeMaterial, error) {
 	var recipeMaterials []database.RecipeMaterial
@@ -43,14 +66,14 @@ func GetRecipeMaterialsMap() (map[string][]database.RecipeMaterial, error) {
 	if err != nil {
 		return nil, err
 	}
-	mMaterialNames := make(map[int]string)
+	mMaterials := make(map[int]database.Material)
 	for _, material := range materials {
-		mMaterialNames[material.MaterialId] = material.Name
+		mMaterials[material.MaterialId] = material
 	}
 	mResult := make(map[string][]database.RecipeMaterial)
 	for _, recipeMaterial := range recipeMaterials {
 		id := recipeMaterial.RecipeGalleryId
-		recipeMaterial.MaterialName = mMaterialNames[recipeMaterial.MaterialId]
+		recipeMaterial.Material = mMaterials[recipeMaterial.MaterialId]
 		mResult[id] = append(mResult[id], recipeMaterial)
 	}
 	return mResult, nil

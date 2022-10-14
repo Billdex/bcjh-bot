@@ -24,10 +24,12 @@ func CheckPluginState(defaultState bool) scheduler.HandleFunc {
 				if pluginOn {
 					c.Next()
 				} else {
+					c.SetWarnMessage("插件功能未启用")
 					c.Abort()
 				}
 			}
 		} else {
+			c.SetWarnMessage("插件功能未启用")
 			c.Abort()
 			return
 		}

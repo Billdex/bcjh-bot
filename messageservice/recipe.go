@@ -27,10 +27,9 @@ func RecipeQuery(c *scheduler.Context) {
 	order := "单时间"
 	page := 1
 	var note string
-	recipes := make([]database.Recipe, 0)
-	err := dao.DB.Find(&recipes)
+	recipes, err := dao.FindAllRecipes()
 	if err != nil {
-		logger.Error("查询数据库出错!", err)
+		logger.Error("查询菜谱数据出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 	}
 	args := strings.Split(c.PretreatedMessage, " ")
@@ -43,43 +42,45 @@ func RecipeQuery(c *scheduler.Context) {
 		case "图鉴序", "时间", "单时间", "总时间", "单价", "售价", "金币效率", "耗材效率", "稀有度":
 			order = arg
 		case "1火", "1星", "一火", "一星":
-			recipes, note = filterRecipesByLowerRarity(recipes, 1)
+			recipes, note = filterRecipesByRarity(recipes, 1, true)
 		case "2火", "2星", "二火", "二星", "两火", "两星":
-			recipes, note = filterRecipesByLowerRarity(recipes, 2)
+			recipes, note = filterRecipesByRarity(recipes, 2, true)
 		case "3火", "3星", "三火", "三星":
-			recipes, note = filterRecipesByLowerRarity(recipes, 3)
+			recipes, note = filterRecipesByRarity(recipes, 3, true)
 		case "4火", "4星", "四火", "四星":
-			recipes, note = filterRecipesByLowerRarity(recipes, 4)
+			recipes, note = filterRecipesByRarity(recipes, 4, true)
 		case "5火", "5星", "五火", "五星":
-			recipes, note = filterRecipesByLowerRarity(recipes, 5)
+			recipes, note = filterRecipesByRarity(recipes, 5, true)
 		case "仅1火", "仅1星", "仅一火", "仅一星":
-			recipes, note = filterRecipesByRarity(recipes, 1)
+			recipes, note = filterRecipesByRarity(recipes, 1, false)
 		case "仅2火", "仅2星", "仅二火", "仅二星", "仅两火", "仅两星":
-			recipes, note = filterRecipesByRarity(recipes, 2)
+			recipes, note = filterRecipesByRarity(recipes, 2, false)
 		case "仅3火", "仅3星", "仅三火", "仅三星":
-			recipes, note = filterRecipesByRarity(recipes, 3)
+			recipes, note = filterRecipesByRarity(recipes, 3, false)
 		case "仅4火", "仅4星", "仅四火", "仅四星":
-			recipes, note = filterRecipesByRarity(recipes, 4)
+			recipes, note = filterRecipesByRarity(recipes, 4, false)
 		case "仅5火", "仅5星", "仅五火", "仅五星":
-			recipes, note = filterRecipesByRarity(recipes, 5)
+			recipes, note = filterRecipesByRarity(recipes, 5, false)
 		case "炒技法", "烤技法", "煮技法", "蒸技法", "炸技法", "切技法":
 			recipes, note = filterRecipesBySkill(recipes, strings.TrimSuffix(arg, "技法"))
 		case "甜味", "酸味", "辣味", "咸味", "苦味", "鲜味":
 			recipes, note = filterRecipesByCondiment(recipes, strings.TrimSuffix(arg, "味"))
 		default:
-			if util.HasPrefixIn(arg, "食材", "材料") {
-				materials := strings.Split(arg, "-")
-				recipes, note = filterRecipesByMaterials(recipes, materials[1:])
-			} else if util.HasPrefixIn(arg, "技法") {
-				skills := strings.Split(arg, "-")
-				recipes, note = filterRecipesBySkills(recipes, skills[1:])
-			} else if util.HasPrefixIn(arg, "贵客", "稀有客人", "客人", "贵宾", "宾客", "稀客") {
-				guests := strings.Split(arg, "-")
+			if pre, has := util.WhatPrefixIn(arg, "食材", "材料"); has {
+				materials := strings.Split(strings.TrimLeft(arg, pre), "-")
+				recipes, note = filterRecipesByMaterials(recipes, materials)
+			} else if pre, has := util.WhatPrefixIn(arg, "技法"); has {
+				skills := strings.Split(strings.TrimLeft(arg, pre), "-")
+				recipes, note = filterRecipesBySkills(recipes, skills)
+			} else if pre, has := util.WhatPrefixIn(arg, "贵客", "稀有客人", "客人", "贵宾", "宾客", "稀客"); has {
+				guests := strings.Split(strings.TrimLeft(arg, pre), "-")
 				recipes, note = filterRecipesByGuests(recipes, guests[1:])
-			} else if util.HasPrefixIn(arg, "符文", "礼物") {
-				antiques := strings.Split(arg, "-")
+			} else if pre, has := util.WhatPrefixIn(arg, "符文", "礼物"); has {
+				antiques := strings.Split(strings.TrimLeft(arg, pre), "-")
 				if len(antiques) > 1 {
 					recipes, note = filterRecipesByAntique(recipes, antiques[1])
+				} else {
+					recipes, note = filterRecipesByAntique(recipes, antiques[0])
 				}
 			} else if util.HasPrefixIn(arg, "神级符文", "神级奖励") {
 				antiques := strings.Split(arg, "-")
@@ -104,7 +105,7 @@ func RecipeQuery(c *scheduler.Context) {
 					recipes, note = filterRecipesByPrice(recipes, num)
 				}
 			} else if util.HasPrefixIn(arg, "p", "P") {
-				pageNum, err := strconv.Atoi(arg[1:])
+				pageNum, err := strconv.Atoi(strings.Trim(arg[1:], "-"))
 				if err != nil {
 					note = "分页参数有误"
 				} else {
@@ -128,7 +129,7 @@ func RecipeQuery(c *scheduler.Context) {
 	// 对菜谱查询结果排序
 	recipes, note = orderRecipes(recipes, order)
 	if note != "" {
-		logger.Info("菜谱查询失败:", note)
+		logger.Info("菜谱排序失败:", note)
 		_, _ = c.Reply(note)
 		return
 	}
@@ -138,28 +139,14 @@ func RecipeQuery(c *scheduler.Context) {
 	_, _ = c.Reply(msg)
 }
 
-// 根据稀有度下限筛选菜谱
-func filterRecipesByLowerRarity(recipes []database.Recipe, rarity int) ([]database.Recipe, string) {
+// 根据具体稀有度筛选菜谱, gte 参数为 true 时筛选大于等于，否则筛选仅等于
+func filterRecipesByRarity(recipes []database.Recipe, rarity int, gte bool) ([]database.Recipe, string) {
 	if len(recipes) == 0 {
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
 	for i := range recipes {
-		if recipes[i].Rarity >= rarity {
-			result = append(result, recipes[i])
-		}
-	}
-	return result, ""
-}
-
-// 根据具体稀有度筛选菜谱
-func filterRecipesByRarity(recipes []database.Recipe, rarity int) ([]database.Recipe, string) {
-	if len(recipes) == 0 {
-		return recipes, ""
-	}
-	result := make([]database.Recipe, 0)
-	for i := range recipes {
-		if recipes[i].Rarity == rarity {
+		if (gte && recipes[i].Rarity >= rarity) || recipes[i].Rarity == rarity {
 			result = append(result, recipes[i])
 		}
 	}
@@ -168,74 +155,55 @@ func filterRecipesByRarity(recipes []database.Recipe, rarity int) ([]database.Re
 
 // 根据食材筛选菜谱
 func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]database.Recipe, string) {
-	if len(recipes) == 0 {
+	if len(recipes) == 0 || material == "" {
 		return recipes, ""
 	}
+	var origins []string
 	result := make([]database.Recipe, 0)
-	// 将所有菜谱信息存入recipeMap
-	recipeMap := make(map[string]database.Recipe)
-	for _, recipe := range recipes {
-		recipeMap[recipe.GalleryId] = recipe
-	}
-	// 根据食材名或食材类型找出对应的菜谱
-	dbMaterials := make([]database.Material, 0)
-	var materialOrigin []string
+	// 符合下列特征的关键词视为根据来源筛选食材
 	switch material {
 	case "鱼类", "水产", "水产类", "海鲜", "海鲜类", "池塘":
-		materialOrigin = []string{"池塘"}
+		origins = []string{"池塘"}
 	case "蔬菜", "蔬菜类", "菜类":
-		materialOrigin = []string{"菜棚", "菜地", "森林"}
+		origins = []string{"菜棚", "菜地", "森林"}
 	case "肉类":
-		materialOrigin = []string{"牧场", "鸡舍", "猪圈"}
+		origins = []string{"牧场", "鸡舍", "猪圈"}
 	case "面类", "加工类", "作坊":
-		materialOrigin = []string{"作坊"}
-	default:
-		materialOrigin = []string{}
+		origins = []string{"作坊"}
 	}
-	if len(materialOrigin) > 0 {
-		err := dao.DB.In("origin", materialOrigin).Find(&dbMaterials)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			return nil, e.SystemErrorNote
+	if len(origins) > 0 {
+		for i := range recipes {
+			if recipes[i].HasMaterialOrigins(origins) {
+				result = append(result, recipes[i])
+			}
 		}
 	} else {
-		err := dao.DB.Where("name like ?", "%"+material+"%").Find(&dbMaterials)
+		// 查出所有食材，假设存在完全匹配的则只使用该食材筛选。
+		materials, err := dao.SearchMaterialsWithName(material)
 		if err != nil {
-			logger.Error("查询数据库出错!", err)
+			logger.Error("根据名称搜索食材失败", err)
 			return nil, e.SystemErrorNote
 		}
-		if len(dbMaterials) == 0 {
+		if len(materials) == 0 {
 			return nil, fmt.Sprintf("厨师长说没有用%s做过菜", material)
 		}
-		if len(dbMaterials) > 1 {
-			for _, dbMaterial := range dbMaterials {
-				if dbMaterial.Name == material {
-					dbMaterials = []database.Material{dbMaterial}
+		if len(materials) > 1 {
+			for i := range materials {
+				if materials[i].Name == material {
+					materials = []database.Material{materials[i]}
 					break
 				}
 			}
 		}
-	}
-	// 找出符合食材要求的菜谱图鉴id
-	materialsId := make([]int, 0)
-	for _, dbMaterial := range dbMaterials {
-		materialsId = append(materialsId, dbMaterial.MaterialId)
-	}
-	recipeMaterials := make([]database.RecipeMaterial, 0)
-	err := dao.DB.In("material_id", materialsId).Find(&recipeMaterials)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		return nil, e.SystemErrorNote
-	}
-	// 从recipeMap中选出符合要求的菜
-	newRecipeMap := make(map[string]database.Recipe)
-	for _, recipeMaterial := range recipeMaterials {
-		if _, has := recipeMap[recipeMaterial.RecipeGalleryId]; has {
-			newRecipeMap[recipeMaterial.RecipeGalleryId] = recipeMap[recipeMaterial.RecipeGalleryId]
+		materialNames := make([]string, 0, len(materials))
+		for i := range materials {
+			materialNames = append(materialNames, materials[i].Name)
 		}
-	}
-	for k := range newRecipeMap {
-		result = append(result, newRecipeMap[k])
+		for i := range recipes {
+			if recipes[i].UsedMaterials(materialNames) {
+				result = append(result)
+			}
+		}
 	}
 	return result, ""
 }
@@ -243,27 +211,18 @@ func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]data
 // 根据食材列表筛选菜谱
 func filterRecipesByMaterials(recipes []database.Recipe, materials []string) ([]database.Recipe, string) {
 	if len(materials) == 0 {
-		return nil, "你想查什么食材呀"
+		return nil, "你想筛选什么食材呀? 食材参数格式为「食材-食材名」"
 	}
 	if len(recipes) == 0 {
 		return recipes, ""
 	}
 	result := recipes
 	var note string
-	materialCount := 0
 	for _, material := range materials {
-		if material == "" {
-			continue
-		} else {
-			result, note = filterRecipesByMaterial(result, material)
-			if note != "" {
-				return nil, note
-			}
-			materialCount++
+		result, note = filterRecipesByMaterial(result, material)
+		if note != "" {
+			return nil, note
 		}
-	}
-	if materialCount == 0 {
-		return nil, "你想查什么食材呀"
 	}
 
 	return result, ""
@@ -271,38 +230,16 @@ func filterRecipesByMaterials(recipes []database.Recipe, materials []string) ([]
 
 // 根据技法筛选菜谱
 func filterRecipesBySkill(recipes []database.Recipe, skill string) ([]database.Recipe, string) {
-	if len(recipes) == 0 {
+	if len(recipes) == 0 || skill == "" {
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
 	for _, recipe := range recipes {
-		switch skill {
-		case "炒":
-			if recipe.Stirfry > 0 {
-				result = append(result, recipe)
-			}
-		case "烤":
-			if recipe.Bake > 0 {
-				result = append(result, recipe)
-			}
-		case "煮":
-			if recipe.Boil > 0 {
-				result = append(result, recipe)
-			}
-		case "蒸":
-			if recipe.Steam > 0 {
-				result = append(result, recipe)
-			}
-		case "炸":
-			if recipe.Fry > 0 {
-				result = append(result, recipe)
-			}
-		case "切":
-			if recipe.Cut > 0 {
-				result = append(result, recipe)
-			}
-		default:
-			return nil, fmt.Sprintf("%s是什么技法呀", skill)
+		need, err := recipe.NeedSkill(skill)
+		if err != nil {
+			return nil, err.Error()
+		} else if need {
+			result = append(result, recipe)
 		}
 	}
 	return result, ""
@@ -311,14 +248,13 @@ func filterRecipesBySkill(recipes []database.Recipe, skill string) ([]database.R
 // 根据技法列表筛选菜谱
 func filterRecipesBySkills(recipes []database.Recipe, skills []string) ([]database.Recipe, string) {
 	if len(skills) == 0 {
-		return nil, "你想查什么技法呀"
+		return nil, "你想筛选什么技法呀? 技法参数格式为「技法-技法名」或「X技法」"
 	}
 	if len(recipes) == 0 {
 		return recipes, ""
 	}
 	result := recipes
 	var note string
-	skillCount := 0
 	for _, skill := range skills {
 		if skill == "" {
 			continue
@@ -327,45 +263,21 @@ func filterRecipesBySkills(recipes []database.Recipe, skills []string) ([]databa
 			if note != "" {
 				return nil, note
 			}
-			skillCount++
 		}
-	}
-	if skillCount == 0 {
-		return nil, "你想查什么技法呀"
 	}
 	return result, ""
 }
 
 // 根据贵客筛选菜谱
 func filterRecipeByGuest(recipes []database.Recipe, guest string) ([]database.Recipe, string) {
-	if len(recipes) == 0 {
+	if len(recipes) == 0 || guest == "" {
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
-	// 将所有recipe存入map
-	recipeMap := make(map[string]database.Recipe)
-	for _, recipe := range recipes {
-		recipeMap[recipe.Name] = recipe
-	}
-	// 根据贵客名找出对应的菜谱
-	guestGifts := make([]database.GuestGift, 0)
-	err := dao.DB.Where("guest_name like ?", "%"+guest+"%").Find(&guestGifts)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		return nil, e.SystemErrorNote
-	}
-	if len(guestGifts) == 0 {
-		return nil, fmt.Sprintf("%s是什么神秘贵客呀", guest)
-	}
-	// 将符合条件的菜谱存入新map
-	newRecipeMap := make(map[string]database.Recipe)
-	for _, guestGift := range guestGifts {
-		if _, has := recipeMap[guestGift.Recipe]; has {
-			newRecipeMap[guestGift.Recipe] = recipeMap[guestGift.Recipe]
+	for i := range recipes {
+		if recipes[i].HasGuest(guest) {
+			result = append(result, recipes[i])
 		}
-	}
-	for k := range newRecipeMap {
-		result = append(result, newRecipeMap[k])
 	}
 	return result, ""
 }
@@ -373,24 +285,15 @@ func filterRecipeByGuest(recipes []database.Recipe, guest string) ([]database.Re
 // 根据贵客列表查询菜谱
 func filterRecipesByGuests(recipes []database.Recipe, guests []string) ([]database.Recipe, string) {
 	if len(guests) == 0 {
-		return nil, "你想查询哪位贵客呀"
+		return nil, "你想筛选哪位贵客呀? 贵客参数格式为「贵客-贵客名」"
 	}
 	result := recipes
 	var note string
-	guestCount := 0
 	for _, guest := range guests {
-		if guest == "" {
-			continue
-		} else {
-			result, note = filterRecipeByGuest(result, guest)
-			if note != "" {
-				return nil, note
-			}
-			guestCount++
+		result, note = filterRecipeByGuest(result, guest)
+		if note != "" {
+			return nil, note
 		}
-	}
-	if guestCount == 0 {
-		return nil, "你想查询哪位贵客呀"
 	}
 
 	return result, ""
@@ -402,45 +305,24 @@ func filterRecipesByAntique(recipes []database.Recipe, antique string) ([]databa
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
-	// 将所有recipe存入map
-	recipeMap := make(map[string]database.Recipe)
-	for _, recipe := range recipes {
-		recipeMap[recipe.Name] = recipe
-	}
-	// 根据符文礼物名找出对应的菜谱
-	guestGifts := make([]database.GuestGift, 0)
-	err := dao.DB.Where("antique like ?", "%"+antique+"%").Find(&guestGifts)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		return nil, e.SystemErrorNote
-	}
-	if len(guestGifts) == 0 {
-		return nil, fmt.Sprintf("%s是什么神秘符文呀", antique)
-	}
-	// 将符合条件的recipe存入新map
-	newRecipeMap := make(map[string]database.Recipe)
-	for _, guestGift := range guestGifts {
-		if _, has := recipeMap[guestGift.Recipe]; has {
-			newRecipeMap[guestGift.Recipe] = recipeMap[guestGift.Recipe]
+	for i := range recipes {
+		if recipes[i].HasAntique(antique) {
+			result = append(result, recipes[i])
 		}
-	}
-	for k := range newRecipeMap {
-		result = append(result, newRecipeMap[k])
 	}
 	return result, ""
 }
 
 // 根据菜谱神级符文查询菜谱
 func filterRecipesByUpgradeAntique(recipes []database.Recipe, antique string) ([]database.Recipe, string) {
-	if len(recipes) == 0 {
+	if len(recipes) == 0 || antique == "" {
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
-	pattern := ".*" + strings.ReplaceAll(antique, "%", ".*") + ".*"
+	pattern := strings.ReplaceAll(antique, "%", ".*")
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		logger.Error("查询正则格式有误", err)
-		return nil, "查询格式有误"
+		return nil, "神级符文查询格式有误"
 	}
 	for i := range recipes {
 		if re.MatchString(recipes[i].Gift) {
@@ -456,11 +338,10 @@ func filterRecipesByOrigin(recipes []database.Recipe, origin string) ([]database
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
-	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
+	pattern := strings.ReplaceAll(origin, "%", ".*")
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		logger.Error("查询正则格式有误", err)
-		return nil, "查询格式有误"
+		return nil, "菜谱来源查询格式有误"
 	}
 	for i := range recipes {
 		if re.MatchString(recipes[i].Origin) {
@@ -472,7 +353,7 @@ func filterRecipesByOrigin(recipes []database.Recipe, origin string) ([]database
 
 // 根据调料筛选菜谱
 func filterRecipesByCondiment(recipes []database.Recipe, condiment string) ([]database.Recipe, string) {
-	if len(recipes) == 0 {
+	if len(recipes) == 0 || condiment == "" {
 		return recipes, ""
 	}
 	result := make([]database.Recipe, 0)
@@ -490,7 +371,7 @@ func filterRecipesByCondiment(recipes []database.Recipe, condiment string) ([]da
 	case "鲜":
 		condiment = "Tasty"
 	default:
-		return nil, fmt.Sprintf("%s是啥味道呀", condiment)
+		return nil, fmt.Sprintf("%s是什么味道呀", condiment)
 	}
 	for i := range recipes {
 		if recipes[i].Condiment == condiment {
@@ -505,10 +386,9 @@ func filterRecipesByName(recipes []database.Recipe, name string) ([]database.Rec
 	result := make([]database.Recipe, 0)
 	numId, err := strconv.Atoi(name)
 	if err != nil {
-		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
+		pattern := strings.ReplaceAll(name, "%", ".*")
 		re, err := regexp.Compile(pattern)
 		if err != nil {
-			logger.Error("查询正则格式有误", err)
 			return nil, "查询格式有误"
 		}
 		for i := range recipes {
@@ -520,9 +400,8 @@ func filterRecipesByName(recipes []database.Recipe, name string) ([]database.Rec
 			}
 		}
 	} else {
-		galleryId := fmt.Sprintf("%03d", numId)
 		for i := range recipes {
-			if recipes[i].GalleryId == galleryId {
+			if recipes[i].RecipeId == numId {
 				result = append(result, recipes[i])
 			}
 		}
@@ -541,23 +420,6 @@ func filterRecipesByPrice(recipes []database.Recipe, price int) ([]database.Reci
 	return result, ""
 }
 
-type recipeWrapper struct {
-	recipe     []database.Recipe
-	recipeLess func(p *database.Recipe, q *database.Recipe) bool
-}
-
-func (w recipeWrapper) Len() int {
-	return len(w.recipe)
-}
-
-func (w recipeWrapper) Swap(i int, j int) {
-	w.recipe[i], w.recipe[j] = w.recipe[j], w.recipe[i]
-}
-
-func (w recipeWrapper) Less(i int, j int) bool {
-	return w.recipeLess(&w.recipe[i], &w.recipe[j])
-}
-
 // 根据排序参数排序菜谱
 func orderRecipes(recipes []database.Recipe, order string) ([]database.Recipe, string) {
 	if len(recipes) == 0 {
@@ -565,57 +427,39 @@ func orderRecipes(recipes []database.Recipe, order string) ([]database.Recipe, s
 	}
 	switch order {
 	case "图鉴序":
-		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			return m.RecipeId < n.RecipeId
-		}})
+		sort.Slice(recipes, func(i, j int) bool {
+			return recipes[i].RecipeId < recipes[j].RecipeId
+		})
 	case "单时间":
-		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			if m.Time == n.Time {
-				return m.RecipeId < n.RecipeId
-			} else {
-				return m.Time < n.Time
-			}
-		}})
+		sort.Slice(recipes, func(i, j int) bool {
+			return recipes[i].Time == recipes[j].Time && recipes[i].RecipeId < recipes[j].RecipeId ||
+				recipes[i].Time < recipes[j].Time
+		})
 	case "总时间":
-		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			if m.TotalTime == n.TotalTime {
-				return m.RecipeId < n.RecipeId
-			} else {
-				return m.TotalTime < n.TotalTime
-			}
-		}})
+		sort.Slice(recipes, func(i, j int) bool {
+			return recipes[i].TotalTime == recipes[j].TotalTime && recipes[i].RecipeId < recipes[j].RecipeId ||
+				recipes[i].TotalTime < recipes[j].TotalTime
+		})
 	case "单价", "售价":
-		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			if m.Price == n.Price {
-				return m.RecipeId < n.RecipeId
-			} else {
-				return m.Price > n.Price
-			}
-		}})
+		sort.Slice(recipes, func(i, j int) bool {
+			return recipes[i].Price == recipes[j].Price && recipes[i].RecipeId < recipes[j].RecipeId ||
+				recipes[i].Price > recipes[j].Price
+		})
 	case "金币效率":
-		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			if m.GoldEfficiency == n.GoldEfficiency {
-				return m.GalleryId < n.GalleryId
-			} else {
-				return m.GoldEfficiency > n.GoldEfficiency
-			}
-		}})
+		sort.Slice(recipes, func(i, j int) bool {
+			return recipes[i].GoldEfficiency == recipes[j].GoldEfficiency && recipes[i].RecipeId < recipes[j].RecipeId ||
+				recipes[i].GoldEfficiency > recipes[j].GoldEfficiency
+		})
 	case "耗材效率":
-		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			if m.MaterialEfficiency == n.MaterialEfficiency {
-				return m.GalleryId < n.GalleryId
-			} else {
-				return m.MaterialEfficiency > n.MaterialEfficiency
-			}
-		}})
+		sort.Slice(recipes, func(i, j int) bool {
+			return recipes[i].MaterialEfficiency == recipes[j].MaterialEfficiency && recipes[i].RecipeId < recipes[j].RecipeId ||
+				recipes[i].MaterialEfficiency > recipes[j].MaterialEfficiency
+		})
 	case "稀有度":
-		sort.Sort(recipeWrapper{recipes, func(m, n *database.Recipe) bool {
-			if m.Rarity == n.Rarity {
-				return m.GalleryId < n.GalleryId
-			} else {
-				return m.Rarity > n.Rarity
-			}
-		}})
+		sort.Slice(recipes, func(i, j int) bool {
+			return recipes[i].Rarity == recipes[j].Rarity && recipes[i].RecipeId < recipes[j].RecipeId ||
+				recipes[i].Rarity > recipes[j].Rarity
+		})
 	default:
 		return nil, "排序参数有误"
 	}
@@ -888,8 +732,7 @@ func GenerateRecipeImage(recipe database.RecipeData, font *truetype.Font, bgImg 
 	// 输出食材
 	materials := make([]string, len(recipe.Materials))
 	for i, material := range recipe.Materials {
-		materials[i] = fmt.Sprintf("%s*%d", material.MaterialName, material.Quantity)
-
+		materials[i] = fmt.Sprintf("%s*%d", material.Material.Name, material.Quantity)
 	}
 	_, err = c.DrawString(fmt.Sprintf("%s", strings.Join(materials, " ")), freetype.Pt(170, 388+fontSize))
 	if err != nil {
@@ -1013,18 +856,6 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 		mCondimentImages[condiment] = img
 	}
 
-	// 载入菜谱和贵客礼物的关联关系
-	mRecipeGifts, err := dao.GetRecipeGuestGiftsMap()
-	if err != nil {
-		return fmt.Errorf("载入菜谱贵客礼物数据失败 %v", err)
-	}
-
-	// 载入菜谱食材关联关系
-	mRecipeMaterials, err := dao.GetRecipeMaterialsMap()
-	if err != nil {
-		return fmt.Errorf("载入菜谱食材数据失败 %v", err)
-	}
-
 	for _, recipe := range recipes {
 		// 载入与计算菜谱信息
 		recipeImgInfo := imgCSS.RecipeImg[recipe.RecipeId]
@@ -1051,11 +882,9 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 		}
 
 		recipeData := database.RecipeData{
-			Recipe:     recipe,
-			Avatar:     avatar,
-			Skills:     skills,
-			GuestGifts: mRecipeGifts[recipe.Name],
-			Materials:  mRecipeMaterials[recipe.GalleryId],
+			Recipe: recipe,
+			Avatar: avatar,
+			Skills: skills,
 		}
 
 		img, err := GenerateRecipeImage(recipeData, font, bgImg, mRarityImages[recipe.Rarity], mCondimentImages[strings.ToLower(recipe.Condiment)])

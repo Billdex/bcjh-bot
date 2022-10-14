@@ -7,7 +7,7 @@ type RecipeMaterial struct {
 	Quantity        int    `xorm:"quantity"`    // 数量
 	Efficiency      int    `xorm:"efficiency"`  // 食材效率
 
-	MaterialName string `xorm:"-"` // 食材名称，查询的时候用
+	Material Material `xorm:"-"` // 关联到具体食材数据
 }
 
 func (RecipeMaterial) TableName() string {

@@ -29,14 +29,14 @@ func ChefQuery(c *scheduler.Context) {
 	var note string
 	chefs, err := dao.FindAllChefs()
 	if err != nil {
-		logger.Error("查询数据库出错!", err)
+		logger.Error("查询厨师数据出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 	}
 	args := strings.Split(c.PretreatedMessage, " ")
 	for _, arg := range args {
 		switch arg {
 		case "图鉴序", "稀有度":
-			chefs, note = orderChefs(chefs, arg)
+			order = arg
 		case "1火", "1星", "一火", "一星":
 			chefs, note = filterChefsByRarity(chefs, 1)
 		case "2火", "2星", "二火", "二星", "两火", "两星":
@@ -59,7 +59,7 @@ func ChefQuery(c *scheduler.Context) {
 					chefs, note = filterChefsBySkill(chefs, strings.Join(skill[1:], "-"))
 				}
 			} else if util.HasPrefixIn(arg, "p", "P") {
-				pageNum, err := strconv.Atoi(strings.Trim(args[1][1:], "-"))
+				pageNum, err := strconv.Atoi(strings.Trim(arg[1:], "-"))
 				if err != nil {
 					note = "分页参数有误"
 				} else {
@@ -76,6 +76,14 @@ func ChefQuery(c *scheduler.Context) {
 			_, _ = c.Reply(note)
 			return
 		}
+	}
+
+	// 对菜谱查询结果排序
+	chefs, note = orderChefs(chefs, order)
+	if note != "" {
+		logger.Info("厨师排序失败:", note)
+		_, _ = c.Reply(note)
+		return
 	}
 
 	// 根据查询结果分页并发送消息
@@ -250,7 +258,7 @@ func echoChefMessage(chef database.Chef) string {
 // 根据来源和排序参数，输出厨师列表消息数据
 func echoChefsMessage(chefs []database.Chef, order string, page int, private bool) string {
 	if len(chefs) == 0 {
-		return "咦? 似乎查无此厨呢!"
+		return "诶? 似乎查无此厨哦!"
 	} else if len(chefs) == 1 {
 		return echoChefMessage(chefs[0])
 	} else {

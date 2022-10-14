@@ -20,6 +20,7 @@ func MustAdmin(c *scheduler.Context) {
 		if ok, _ := dao.GetBotState(c.GetBot().BotId, event.GroupId); ok {
 			_, _ = c.Reply(e.PermissionDeniedNote)
 		}
+		c.SetWarnMessage("用户没有管理员权限")
 		c.Abort()
 		return
 	}
@@ -34,6 +35,7 @@ func MustSuperAdmin(c *scheduler.Context) {
 				_, _ = c.Reply(e.PermissionDeniedNote)
 			}
 		}
+		c.SetWarnMessage("用户没有超管权限")
 		c.Abort()
 	}
 }
