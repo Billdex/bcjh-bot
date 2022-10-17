@@ -200,10 +200,8 @@ func orderChefs(chefs []database.Chef, order string) ([]database.Chef, string) {
 		})
 	case "稀有度":
 		sort.Slice(chefs, func(i, j int) bool {
-			if chefs[i].Rarity == chefs[j].Rarity {
-				return chefs[i].ChefId < chefs[j].ChefId
-			}
-			return chefs[i].Rarity > chefs[j].Rarity
+			return chefs[i].Rarity == chefs[j].Rarity && chefs[i].ChefId < chefs[j].ChefId ||
+				chefs[i].Rarity > chefs[j].Rarity
 		})
 	default:
 		return nil, "排序参数有误"

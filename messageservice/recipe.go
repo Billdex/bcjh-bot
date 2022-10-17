@@ -480,11 +480,6 @@ func echoRecipeMessage(recipe database.Recipe) string {
 			logger.Debugf("无法确定文件是否存在!", err)
 		}
 		logger.Info("未找到菜谱图鉴图片, 以文字格式发送数据")
-		// 稀有度数据
-		rarity := ""
-		for i := 0; i < recipe.Rarity; i++ {
-			rarity += "🔥"
-		}
 		// 菜谱所需技法数据
 		recipeSkill := ""
 		if recipe.Stirfry > 0 {
@@ -532,7 +527,7 @@ func echoRecipeMessage(recipe database.Recipe) string {
 		} else {
 			guests += fmt.Sprintf("神-未知")
 		}
-		msg += fmt.Sprintf("%s %s %s\n", recipe.GalleryId, recipe.Name, rarity)
+		msg += fmt.Sprintf("%s %s %s\n", recipe.GalleryId, recipe.Name, recipe.FormatRarity())
 		msg += fmt.Sprintf("💰: %d(%d) --- %d/h\n", recipe.Price, recipe.Price+recipe.ExPrice, recipe.GoldEfficiency)
 		msg += fmt.Sprintf("来源: %s\n", recipe.Origin)
 		msg += fmt.Sprintf("单时间: %s\n", util.FormatSecondToString(recipe.Time))
@@ -552,13 +547,10 @@ func echoRecipeMessage(recipe database.Recipe) string {
 // 根据排序规则与分页参数，返回菜谱列表消息数据
 func echoRecipesMessage(recipes []database.Recipe, order string, page int, private bool) string {
 	if len(recipes) == 0 {
-		logger.Debug("未查询到菜谱")
 		return "本店没有相关的菜呢!"
 	} else if len(recipes) == 1 {
-		logger.Debug("查询到一个菜谱")
 		return echoRecipeMessage(recipes[0])
 	} else {
-		logger.Debug("查询到多个菜谱")
 		var msg string
 		listLength := config.AppConfig.Bot.GroupMsgMaxLen
 		if private {
@@ -569,9 +561,9 @@ func echoRecipesMessage(recipes []database.Recipe, order string, page int, priva
 			page = maxPage
 		}
 		if len(recipes) > listLength {
-			msg += fmt.Sprintf("这里有你想点的菜吗: (%d/%d)\n", page, maxPage)
+			msg += fmt.Sprintf("这里有你想点的菜吗 (%d/%d)\n", page, maxPage)
 		} else {
-			msg += "这里有你想点的菜吗:\n"
+			msg += "这里有你想点的菜吗\n"
 		}
 		for i := (page - 1) * listLength; i < page*listLength && i < len(recipes); i++ {
 			orderInfo := getRecipeInfoWithOrder(recipes[i], order)
@@ -601,11 +593,7 @@ func getRecipeInfoWithOrder(recipe database.Recipe, order string) string {
 	case "耗材效率":
 		return fmt.Sprintf("🥗%d/h", recipe.MaterialEfficiency)
 	case "稀有度":
-		msg := ""
-		for i := 0; i < recipe.Rarity; i++ {
-			msg += "🔥"
-		}
-		return msg
+		return recipe.FormatRarity()
 	default:
 		return ""
 	}

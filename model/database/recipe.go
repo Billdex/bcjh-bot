@@ -52,6 +52,11 @@ func (recipe Recipe) GetSkillValueMap() map[string]int {
 	return m
 }
 
+// FormatRarity 格式化菜谱稀有度
+func (recipe Recipe) FormatRarity() string {
+	return strings.Repeat("🔥", recipe.Rarity)
+}
+
 // NeedSkill 判断菜谱是否需要某个技法
 func (recipe Recipe) NeedSkill(skill string) (bool, error) {
 	switch skill {

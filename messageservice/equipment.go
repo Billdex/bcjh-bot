@@ -27,8 +27,7 @@ func EquipmentQuery(c *scheduler.Context) {
 	order := "稀有度"
 	page := 1
 	var note string
-	equips := make([]database.Equip, 0)
-	err := dao.DB.Find(&equips)
+	equips, err := dao.FindAllEquips()
 	if err != nil {
 		logger.Error("查询数据库出错!", err)
 		_, _ = c.Reply(e.SystemErrorNote)
@@ -91,7 +90,7 @@ func filterEquipsByName(equips []database.Equip, name string) ([]database.Equip,
 	result := make([]database.Equip, 0)
 	numId, err := strconv.Atoi(name)
 	if err != nil {
-		pattern := ".*" + strings.ReplaceAll(name, "%", ".*") + ".*"
+		pattern := strings.ReplaceAll(name, "%", ".*")
 		re, err := regexp.Compile(pattern)
 		if err != nil {
 			logger.Error("查询正则格式有误", err)
@@ -122,7 +121,7 @@ func filterEquipsByOrigin(equips []database.Equip, origin string) ([]database.Eq
 		return equips, ""
 	}
 	result := make([]database.Equip, 0)
-	pattern := ".*" + strings.ReplaceAll(origin, "%", ".*") + ".*"
+	pattern := strings.ReplaceAll(origin, "%", ".*")
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		logger.Error("查询正则格式有误", err)
@@ -140,21 +139,13 @@ func filterEquipsByOrigin(equips []database.Equip, origin string) ([]database.Eq
 func filterEquipsBySkill(equips []database.Equip, skill string) ([]database.Equip, string) {
 	// 处理某些技能关键词
 	if s, has := util.WhatPrefixIn(skill, "贵客", "贵宾", "客人", "宾客", "稀客"); has {
-		skill = "稀有客人" + "%" + strings.ReplaceAll(skill, s, "")
+		skill = "稀有客人" + strings.ReplaceAll(skill, s, "")
 	}
+
 	result := make([]database.Equip, 0)
-	skills := make(map[int]database.Skill)
-	err := dao.DB.Where("description like ?", "%"+skill+"%").Find(&skills)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		return result, e.SystemErrorNote
-	}
 	for i := range equips {
-		for _, skillId := range equips[i].Skills {
-			if _, ok := skills[skillId]; ok {
-				result = append(result, equips[i])
-				break
-			}
+		if equips[i].HasSkill(skill) {
+			result = append(result, equips[i])
 		}
 	}
 	return result, ""
@@ -184,17 +175,14 @@ func orderEquips(equips []database.Equip, order string) ([]database.Equip, strin
 	}
 	switch order {
 	case "图鉴序":
-		sort.Sort(equipWrapper{equips, func(m, n *database.Equip) bool {
-			return m.EquipId < n.EquipId
-		}})
+		sort.Slice(equips, func(i, j int) bool {
+			return equips[i].EquipId < equips[j].EquipId
+		})
 	case "稀有度":
-		sort.Sort(equipWrapper{equips, func(m, n *database.Equip) bool {
-			if m.Rarity == n.Rarity {
-				return m.EquipId < n.EquipId
-			} else {
-				return m.Rarity > n.Rarity
-			}
-		}})
+		sort.Slice(equips, func(i, j int) bool {
+			return equips[i].Rarity == equips[j].Rarity && equips[i].EquipId < equips[j].EquipId ||
+				equips[i].Rarity > equips[j].Rarity
+		})
 	default:
 		return nil, "排序参数有误"
 	}
@@ -205,17 +193,9 @@ func orderEquips(equips []database.Equip, order string) ([]database.Equip, strin
 func getEquipInfoWithOrder(equip database.Equip, order string) string {
 	switch order {
 	case "图鉴序":
-		msg := ""
-		for i := 0; i < equip.Rarity; i++ {
-			msg += "🔥"
-		}
-		return msg
+		return equip.FormatRarity()
 	case "稀有度":
-		msg := ""
-		for i := 0; i < equip.Rarity; i++ {
-			msg += "🔥"
-		}
-		return msg
+		return equip.FormatRarity()
 	default:
 		return ""
 	}
@@ -270,29 +250,10 @@ func echoEquipMessage(equip database.Equip) string {
 		if err != nil {
 			logger.Debugf("无法确定文件是否存在, 返回文字数据", err)
 		}
-		rarity := ""
-		for i := 0; i < equip.Rarity; i++ {
-			rarity += "🔥"
-		}
-		skills := ""
-		for p, skillId := range equip.Skills {
-			skill := new(database.Skill)
-			has, err := dao.DB.Where("skill_id = ?", skillId).Get(skill)
-			if err != nil {
-				logger.Error("查询数据库出错!", err)
-				return e.SystemErrorNote
-			}
-			if has {
-				skills += skill.Description
-				if p != len(equip.Skills)-1 {
-					skills += ","
-				}
-			}
-		}
 		msg += fmt.Sprintf("%s %s\n", equip.GalleryId, equip.Name)
-		msg += fmt.Sprintf("%s\n", rarity)
+		msg += fmt.Sprintf("%s\n", equip.FormatRarity())
 		msg += fmt.Sprintf("来源: %s\n", equip.Origin)
-		msg += fmt.Sprintf("效果: %s", skills)
+		msg += fmt.Sprintf("效果: %s", strings.Join(equip.SkillDescs, ","))
 	}
 	return msg
 }
