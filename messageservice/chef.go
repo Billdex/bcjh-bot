@@ -133,6 +133,9 @@ func filterChefsByOrigin(chefs []database.Chef, origin string) ([]database.Chef,
 
 // 根据厨师技能筛选厨师
 func filterChefsBySkill(chefs []database.Chef, skill string) ([]database.Chef, string) {
+	if skill == "" {
+		return nil, "你想筛选什么技能呀? 贵客参数格式为「贵客-贵客名」"
+	}
 	// 处理某些技能关键词
 	if s, has := util.WhatPrefixIn(skill, "炒光环", "烤光环", "煮光环", "蒸光环", "炸光环", "切光环", "光环"); has {
 		skill = "场上所有厨师" + strings.ReplaceAll(s, "光环", "")
@@ -143,16 +146,14 @@ func filterChefsBySkill(chefs []database.Chef, skill string) ([]database.Chef, s
 	if strings.HasPrefix(skill, "采集") {
 		skill = "探索" + strings.TrimLeft(skill, "采集")
 	}
-	result := make([]database.Chef, 0)
-	skills, err := dao.SearchSkillsMapWithDescription(skill)
+	pattern := strings.ReplaceAll(skill, "%", ".*")
+	re, err := regexp.Compile(pattern)
 	if err != nil {
-		logger.Error("搜索技能数据失败!", err)
-		return result, err.Error()
+		return nil, fmt.Sprintf("技能描述格式有误 %v", err)
 	}
+	result := make([]database.Chef, 0)
 	for i := range chefs {
-		_, ok1 := skills[chefs[i].SkillId]
-		_, ok2 := skills[chefs[i].UltimateSkill]
-		if ok1 || ok2 {
+		if re.MatchString(chefs[i].SkillDesc) || re.MatchString(chefs[i].UltimateSkillDesc) {
 			result = append(result, chefs[i])
 		}
 	}
@@ -418,7 +419,7 @@ func GenerateChefImage(chef database.ChefData, font *truetype.Font, bgImg image.
 	}
 
 	// 输出技能数据
-	_, err = c.DrawString(fmt.Sprintf("%s", chef.Skill), freetype.Pt(150, 435+fontSize))
+	_, err = c.DrawString(fmt.Sprintf("%s", chef.SkillDesc), freetype.Pt(150, 435+fontSize))
 	if err != nil {
 		return nil, err
 	}
@@ -491,12 +492,6 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 		mRarityImages[rarity] = img
 	}
 
-	// 载入技能数据
-	mSkills, err := dao.GetSkillsMap()
-	if err != nil {
-		return fmt.Errorf("载入技能数据出错 %v", err)
-	}
-
 	// 载入任务数据
 	mQuests, err := dao.GetQuestsMap()
 	if err != nil {
@@ -522,9 +517,7 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 		chefData := database.ChefData{
 			Chef:          chef,
 			Avatar:        avatar,
-			Skill:         mSkills[chef.SkillId].Description,
 			UltimateGoals: goals,
-			UltimateSkill: mSkills[chef.UltimateSkill].Description,
 		}
 		// 绘制厨师图片
 		img, err := GenerateChefImage(chefData, font, mBgImages[chefData.GetCondimentType()], mGenderImages[chefData.Gender], mRarityImages[chefData.Rarity])
