@@ -201,7 +201,7 @@ func filterRecipesByMaterial(recipes []database.Recipe, material string) ([]data
 		}
 		for i := range recipes {
 			if recipes[i].UsedMaterials(materialNames) {
-				result = append(result)
+				result = append(result, recipes[i])
 			}
 		}
 	}
@@ -506,39 +506,14 @@ func echoRecipeMessage(recipe database.Recipe) string {
 			recipeSkill += fmt.Sprintf("切: %d  ", recipe.Cut)
 		}
 		// 食材数据
-		materials := ""
-		recipeMaterials := make([]database.RecipeMaterial, 0)
-		err := dao.DB.Where("recipe_id = ?", recipe.GalleryId).Find(&recipeMaterials)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			return e.SystemErrorNote
-		}
-		for _, recipeMaterial := range recipeMaterials {
-			material := new(database.Material)
-			has, err := dao.DB.Where("material_id = ?", recipeMaterial.MaterialId).Get(material)
-			if err != nil {
-				logger.Error("查询数据库出错!", err)
-				return e.SystemErrorNote
-			}
-			if !has {
-				logger.Warnf("菜谱%d数据缺失", recipeMaterial.MaterialId)
-			} else {
-				materials += fmt.Sprintf("%s*%d ", material.Name, recipeMaterial.Quantity)
-			}
+		materials := make([]string, 0, len(recipe.Materials))
+		for _, material := range recipe.Materials {
+			materials = append(materials, fmt.Sprintf("%s*%d", material.Material.Name, material.Quantity))
 		}
 		// 贵客礼物数据
-		giftInfo := ""
-		guestGifts := make([]database.GuestGift, 0)
-		err = dao.DB.Where("recipe = ?", recipe.Name).Find(&guestGifts)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			return e.SystemErrorNote
-		}
-		for _, gift := range guestGifts {
-			if giftInfo != "" {
-				giftInfo += ", "
-			}
-			giftInfo += fmt.Sprintf("%s-%s", gift.GuestName, gift.Antique)
+		giftInfo := make([]string, 0, len(recipe.GuestGifts))
+		for _, guestGift := range recipe.GuestGifts {
+			giftInfo = append(giftInfo, fmt.Sprintf("%s-%s", guestGift.GuestName, guestGift.Antique))
 		}
 		// 升阶贵客数据
 		guests := ""
@@ -563,7 +538,7 @@ func echoRecipeMessage(recipe database.Recipe) string {
 		msg += fmt.Sprintf("单时间: %s\n", util.FormatSecondToString(recipe.Time))
 		msg += fmt.Sprintf("总时间: %s (%d份)\n", util.FormatSecondToString(recipe.Time*recipe.Limit), recipe.Limit)
 		msg += fmt.Sprintf("技法: %s\n", recipeSkill)
-		msg += fmt.Sprintf("食材: %s\n", materials)
+		msg += fmt.Sprintf("食材: %s\n", strings.Join(materials, ","))
 		msg += fmt.Sprintf("耗材效率: %d/h\n", recipe.MaterialEfficiency)
 		msg += fmt.Sprintf("可解锁: %s\n", recipe.Unlock)
 		msg += fmt.Sprintf("可合成: %s\n", strings.Join(recipe.Combo, ","))
