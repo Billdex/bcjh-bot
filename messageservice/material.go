@@ -5,7 +5,7 @@ import (
 	"bcjh-bot/dao"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
-	onebot2 "bcjh-bot/scheduler/onebot"
+	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
@@ -20,7 +20,7 @@ func MaterialQuery(c *scheduler.Context) {
 		if strings.HasPrefix(args[1], "p") || strings.HasPrefix(args[1], "P") {
 			num, err := strconv.Atoi(args[1][1:])
 			if err != nil {
-				logger.Error("字符串转int失败!", err)
+				_, _ = c.Reply("分页参数错误")
 			} else {
 				if num < 1 {
 					num = 1
@@ -30,18 +30,16 @@ func MaterialQuery(c *scheduler.Context) {
 		}
 	}
 
-	materials := make([]database.Material, 0)
-	err := dao.DB.Where("name like ?", "%"+args[0]+"%").Find(&materials)
+	// 查出所有食材，假设存在完全匹配的则只使用该食材筛选。
+	materials, err := dao.SearchMaterialsWithName(args[0])
 	if err != nil {
-		logger.Error("数据库查询出错!")
+		logger.Error("根据名称搜索食材失败", err)
 		_, _ = c.Reply(e.SystemErrorNote)
-		return
 	}
 	if len(materials) == 0 {
-		_, _ = c.Reply(fmt.Sprintf("没有找到叫%s的食材", args[0]))
-		return
+		_, _ = c.Reply(fmt.Sprintf("%s是什么食材呀", args[0]))
 	}
-	// 匹配大于1个时，如果有完全匹配的则直接使用该食材
+	// 查询到多个食材时检查是否有完整匹配的，有则直接按照原值筛选菜谱，没有则返回食材列表
 	if len(materials) > 1 {
 		match := false
 		var msg string
@@ -58,37 +56,21 @@ func MaterialQuery(c *scheduler.Context) {
 			return
 		}
 	}
-
-	recipeMaterials := make([]database.RecipeMaterial, 0)
-	err = dao.DB.Where("material_id = ?", materials[0].MaterialId).Find(&recipeMaterials)
+	// 查出所有菜谱，根据菜谱数据取结果
+	allRecipes, err := dao.FindAllRecipes()
 	if err != nil {
-		logger.Error("数据库查询出错!")
+		logger.Error("查询菜谱数据失败", err)
 		_, _ = c.Reply(e.SystemErrorNote)
-		return
 	}
-	if len(recipeMaterials) == 0 {
-		_, _ = c.Reply(fmt.Sprintf("没有使用%s的菜谱哦~", args[0]))
-		return
-	}
-
-	recipeMaterialMap := make(map[string]int)
-	recipeGalleryIds := make([]string, 0)
-	for _, recipeMaterial := range recipeMaterials {
-		recipeGalleryIds = append(recipeGalleryIds, recipeMaterial.RecipeGalleryId)
-		recipeMaterialMap[recipeMaterial.RecipeGalleryId] = recipeMaterial.Efficiency
-	}
-
-	// 根据查出的信息查询菜谱信息
 	recipes := make([]database.Recipe, 0)
-	err = dao.DB.In("gallery_id", recipeGalleryIds).Find(&recipes)
-	if err != nil {
-		logger.Error("数据库查询出错!")
-		_, _ = c.Reply(e.SystemErrorNote)
-		return
-	}
-
-	for i := range recipes {
-		recipes[i].MaterialEfficiency = recipeMaterialMap[recipes[i].GalleryId]
+	for _, recipe := range allRecipes {
+		for i := range recipe.Materials {
+			if recipe.Materials[i].Material.Name == args[0] {
+				recipe.MaterialEfficiency = recipe.Materials[i].Efficiency
+				recipes = append(recipes, recipe)
+				break
+			}
+		}
 	}
 
 	var note string
@@ -101,7 +83,7 @@ func MaterialQuery(c *scheduler.Context) {
 	// 处理消息
 	var msg string
 	listLength := config.AppConfig.Bot.GroupMsgMaxLen
-	if c.GetMessageType() == onebot2.MessageTypePrivate {
+	if c.GetMessageType() == onebot.MessageTypePrivate {
 		listLength = config.AppConfig.Bot.PrivateMsgMaxLen
 	}
 	maxPage := (len(recipes)-1)/listLength + 1
@@ -123,6 +105,5 @@ func MaterialQuery(c *scheduler.Context) {
 	if page < maxPage {
 		msg += "\n......"
 	}
-	logger.Info("发送食材效率查询结果:", msg)
 	_, _ = c.Reply(msg)
 }
