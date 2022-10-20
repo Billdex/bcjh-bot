@@ -10,6 +10,7 @@ import (
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -32,99 +33,74 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 		}
 	}
 
-	guests := make([]database.GuestGift, 0)
-	numId, err := strconv.Atoi(args[0])
-	if err == nil {
-		guestId := fmt.Sprintf("%03d", numId)
-		err := dao.DB.Where("guest_id = ?", guestId).Find(&guests)
+	re, err := regexp.Compile(strings.ReplaceAll(args[0], "%", ".*"))
+	if err != nil {
+		_, _ = c.Reply("查询格式有误")
+		return
+	}
+	guestGifts, err := dao.FindAllGuestGifts()
+	if err != nil {
+		logger.Error("查询贵客礼物数据失败", err)
+		_, _ = c.Reply(e.SystemErrorNote)
+		return
+	}
+	var guestName string
+	mGuests := make(map[string]database.GuestGift)
+	numId, _ := strconv.Atoi(args[0])
+	guestId := fmt.Sprintf("%03d", numId)
+	for i := range guestGifts {
+		// 如果有贵客 id 或贵客名完全匹配，则视为查询该贵客
+		if guestGifts[i].GuestId == guestId || guestGifts[i].GuestName == args[0] {
+			guestName = guestGifts[i].GuestName
+			mGuests = map[string]database.GuestGift{guestName: guestGifts[i]}
+			break
+		}
+		// 模糊匹配到则把结果加到列表里
+		if re.MatchString(guestGifts[i].GuestName) {
+			mGuests[guestGifts[i].GuestName] = guestGifts[i]
+		}
+	}
+
+	if len(mGuests) == 0 {
+		_, _ = c.Reply(fmt.Sprintf("唔, %s未曾光临本店呢", args[0]))
+		return
+	} else if len(mGuests) == 1 {
+		// 筛选出包含该升阶贵客的菜谱
+		allRecipes, err := dao.FindAllRecipes()
 		if err != nil {
-			logger.Error("查询数据库出错!", err)
+			logger.Error("获取菜谱数据失败", err)
 			_, _ = c.Reply(e.SystemErrorNote)
 			return
 		}
-	}
-	if len(guests) == 0 {
-		err = dao.DB.Where("guest_name like ?", "%"+args[0]+"%").Find(&guests)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			_, _ = c.Reply("查询数据失败!")
-			return
-		}
-	}
-
-	guestInfo := make(map[string]string)
-	for _, guest := range guests {
-		key := guest.GuestId
-		guestInfo[key] = guest.GuestName
-	}
-	var msg string
-	if len(guestInfo) == 0 {
-		msg = "哎呀，好像找不到这个贵客呢!"
-	} else if len(guestInfo) == 1 {
-		recipes := make([]database.Recipe, 0)
-		var guestName string
-		for _, guest := range guestInfo {
-			guestName = guest
-		}
-		err = dao.DB.Where("guests like ?", "%\""+guestName+"\"%").Asc("Time").Find(&recipes)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			_, _ = c.Reply("查询数据失败!")
-			return
-		}
-		if len(recipes) == 0 {
-			msg = fmt.Sprintf("%s没有碰瓷数据哦!", guestName)
-		} else {
-			results := make([]string, 0)
-			for _, recipe := range recipes {
-				var upgrade string
-				for p := range recipe.Guests {
-					if recipe.Guests[p] == guestName {
-						switch p {
-						case 0:
-							upgrade = "优"
-						case 1:
-							upgrade = "特"
-						case 2:
-							upgrade = "神"
-						}
-					}
-				}
+		results := make([]string, 0)
+		for _, recipe := range allRecipes {
+			if upgrade, ok := recipe.HasUpgradeGuest(guestName); ok {
 				results = append(results, fmt.Sprintf("%s: %s", upgrade, recipe.Name))
 			}
-
-			listLength := config.AppConfig.Bot.GroupMsgMaxLen
-			if c.GetRawMessage() == onebot.MessageTypePrivate {
-				listLength = config.AppConfig.Bot.PrivateMsgMaxLen
-			}
-			maxPage := (len(results)-1)/listLength + 1
-			if len(results) > listLength {
-				if page > maxPage {
-					page = maxPage
-				}
-				msg += fmt.Sprintf("以下菜谱可碰瓷%s: (%d/%d)", guestName, page, maxPage)
-			} else {
-				msg += fmt.Sprintf("以下菜谱可碰瓷%s:", guestName)
-			}
-			for i := (page - 1) * listLength; i < page*listLength && i < len(results); i++ {
-				msg += fmt.Sprintf("\n%s", results[i])
-			}
-			if page < maxPage {
-				msg += "\n......"
-			}
 		}
+
+		listLength := config.AppConfig.Bot.GroupMsgMaxLen
+		if c.GetRawMessage() == onebot.MessageTypePrivate {
+			listLength = config.AppConfig.Bot.PrivateMsgMaxLen
+		}
+		msg := util.PaginationOutput(results, page, listLength,
+			fmt.Sprintf("以下菜谱可碰瓷%s", guestName),
+			func(s string) string {
+				return s
+			})
+		_, _ = c.Reply(msg)
+		return
 	} else {
-		msg = "想查哪个升阶贵客数据呢:"
+		msg := "想查哪个升阶贵客数据呢:"
 		p := 0
-		for k := range guestInfo {
-			msg += fmt.Sprintf("\n%s %s", k, guestInfo[k])
+		for k := range mGuests {
+			msg += fmt.Sprintf("\n%s %s", k, mGuests[k].GuestName)
 			if p == config.AppConfig.Bot.GroupMsgMaxLen-1 {
 				msg += "\n......"
 				break
 			}
 			p++
 		}
+		return
 	}
-
-	_, _ = c.Reply(msg)
 }

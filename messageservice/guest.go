@@ -46,7 +46,7 @@ func GuestQuery(c *scheduler.Context) {
 
 	if guestName == "" {
 		if len(mGuests) == 0 {
-			_, _ = c.Reply(fmt.Sprintf("%s是什么神秘贵客呀？", arg))
+			_, _ = c.Reply(fmt.Sprintf("唔, %s未曾光临本店呢", arg))
 			return
 		} else if len(mGuests) == 1 {
 			for _, v := range mGuests {

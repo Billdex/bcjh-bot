@@ -132,7 +132,24 @@ func (recipe Recipe) HasGuest(guest string) bool {
 	return false
 }
 
-// HasAntique 判断菜谱是否会给某个菜谱
+// HasUpgradeGuest 判断菜谱是否有某个升阶贵客，并返回对应的升阶级别
+func (recipe Recipe) HasUpgradeGuest(guest string) (string, bool) {
+	for i := range recipe.Guests {
+		if recipe.Guests[i] == guest {
+			switch i {
+			case 0:
+				return "优", true
+			case 1:
+				return "特", true
+			case 2:
+				return "神", true
+			}
+		}
+	}
+	return "", false
+}
+
+// HasAntique 判断菜谱是否会给某个符文礼物
 func (recipe Recipe) HasAntique(antique string) bool {
 	pattern := strings.ReplaceAll(antique, "%", ".*")
 	re, err := regexp.Compile(pattern)

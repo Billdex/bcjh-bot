@@ -38,6 +38,7 @@ func MaterialQuery(c *scheduler.Context) {
 	}
 	if len(materials) == 0 {
 		_, _ = c.Reply(fmt.Sprintf("%s是什么食材呀", args[0]))
+		return
 	}
 	// 查询到多个食材时检查是否有完整匹配的，有则直接按照原值筛选菜谱，没有则返回食材列表
 	if len(materials) > 1 {
