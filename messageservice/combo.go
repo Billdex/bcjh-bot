@@ -7,60 +7,52 @@ import (
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
-	"strconv"
+	"strings"
 )
 
+// ComboQuery 后厨合成菜查询
 func ComboQuery(c *scheduler.Context) {
 	comboRecipeName := c.PretreatedMessage
 
-	// 判断菜名是否唯一
-	recipes := make([]database.Recipe, 0)
-	recipeId, err := strconv.Atoi(comboRecipeName)
-	if err == nil {
-		err = dao.DB.Where("gallery_id = ?", fmt.Sprintf("%03d", recipeId)).Find(&recipes)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			_, _ = c.Reply(e.SystemErrorNote)
-			return
-		}
-	} else {
-		err = dao.DB.Where("name like ?", "%"+comboRecipeName+"%").Find(&recipes)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			_, _ = c.Reply(e.SystemErrorNote)
-			return
-		}
-	}
-	if len(recipes) == 0 {
-		_, _ = c.Reply("没有查询到相关餐谱呢")
+	// 查询全部菜谱
+	allRecipes, err := dao.FindAllRecipes()
+	if err != nil {
+		logger.Error("获取菜谱数据出错", err)
+		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
-	if len(recipes) > 1 {
-		msg := "你想查询哪个菜谱呢:"
-		for _, recipe := range recipes {
-			msg += fmt.Sprintf("\n%s", recipe.Name)
+
+	// 匹配符合的后厨菜名和对应需要的前置菜谱
+	mMatchRecipes := make(map[string][]database.Recipe)
+	var matchComboName string
+	for _, recipe := range allRecipes {
+		for _, combo := range recipe.Combo {
+			if strings.Contains(combo, comboRecipeName) {
+				mMatchRecipes[combo] = append(mMatchRecipes[combo], recipe)
+				matchComboName = combo
+				break
+			}
+		}
+	}
+
+	if len(mMatchRecipes) == 0 {
+		_, _ = c.Reply(fmt.Sprintf("%s 不是后厨合成菜哦", comboRecipeName))
+		return
+	}
+
+	if len(mMatchRecipes) > 1 {
+		msg := "你想查询哪个菜谱呢"
+		for combo := range mMatchRecipes {
+			msg += fmt.Sprintf("\n%s", combo)
 		}
 		_, _ = c.Reply(msg)
 		return
 	}
 
-	comboRecipeName = recipes[0].Name
-
-	preRecipes := make([]database.Recipe, 0)
-	err = dao.DB.Where("combo like ?", "%\""+comboRecipeName+"\"%").Find(&preRecipes)
-	if err != nil {
-		logger.Error("查询数据库出错!", err)
-		_, _ = c.Reply(e.SystemErrorNote)
-		return
-	}
-	var msg string
-	if len(preRecipes) == 0 {
-		msg = fmt.Sprintf("%s不是后厨合成菜哦!", comboRecipeName)
-	} else {
-		msg += fmt.Sprintf("合成%s需要以下前置菜谱:", comboRecipeName)
-		for _, recipe := range preRecipes {
-			msg += fmt.Sprintf("\n「%s-%s」", recipe.Name, recipe.Origin)
-		}
+	recipes := mMatchRecipes[matchComboName]
+	msg := fmt.Sprintf("合成%s需要以下菜谱", comboRecipeName)
+	for _, recipe := range recipes {
+		msg += fmt.Sprintf("\n「%s-%s」", recipe.Name, recipe.Origin)
 	}
 
 	_, _ = c.Reply(msg)
