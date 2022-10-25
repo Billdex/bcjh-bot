@@ -470,7 +470,7 @@ func orderRecipes(recipes []database.Recipe, order string) ([]database.Recipe, s
 func echoRecipeMessage(recipe database.Recipe) string {
 	// 尝试寻找图片文件，未找到则按照文字格式发送
 	resourceImageDir := config.AppConfig.Resource.Image + "/recipe"
-	imagePath := fmt.Sprintf("%s/recipe_%s.png", resourceImageDir, recipe.GalleryId)
+	imagePath := fmt.Sprintf("%s/recipe_%s_%s.png", resourceImageDir, recipe.GalleryId, strings.ReplaceAll(recipe.Name, " ", "_"))
 	logger.Debug("imagePath:", imagePath)
 	var msg string
 	if has, err := util.PathExists(imagePath); has {
@@ -856,7 +856,7 @@ func GenerateAllRecipesImages(recipes []database.Recipe, galleryImg image.Image,
 		}
 
 		// 以PNG格式保存文件
-		err = util.SavePngImage(fmt.Sprintf("%s/recipe_%s.png", recipeImgPath, recipe.GalleryId), img)
+		err = util.SavePngImage(fmt.Sprintf("%s/recipe_%s_%s.png", recipeImgPath, recipe.GalleryId, strings.ReplaceAll(recipe.Name, " ", "_")), img)
 		if err != nil {
 			return fmt.Errorf("保存菜谱 %s 图鉴图片出错 %v", recipe.GalleryId, err)
 		}

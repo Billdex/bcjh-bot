@@ -151,23 +151,6 @@ func filterEquipsBySkill(equips []database.Equip, skill string) ([]database.Equi
 	return result, ""
 }
 
-type equipWrapper struct {
-	equip     []database.Equip
-	equipLess func(p *database.Equip, q *database.Equip) bool
-}
-
-func (w equipWrapper) Len() int {
-	return len(w.equip)
-}
-
-func (w equipWrapper) Swap(i int, j int) {
-	w.equip[i], w.equip[j] = w.equip[j], w.equip[i]
-}
-
-func (w equipWrapper) Less(i int, j int) bool {
-	return w.equipLess(&w.equip[i], &w.equip[j])
-}
-
 // 根据排序参数排序厨具
 func orderEquips(equips []database.Equip, order string) ([]database.Equip, string) {
 	if len(equips) == 0 {
@@ -240,7 +223,7 @@ func echoEquipsMessage(equips []database.Equip, order string, page int, private 
 // 输出单厨具消息数据
 func echoEquipMessage(equip database.Equip) string {
 	resourceImageDir := config.AppConfig.Resource.Image + "/equip"
-	imagePath := fmt.Sprintf("%s/equip_%s.png", resourceImageDir, equip.GalleryId)
+	imagePath := fmt.Sprintf("%s/equip_%s_%s.png", resourceImageDir, equip.GalleryId, strings.ReplaceAll(equip.Name, " ", "_"))
 	logger.Debug("imagePath:", imagePath)
 	var msg string
 	if has, err := util.PathExists(imagePath); has {
@@ -402,7 +385,7 @@ func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image
 		}
 
 		// 以PNG格式保存文件
-		err = util.SavePngImage(fmt.Sprintf("%s/equip_%s.png", equipImgPath, equip.GalleryId), img)
+		err = util.SavePngImage(fmt.Sprintf("%s/equip_%s_%s.png", equipImgPath, equip.GalleryId, strings.ReplaceAll(equip.Name, " ", "_")), img)
 		if err != nil {
 			return fmt.Errorf("保存厨具 %s 图鉴图片出错 %v", equip.GalleryId, err)
 		}
