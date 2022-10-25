@@ -3,7 +3,6 @@ package messageservice
 import (
 	"bcjh-bot/config"
 	"bcjh-bot/dao"
-	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
@@ -45,26 +44,27 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 		return
 	}
 	var guestName string
-	mGuests := make(map[string]database.GuestGift)
+	mGuestNames := make(map[string]string)
 	numId, _ := strconv.Atoi(args[0])
 	guestId := fmt.Sprintf("%03d", numId)
 	for i := range guestGifts {
 		// 如果有贵客 id 或贵客名完全匹配，则视为查询该贵客
 		if guestGifts[i].GuestId == guestId || guestGifts[i].GuestName == args[0] {
 			guestName = guestGifts[i].GuestName
-			mGuests = map[string]database.GuestGift{guestName: guestGifts[i]}
+			mGuestNames = map[string]string{guestGifts[i].GuestId: guestGifts[i].GuestName}
 			break
 		}
 		// 模糊匹配到则把结果加到列表里
 		if re.MatchString(guestGifts[i].GuestName) {
-			mGuests[guestGifts[i].GuestName] = guestGifts[i]
+			guestName = guestGifts[i].GuestName
+			mGuestNames[guestGifts[i].GuestId] = guestGifts[i].GuestName
 		}
 	}
 
-	if len(mGuests) == 0 {
+	if len(mGuestNames) == 0 {
 		_, _ = c.Reply(fmt.Sprintf("唔, %s未曾光临本店呢", args[0]))
 		return
-	} else if len(mGuests) == 1 {
+	} else if len(mGuestNames) == 1 {
 		// 筛选出包含该升阶贵客的菜谱
 		allRecipes, err := dao.FindAllRecipes()
 		if err != nil {
@@ -93,14 +93,15 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 	} else {
 		msg := "想查哪个升阶贵客数据呢:"
 		p := 0
-		for k := range mGuests {
-			msg += fmt.Sprintf("\n%s %s", k, mGuests[k].GuestName)
+		for k := range mGuestNames {
+			msg += fmt.Sprintf("\n%s %s", k, mGuestNames[k])
 			if p == config.AppConfig.Bot.GroupMsgMaxLen-1 {
 				msg += "\n......"
 				break
 			}
 			p++
 		}
+		_, _ = c.Reply(msg)
 		return
 	}
 }

@@ -3,6 +3,8 @@ package dao
 import (
 	"bcjh-bot/model/database"
 	"fmt"
+	"regexp"
+	"strings"
 )
 
 const CacheKeyRecipeList = "recipe_list"
@@ -41,4 +43,24 @@ func FindAllRecipes() ([]database.Recipe, error) {
 		return nil
 	})
 	return recipes, err
+}
+
+// SearchRecipesWithName 根据菜谱名查询菜谱
+func SearchRecipesWithName(name string) ([]database.Recipe, error) {
+	pattern := strings.ReplaceAll(name, "%", ".*")
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("描述格式有误 %v", err)
+	}
+	recipes, err := FindAllRecipes()
+	if err != nil {
+		return nil, fmt.Errorf("查询菜谱数据失败 %v", err)
+	}
+	result := make([]database.Recipe, 0)
+	for _, recipe := range recipes {
+		if re.MatchString(recipe.Name) {
+			result = append(result, recipe)
+		}
+	}
+	return result, nil
 }
