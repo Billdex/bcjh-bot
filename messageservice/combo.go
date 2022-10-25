@@ -50,7 +50,7 @@ func ComboQuery(c *scheduler.Context) {
 	}
 
 	recipes := mMatchRecipes[matchComboName]
-	msg := fmt.Sprintf("合成%s需要以下菜谱", comboRecipeName)
+	msg := fmt.Sprintf("合成%s需要以下菜谱", matchComboName)
 	for _, recipe := range recipes {
 		msg += fmt.Sprintf("\n「%s-%s」", recipe.Name, recipe.Origin)
 	}
