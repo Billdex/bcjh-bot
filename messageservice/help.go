@@ -2,9 +2,9 @@ package messageservice
 
 import (
 	"bcjh-bot/dao"
-	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/e"
+	"bcjh-bot/util/logger"
 	"fmt"
 	"strings"
 )
@@ -170,17 +170,17 @@ func LaboratoryHelp() string {
 
 // 攻略功能指引
 func strategyHelp() string {
-	strategies := make([]database.Strategy, 0)
-	err := dao.DB.Find(&strategies)
+	keywords, err := dao.LoadStrategyKeywords()
 	if err != nil {
+		logger.Errorf("查询攻略关键词列表失败 %v", err)
 		return e.SystemErrorNote
 	}
 	sb := strings.Builder{}
 	sb.WriteString("【游戏攻略快捷查询】\n")
 	sb.WriteString("收录了一些简要的游戏攻略，查询方式:『#攻略 关键词』\n")
 	sb.WriteString("目前收录了以下内容:\n")
-	for _, strategy := range strategies {
-		sb.WriteString(fmt.Sprintf("「%s」 ", strategy.Keyword))
+	for _, keyword := range keywords {
+		sb.WriteString(fmt.Sprintf("「%s」 ", keyword))
 	}
 	return sb.String()
 }
