@@ -107,7 +107,7 @@ func StrategyQuery(c *scheduler.Context) {
 			_, _ = c.Reply(e.SystemErrorNote)
 			return
 		}
-		_, _ = c.Reply(result)
+		_, _ = c.Reply(result.Value)
 	} else {
 		msg := "这些攻略你想看哪条呀?\n"
 		msg += strings.Join(matchList, " ")

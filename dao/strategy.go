@@ -6,6 +6,8 @@ import (
 	"bcjh-bot/util/logger"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 )
 
 const CacheKeyStrategyKeywords = "strategy_keywords"
@@ -31,16 +33,14 @@ func LoadStrategyKeywords() ([]string, error) {
 }
 
 // GetStrategyByKeyword 查询攻略数据
-func GetStrategyByKeyword(keyword string) (string, error) {
-	var strategy string
+func GetStrategyByKeyword(keyword string) (database.Strategy, error) {
+	var strategy database.Strategy
 	key := fmt.Sprintf(CacheKeyStrategyData, keyword)
 	err := SimpleFindDataWithCache(key, &strategy, func(dest interface{}) error {
-		var result database.Strategy
-		_, err := DB.Where("keyword = ?", keyword).Get(&result)
+		_, err := DB.Where("keyword = ?", keyword).Get(dest)
 		if err != nil {
 			return err
 		}
-		*dest.(*string) = result.Value
 		return nil
 	})
 	return strategy, err
@@ -59,6 +59,30 @@ func HasStrategyKeyword(keyword string) bool {
 		}
 	}
 	return false
+}
+
+// SearchStrategiesWithKeyword 根据关键词内容搜索
+func SearchStrategiesWithKeyword(keyword string) ([]database.Strategy, error) {
+	pattern := strings.ReplaceAll(keyword, "%", ".*")
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("描述格式有误 %v", err)
+	}
+	keywords, err := LoadStrategyKeywords()
+	if err != nil {
+		return nil, fmt.Errorf("载入关键词数据失败 %v", err)
+	}
+	result := make([]database.Strategy, 0)
+	for i := range keywords {
+		if re.MatchString(keywords[i]) {
+			strategy, err := GetStrategyByKeyword(keywords[i])
+			if err != nil {
+				continue
+			}
+			result = append(result, strategy)
+		}
+	}
+	return result, nil
 }
 
 func CreateStrategy(keyword string, value string) error {
