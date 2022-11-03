@@ -2,9 +2,7 @@ package messageservice
 
 import (
 	"bcjh-bot/dao"
-	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
-	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
 	"math/rand"
@@ -12,62 +10,33 @@ import (
 	"time"
 )
 
+// Tarot 抽签占卜
 func Tarot(c *scheduler.Context) {
-	now := time.Now()
-	timeSeed := now.Unix()
-	timeSeed -= int64(now.Hour() * 3600)
-	timeSeed -= int64(now.Minute() * 60)
-	timeSeed -= int64(now.Second())
-	total, err := dao.DB.Count(&database.Tarot{})
-	if err != nil {
-		logger.Error("查询数据库出错", err)
-		_, _ = c.Reply(e.SystemErrorNote)
-		return
+	y, m, d := time.Now().Date()
+	timeSeed := time.Date(y, m, d, 0, 0, 0, 0, time.Local).Unix()
+	tarots, err := dao.FindAllTarots()
+	if err != nil || len(tarots) == 0 {
+		logger.Error("查询签文信息出错", err)
+		_, _ = c.Reply("获取签文信息失败")
 	}
 	selfRand := rand.New(rand.NewSource(c.GetSenderId() + timeSeed))
-	tarotId := selfRand.Int63n(total) + 1
-	tarot := new(database.Tarot)
-	_, err = dao.DB.Where("id = ?", tarotId).Get(tarot)
-	if err != nil {
-		logger.Error("查询数据库出错", err)
-		_, _ = c.Reply(e.SystemErrorNote)
-		return
-	}
+	tarot := tarots[selfRand.Int63n(int64(len(tarots)))]
 	if tarot.Score == 99 && c.GetSenderId() != 1726688182 {
-		tarot = new(database.Tarot)
-		_, err = dao.DB.Where("score = ?", selfRand.Int63n(98)).OrderBy("id").Limit(1).Get(tarot)
-		if err != nil {
-			logger.Error("查询数据库出错", err)
-			_, _ = c.Reply(e.SystemErrorNote)
-			return
+		score := selfRand.Int63n(98)
+		for i := range tarots {
+			if int64(tarots[i].Score) == score {
+				tarot = tarots[i]
+				break
+			}
 		}
 	}
-	var level string
-	switch {
-	case tarot.Score == 0:
-		level = "不知道吉不吉"
-	case 0 < tarot.Score && tarot.Score < 15:
-		level = "小小吉"
-	case 15 <= tarot.Score && tarot.Score < 40:
-		level = "小吉"
-	case 40 <= tarot.Score && tarot.Score < 60:
-		level = "中吉"
-	case 60 <= tarot.Score && tarot.Score < 85:
-		level = "大吉"
-	case 85 <= tarot.Score && tarot.Score < 100:
-		level = "大大吉"
-	case tarot.Score == 100:
-		level = "超吉"
-	default:
-		level = "?"
-	}
-	msg := fmt.Sprintf("[%s]抽了一根签\n", c.GetSenderNickname())
-	msg += fmt.Sprintf("运势指数:%d [%s]\n", tarot.Score, level)
-	msg += fmt.Sprintf("签上说:\n%s", tarot.Description)
+	msg := fmt.Sprintf("[%s]抽了一根签\n运势指数 %d [%s]\n签上说:\n%s", c.GetSenderNickname(), tarot.Score, tarot.Level(), tarot.Description)
+
 	_, _ = c.Reply(msg)
 	return
 }
 
+// ForceTarot 强抽一签
 func ForceTarot(c *scheduler.Context) {
 	num, err := strconv.Atoi(c.PretreatedMessage)
 	if err != nil {
@@ -78,35 +47,15 @@ func ForceTarot(c *scheduler.Context) {
 		_, _ = c.Reply("改命失败")
 		return
 	}
-	tarotList := make([]database.Tarot, 0)
-	err = dao.DB.Where("score = ?", num).Find(&tarotList)
-	if err != nil || len(tarotList) == 0 {
+	tarots, err := dao.FindTarotsWithScore(num)
+	if err != nil || len(tarots) == 0 {
 		_, _ = c.Reply("改命失败")
 		return
 	}
-	tarot := tarotList[rand.Intn(len(tarotList))]
-	var level string
-	switch {
-	case tarot.Score == 0:
-		level = "不知道吉不吉"
-	case 0 < tarot.Score && tarot.Score < 15:
-		level = "小小吉"
-	case 15 <= tarot.Score && tarot.Score < 40:
-		level = "小吉"
-	case 40 <= tarot.Score && tarot.Score < 60:
-		level = "中吉"
-	case 60 <= tarot.Score && tarot.Score < 85:
-		level = "大吉"
-	case 85 <= tarot.Score && tarot.Score < 100:
-		level = "大大吉"
-	case tarot.Score == 100:
-		level = "超吉"
-	default:
-		level = "?"
-	}
+	tarot := tarots[rand.Intn(len(tarots))]
 	msg := fmt.Sprintf("[%s]抽了一根签\n", c.GetSenderNickname())
-	msg += fmt.Sprintf("运势指数:%d [%s]\n", tarot.Score, level)
+	msg += fmt.Sprintf("运势指数 %d [%s]\n", tarot.Score, tarot.Level())
 	msg += fmt.Sprintf("签上说:\n%s", tarot.Description)
 	_, _ = c.Reply(msg)
-
+	return
 }

@@ -4,12 +4,26 @@ import (
 	"bcjh-bot/config"
 	"bcjh-bot/model/database"
 	"fmt"
+	"github.com/allegro/bigcache/v3"
 	_ "github.com/go-sql-driver/mysql"
 	_ "modernc.org/sqlite"
+	"time"
 	"xorm.io/xorm"
 )
 
 var DB *xorm.Engine
+var Cache *bigcache.BigCache
+
+func InitDao() error {
+	if err := InitDatabase(); err != nil {
+		return err
+	}
+	if err := InitCache(); err != nil {
+		return err
+	}
+	initPluginAliasComparison()
+	return nil
+}
 
 // DSN Data Source Name
 // [username[:password]@][protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]
@@ -43,5 +57,18 @@ func InitDatabase() error {
 	if err != nil {
 		return fmt.Errorf("初始化数据导入失败 %v", err)
 	}
+	return nil
+}
+
+// InitCache 初始化缓存
+func InitCache() error {
+	cacheCfg := bigcache.DefaultConfig(24 * time.Hour)
+	cacheCfg.Shards = 16
+	cacheCfg.HardMaxCacheSize = 64
+	cache, err := bigcache.NewBigCache(cacheCfg)
+	if err != nil {
+		return fmt.Errorf("初始化缓存失败 %+v", err)
+	}
+	Cache = cache
 	return nil
 }

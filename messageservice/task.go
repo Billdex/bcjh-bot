@@ -87,19 +87,12 @@ func TaskQuery(c *scheduler.Context) {
 	var err error
 	if questType == "主线" {
 		id, _ := strconv.Atoi(idStr)
-		maxQuest, err := GetMainQuestCount()
-		if id > maxQuest && err == nil {
-			_, _ = c.Reply(prefixMsg + fmt.Sprintf("目前只记录了 %d 条主线任务哦！", maxQuest))
+		maxQuestId, err := dao.GetMaxMainQuestId()
+		if id > maxQuestId && err == nil {
+			_, _ = c.Reply(prefixMsg + fmt.Sprintf("目前只记录了 %d 条主线任务哦！", maxQuestId))
 			return
 		}
-		if length == 1 {
-			quests, err = findMainQuest(id)
-		} else if length > 5 {
-			length = 5
-			quests, err = findMainQuests(id, length)
-		} else {
-			quests, err = findMainQuests(id, length)
-		}
+		quests, err = dao.FindMainQuestsWithLimit(id, length)
 	} else if questType == "支线" {
 		quests, err = findSubQuest(idStr)
 	}
@@ -111,37 +104,6 @@ func TaskQuery(c *scheduler.Context) {
 	}
 	// 构造返回语句
 	_, _ = c.Reply(prefixMsg + echoQuestsMessage(quests))
-}
-
-func GetMainQuestCount() (int, error) {
-	var quest database.Quest
-	_, err := dao.DB.Select("quest_id").Where("type = ?", "主线任务").OrderBy("quest_id desc").Get(&quest)
-	if err != nil {
-		return 0, err
-	}
-	return quest.QuestId, nil
-}
-
-// 主线查询（单条）
-func findMainQuest(id int) ([]database.Quest, error) {
-	Session := dao.DB.Where("type = ? and quest_id = ?", "主线任务", id).
-		Limit(5)
-	quests := make([]database.Quest, 0)
-	if err := Session.Find(&quests); err != nil {
-		return quests, err
-	}
-	return quests, nil
-}
-
-// 主线查询（多条）
-func findMainQuests(id int, length int) ([]database.Quest, error) {
-	Session := dao.DB.Where("type = ? and quest_id >= ? and quest_id <= ?", "主线任务", id, id+length-1).
-		Limit(5)
-	quests := make([]database.Quest, 0)
-	if err := Session.Find(&quests); err != nil {
-		return quests, err
-	}
-	return quests, nil
 }
 
 // 支线查询（单条）

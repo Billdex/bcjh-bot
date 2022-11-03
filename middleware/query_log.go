@@ -13,14 +13,14 @@ func QueryLog(c *scheduler.Context) {
 
 	c.Next()
 
-	latency := time.Now().Sub(start)
+	latency := time.Now().Sub(start).Round(time.Microsecond)
 	bot := c.GetBot()
 	group := c.GetGroupId()
 	sender := c.GetSenderId()
-	logMsg := fmt.Sprintf("[Query] bot:%12d | %13v | group:%12d | sender:%12d | %s",
+	logMsg := fmt.Sprintf("[Query] bot:%12d | %10v | group:%12d | sender:%12d | %s",
 		bot.BotId, latency, group, sender, c.GetRawMessage())
 	if c.WarnMessage != "" {
-		logMsg = fmt.Sprintf("%s | %s", logMsg, c.WarnMessage)
+		logMsg = fmt.Sprintf("%s | warn: %s", logMsg, c.WarnMessage)
 	}
 	logger.Infof(logMsg)
 }

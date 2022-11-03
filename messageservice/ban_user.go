@@ -1,7 +1,7 @@
 package messageservice
 
 import (
-	"bcjh-bot/global"
+	"bcjh-bot/dao"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util/e"
@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -39,26 +40,26 @@ func BanUser(c *scheduler.Context) {
 	successList := make([]int64, 0)
 	failList := make([]int64, 0)
 	for _, qq := range atList {
-		if global.IsSuperAdmin(qq) {
+		if dao.IsSuperAdmin(qq) {
 			_, _ = c.Reply(fmt.Sprintf(e.PermissionDeniedNote))
 		} else {
-			err := global.PullUserBlackList(qq, c.GetGroupEvent().GroupId, endTime)
+			err := dao.SetUserBanTime(qq, c.GetGroupId(), endTime)
 			if err != nil {
-				logger.Error("加入黑名单失败", err)
+				logger.Errorf("%d 加入黑名单失败 %v", qq, err)
 				failList = append(failList, qq)
 			} else {
 				successList = append(successList, qq)
 			}
 		}
 	}
-	msg := ""
+	var successMsg, failMsg string
 	if len(successList) > 0 {
-		msg += fmt.Sprintf("%v已被禁用至%s", successList, time.Unix(endTime, 0).Format("2006-01-02 15:04:05"))
+		successMsg = fmt.Sprintf("%+v 已被禁用至%s", successList, time.Unix(endTime, 0).Format("2006-01-02 15:04:05"))
 	}
 	if len(failList) > 0 {
-		msg += fmt.Sprintf("\n[%v]加入禁用名单失败", failList)
+		failMsg = fmt.Sprintf("%+v 加入禁用名单失败", failList)
 	}
-	_, _ = c.Reply(msg)
+	_, _ = c.Reply(strings.Join([]string{successMsg, failMsg}, "\n"))
 }
 
 func AllowUser(c *scheduler.Context) {
@@ -73,22 +74,23 @@ func AllowUser(c *scheduler.Context) {
 	successList := make([]int64, 0)
 	failList := make([]int64, 0)
 	for _, qq := range atList {
-		err := global.RemoveUserFromBlackList(qq, c.GetGroupEvent().GroupId)
+		// 禁用时间设为当前时间即可视为移出黑名单
+		err := dao.SetUserBanTime(qq, c.GetGroupId(), time.Now().Unix())
 		if err != nil {
-			logger.Error("移除黑名单失败", err)
+			logger.Errorf("%d 移出禁用名单失败 %v", qq, err)
 			failList = append(failList, qq)
 		} else {
 			successList = append(successList, qq)
 		}
 	}
-	msg := ""
+	var successMsg, failMsg string
 	if len(successList) > 0 {
-		msg += fmt.Sprintf("%v已移出禁用名单", successList)
+		successMsg = fmt.Sprintf("%+v 已移出禁用名单", successList)
 	}
 	if len(failList) > 0 {
-		msg += fmt.Sprintf("\n[%v]移出禁用名单失败", failList)
+		failMsg = fmt.Sprintf("%+v 移出禁用名单失败", failList)
 	}
-	_, _ = c.Reply(msg)
+	_, _ = c.Reply(strings.Join([]string{successMsg, failMsg}, "\n"))
 }
 
 func matchStringTime(s string) string {

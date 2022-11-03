@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"bcjh-bot/global"
+	"bcjh-bot/dao"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/scheduler/onebot"
 	"bcjh-bot/util"
@@ -13,11 +13,11 @@ func CheckBotState(c *scheduler.Context) {
 			c.Next()
 			return
 		}
-		if global.IsSuperAdmin(c.GetSenderId()) {
+		if dao.IsSuperAdmin(c.GetSenderId()) {
 			c.Next()
 			return
 		}
-		if privateOn, _ := global.GetBotState(c.GetBot().BotId, 0); privateOn {
+		if privateOn, _ := dao.GetBotState(c.GetBot().BotId, 0); privateOn {
 			c.Next()
 			return
 		} else {
@@ -32,7 +32,7 @@ func CheckBotState(c *scheduler.Context) {
 			return
 		}
 		event := c.GetGroupEvent()
-		if botOn, _ := global.GetBotState(c.GetBot().BotId, event.GroupId); botOn {
+		if botOn, _ := dao.GetBotState(c.GetBot().BotId, event.GroupId); botOn {
 			c.Next()
 			return
 		} else {

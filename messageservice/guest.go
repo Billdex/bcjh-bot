@@ -9,78 +9,76 @@ import (
 	"bcjh-bot/util/e"
 	"bcjh-bot/util/logger"
 	"fmt"
+	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 )
 
 func GuestQuery(c *scheduler.Context) {
 	arg := c.PretreatedMessage
-	argType := "guest_id"
-	guests := make([]database.Guest, 0)
-	numId, err := strconv.Atoi(arg)
-	if err == nil {
-		guestId := fmt.Sprintf("%03d", numId)
-		err := dao.DB.Where("guest_id = ?", guestId).Find(&guests)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			_, _ = c.Reply(e.SystemErrorNote)
-			return
-		}
-	}
-	if len(guests) == 0 {
-		err = dao.DB.Where("guest_name like ?", "%"+arg+"%").Find(&guests)
-		if err != nil {
-			logger.Error("查询数据库出错!", err)
-			_, _ = c.Reply(e.SystemErrorNote)
-			return
-		}
-		argType = "guest_name"
-	}
-
-	// 遍历查询结果，如果有多个符合的结果但有某项完全匹配，则直接以该完全匹配的数据为准
-	for _, guest := range guests {
-		if guest.GuestName == arg {
-			guests = []database.Guest{guest}
-			break
-		}
-	}
-
-	// 上述检查后仍匹配到到多个贵客时返回贵客列表
-	if len(guests) > 1 {
-		msg := "查询到以下贵客"
-		for i, guest := range guests {
-			if i > config.AppConfig.Bot.GroupMsgMaxLen-1 {
-				msg += "\n..."
-				break
-			}
-			msg += fmt.Sprintf("\n%s %s", guest.GuestId, guest.GuestName)
-		}
-		_, _ = c.Reply(msg)
-		return
-	} else if len(guests) == 0 {
-		_, _ = c.Reply(fmt.Sprintf("%s是什么神秘贵客呀？", arg))
-		return
-	}
-
-	guestsInfo := make([]database.GuestGift, 0)
-	switch argType {
-	case "guest_id":
-		err = dao.DB.Where("guest_id = ?", guests[0].GuestId).Asc("total_time").Find(&guestsInfo)
-	case "guest_name":
-		err = dao.DB.Where("guest_name = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
-	default:
-		err = dao.DB.Where("guest_name = ?", guests[0].GuestName).Asc("total_time").Find(&guestsInfo)
-	}
+	re, err := regexp.Compile(strings.ReplaceAll(arg, "%", ".*"))
 	if err != nil {
-		logger.Error("查询数据库出错!", err)
+		_, _ = c.Reply("查询格式有误")
+		return
+	}
+	guestGifts, err := dao.FindAllGuestGifts()
+	if err != nil {
+		logger.Error("查询贵客礼物数据失败", err)
 		_, _ = c.Reply(e.SystemErrorNote)
 		return
 	}
-	if len(guestsInfo) == 0 {
-		_, _ = c.Reply(fmt.Sprintf("未查询到%s的贵客信息", arg))
-		return
+	var guestName string
+	mGuests := make(map[string]database.GuestGift)
+	numId, _ := strconv.Atoi(arg)
+	guestId := fmt.Sprintf("%03d", numId)
+	for i := range guestGifts {
+		// 如果有贵客 id 或贵客名完全匹配，则视为查询该贵客
+		if guestGifts[i].GuestId == guestId || guestGifts[i].GuestName == arg {
+			guestName = guestGifts[i].GuestName
+			break
+		}
+		// 模糊匹配到则把结果加到列表里
+		if re.MatchString(guestGifts[i].GuestName) {
+			mGuests[guestGifts[i].GuestName] = guestGifts[i]
+		}
 	}
+
+	if guestName == "" {
+		if len(mGuests) == 0 {
+			_, _ = c.Reply(fmt.Sprintf("唔, %s未曾光临本店呢", arg))
+			return
+		} else if len(mGuests) == 1 {
+			for _, v := range mGuests {
+				guestName = v.GuestName
+			}
+		} else {
+			msg := "查询到以下贵客"
+			cnt := 0
+			for _, guest := range mGuests {
+				cnt++
+				if cnt > config.AppConfig.Bot.GroupMsgMaxLen {
+					msg += "\n..."
+					break
+				}
+				msg += fmt.Sprintf("\n%s %s", guest.GuestId, guest.GuestName)
+			}
+			_, _ = c.Reply(msg)
+			return
+		}
+	}
+
+	guests := make([]database.GuestGift, 0)
+	for _, guest := range guestGifts {
+		if guest.GuestName == guestName {
+			guests = append(guests, guest)
+		}
+	}
+	sort.Slice(guests, func(i, j int) bool {
+		return guests[i].TotalTime < guests[j].TotalTime
+	})
 	msg := fmt.Sprintf("%s %s", guests[0].GuestId, guests[0].GuestName)
-	for _, guestInfo := range guestsInfo {
+	for _, guestInfo := range guests {
 		msg += fmt.Sprintf("\n%s-%s %s", guestInfo.Recipe, guestInfo.Antique, util.FormatSecondToString(guestInfo.TotalTime))
 	}
 	_, _ = c.Reply(msg)

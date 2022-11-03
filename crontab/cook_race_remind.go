@@ -1,7 +1,7 @@
 package crontab
 
 import (
-	"bcjh-bot/global"
+	"bcjh-bot/dao"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util/logger"
 	"time"
@@ -18,8 +18,8 @@ func cookRaceRemind(s *scheduler.Scheduler) func() {
 				continue
 			}
 			for _, group := range groups {
-				if botOk, _ := global.GetBotState(bot.BotId, group.GroupId); botOk {
-					if pluginOk, _ := global.GetPluginState(group.GroupId, "厨神提醒", true); pluginOk {
+				if botOk, _ := dao.GetBotState(bot.BotId, group.GroupId); botOk {
+					if pluginOk, _ := dao.GetPluginState(group.GroupId, "厨神提醒", true); pluginOk {
 						_, _ = bot.SendGroupMessage(group.GroupId, msg)
 						// 等待一点时间，免得发得太快被风控
 						time.Sleep(200 * time.Millisecond)

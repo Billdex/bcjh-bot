@@ -29,6 +29,9 @@ type Chef struct {
 	SkillId       int    `xorm:"skill_id"`         // 技能id
 	UltimateGoals []int  `xorm:"ultimate_goals"`   // 修炼任务id数组
 	UltimateSkill int    `xorm:"ultimate_skill"`   // 修炼效果id
+
+	SkillDesc         string `xorm:"-"` // 技能描述
+	UltimateSkillDesc string `xorm:"-"` // 修炼技能描述
 }
 
 func (Chef) TableName() string {
@@ -39,9 +42,7 @@ func (Chef) TableName() string {
 type ChefData struct {
 	Chef
 	Avatar        image.Image
-	Skill         string
 	UltimateGoals []string
-	UltimateSkill string
 }
 
 // GetCondimentData 获取厨师的调味数据，返回值分别为数值和类型名称
@@ -75,10 +76,10 @@ func (c ChefData) GetCondimentType() string {
 }
 
 func (c ChefData) GetUltimateSkill() string {
-	if c.UltimateSkill == "" {
+	if c.UltimateSkillDesc == "" {
 		return "暂无"
 	}
-	return c.UltimateSkill
+	return c.UltimateSkillDesc
 }
 
 func (c ChefData) GetUltimateGoals() []string {

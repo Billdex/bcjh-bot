@@ -172,22 +172,22 @@ func RandChefImg(c *scheduler.Context) {
 	}
 	chef := database.ChefData{
 		Chef: database.Chef{
-			Name:      name,
-			Rarity:    rarity,
-			Origin:    groupInfo.GroupName,
-			Meat:      selfRand.Intn(rarity + 4),
-			Flour:     selfRand.Intn(rarity + 4),
-			Fish:      selfRand.Intn(rarity + 4),
-			Vegetable: selfRand.Intn(rarity + 4),
+			Name:              name,
+			Rarity:            rarity,
+			Origin:            groupInfo.GroupName,
+			Meat:              selfRand.Intn(rarity + 4),
+			Flour:             selfRand.Intn(rarity + 4),
+			Fish:              selfRand.Intn(rarity + 4),
+			Vegetable:         selfRand.Intn(rarity + 4),
+			SkillDesc:         skills[selfRand.Intn(len(skills))].Description,
+			UltimateSkillDesc: practiceSkillList[selfRand.Intn(len(practiceSkillList))](rarity),
 		},
 		Avatar: avatar,
-		Skill:  skills[selfRand.Intn(len(skills))].Description,
 		UltimateGoals: []string{
 			practiceTaskList1[selfRand.Intn(len(practiceTaskList1))](rarity),
 			practiceTaskList2[selfRand.Intn(len(practiceTaskList2))](rarity),
 			practiceTaskList3[selfRand.Intn(len(practiceTaskList3))](rarity),
 		},
-		UltimateSkill: practiceSkillList[selfRand.Intn(len(practiceSkillList))](rarity),
 	}
 
 	for chef.Stirfry < 15+60*rarity && chef.Bake < 15+60*rarity && chef.Boil < 15+60*rarity &&
@@ -300,13 +300,14 @@ func DownloadImage(url string) (image.Image, error) {
 	}
 
 	// 导出image实例
-	img, err := jpeg.Decode(bytes.NewReader(body))
+	reader := bytes.NewReader(body)
+	img, err := jpeg.Decode(reader)
 	if err != nil {
 		// 读取失败则再尝试用png读取
-		img, err = png.Decode(bytes.NewReader(body))
+		img, err = png.Decode(reader)
 		if err != nil {
 			// 再失败就试试gif
-			img, err = gif.Decode(bytes.NewReader(body))
+			img, err = gif.Decode(reader)
 			if err != nil {
 				return nil, err
 			}

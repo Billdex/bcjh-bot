@@ -3,7 +3,6 @@ package messageservice
 import (
 	"bcjh-bot/config"
 	"bcjh-bot/dao"
-	"bcjh-bot/global"
 	"bcjh-bot/model/database"
 	"bcjh-bot/scheduler"
 	"bcjh-bot/util"
@@ -41,7 +40,7 @@ func ExchangeQuery(c *scheduler.Context) {
 	} else {
 		// 管理员可操作新增与更新
 		if prefix, has := util.WhatPrefixIn(arg, "新增", "添加"); has {
-			if !global.IsSuperAdmin(c.GetSenderId()) {
+			if !dao.IsSuperAdmin(c.GetSenderId()) {
 				_, _ = c.Reply(e.PermissionDeniedNote)
 				return
 			}
@@ -57,7 +56,7 @@ func ExchangeQuery(c *scheduler.Context) {
 			_, _ = c.Reply("新增兑换码信息成功!" + content)
 			return
 		} else if prefix, has := util.WhatPrefixIn(arg, "更新", "修改"); has {
-			if !global.IsSuperAdmin(c.GetSenderId()) {
+			if !dao.IsSuperAdmin(c.GetSenderId()) {
 				_, _ = c.Reply(e.PermissionDeniedNote)
 				return
 			}
@@ -83,7 +82,7 @@ func ExchangeQuery(c *scheduler.Context) {
 			_, _ = c.Reply("已更新最新兑换码内容!")
 			return
 		} else if has := util.HasPrefixIn(arg, "删除", "移除"); has {
-			if !global.IsSuperAdmin(c.GetSenderId()) {
+			if !dao.IsSuperAdmin(c.GetSenderId()) {
 				_, _ = c.Reply(e.PermissionDeniedNote)
 				return
 			}
