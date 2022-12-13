@@ -444,7 +444,7 @@ func GenerateAllChefsImages(chefs []database.Chef, galleryImg image.Image, imgCS
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数，图鉴网图片imgCSS给的数据时缩小版图片记录的位置，下载的图片为高清版尺寸为两倍，因此后续计算中取不同的计算倍数
 
 	// 载入字体文件
-	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
+	font, err := util.LoadFont(config.AppConfig.Resource.Font)
 	if err != nil {
 		return fmt.Errorf("载入字体文件失败 %v", err)
 	}

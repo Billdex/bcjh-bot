@@ -23,32 +23,6 @@ import (
 	"time"
 )
 
-type userChefInfo struct {
-	Name          string
-	Avatar        string
-	Rarity        int
-	Origin        string
-	Stirfry       int
-	Bake          int
-	Boil          int
-	Steam         int
-	Fry           int
-	Cut           int
-	Meat          int
-	Flour         int
-	Fish          int
-	Vegetable     int
-	Sweet         int
-	Sour          int
-	Spicy         int
-	Salty         int
-	Bitter        int
-	Tasty         int
-	Skill         string
-	UltimateGoals []string
-	UltimateSkill string
-}
-
 var practiceTaskList1 = []func(rarity int) string{
 	func(rarity int) string { return fmt.Sprintf("获得群内龙王%d次", 4*rarity) },
 	func(rarity int) string { return fmt.Sprintf("获得群内财神荣誉%d次", 2*rarity) },
@@ -252,7 +226,7 @@ func RandChefImg(c *scheduler.Context) {
 
 	// 载入一些资源文件
 	// 载入字体文件
-	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
+	font, err := util.LoadFont(config.AppConfig.Resource.Font)
 	if err != nil {
 		logger.Error("加载字体失败", err)
 		_, _ = c.Reply(e.SystemErrorNote)
