@@ -309,7 +309,7 @@ func GenerateEquipmentImage(equip database.EquipData, font *truetype.Font, bgImg
 func GenerateAllEquipmentsImages(equips []database.Equip, galleryImg image.Image, imgCSS *gamedata.ImgCSS) error {
 	magnification := 4 // 截取的图像相比图鉴网原始图片的放大倍数
 	// 加载字体文件
-	font, err := util.LoadFontFile(fmt.Sprintf("%s/%s", config.AppConfig.Resource.Font, "yuan500W.ttf"))
+	font, err := util.LoadFont(config.AppConfig.Resource.Font)
 	if err != nil {
 		return fmt.Errorf("载入字体文件失败 %v", err)
 	}
