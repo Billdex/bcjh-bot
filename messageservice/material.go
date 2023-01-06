@@ -66,7 +66,7 @@ func MaterialQuery(c *scheduler.Context) {
 	recipes := make([]database.Recipe, 0)
 	for _, recipe := range allRecipes {
 		for i := range recipe.Materials {
-			if recipe.Materials[i].Material.Name == args[0] {
+			if recipe.Materials[i].Material.Name == materials[0].Name {
 				recipe.MaterialEfficiency = recipe.Materials[i].Efficiency
 				recipes = append(recipes, recipe)
 				break
