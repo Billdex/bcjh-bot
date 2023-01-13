@@ -8,7 +8,7 @@ type Feedback struct {
 	Nickname   string         `xorm:"nickname" json:"nickname"`
 	Message    string         `xorm:"message" json:"message"`
 	Status     FeedbackStatus `xorm:"status" json:"status"`
-	CreateTime time.Time      `xorm:"create_time created" json:"-"`
+	CreateTime time.Time      `xorm:"create_time created" json:"create_time"`
 	UpdateTime time.Time      `xorm:"update_time updated" json:"-"`
 }
 

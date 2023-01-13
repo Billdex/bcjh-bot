@@ -95,13 +95,3 @@ func MergeRepeatSpace(s string) string {
 	reg := regexp.MustCompile("\\s+")
 	return reg.ReplaceAllString(s, " ")
 }
-
-func LimitPage(page, min, max int) int {
-	if page < min {
-		return min
-	}
-	if page > max {
-		return max
-	}
-	return page
-}

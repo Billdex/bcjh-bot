@@ -13,7 +13,7 @@ func main() {
 	// 初始化配置文件
 	err := LoadConfig(*cfgPath)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("读取配置文件出错", err)
 		return
 	}
 
