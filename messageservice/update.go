@@ -6,6 +6,7 @@ import (
 	"bcjh-bot/model/database"
 	"bcjh-bot/model/gamedata"
 	"bcjh-bot/scheduler"
+	"bcjh-bot/util"
 	"bcjh-bot/util/logger"
 	"bytes"
 	"encoding/json"
@@ -63,7 +64,11 @@ func UpdateData(c *scheduler.Context) {
 	case "白菜菊花":
 		baseURL = bcjhURLBase
 	default:
-		baseURL = bcjhCfPageURLBase
+		if util.HasPrefixIn(strings.TrimSpace(c.PretreatedMessage), "http://", "https://") {
+			baseURL = strings.TrimSpace(c.PretreatedMessage)
+		} else {
+			baseURL = bcjhCfPageURLBase
+		}
 	}
 	_, _ = c.Reply(fmt.Sprintf("开始导入数据, 数据源:\n%s", baseURL))
 	updateStart := time.Now()
