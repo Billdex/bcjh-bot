@@ -78,6 +78,10 @@ func UpgradeGuestQuery(c *scheduler.Context) {
 				results = append(results, fmt.Sprintf("%s: %s", upgrade, recipe.Name))
 			}
 		}
+		if len(results) == 0 {
+			_, _ = c.Reply(guestName + "没有碰瓷数据喔")
+			return
+		}
 
 		listLength := config.AppConfig.Bot.GroupMsgMaxLen
 		if c.GetRawMessage() == onebot.MessageTypePrivate {
