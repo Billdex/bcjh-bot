@@ -59,6 +59,7 @@ func Ultimate(c *scheduler.Context) {
 	logger.Debugw("识别到厨师", "chefs", chefs)
 	if len(chefs) == 0 {
 		_, _ = c.Reply("没有找到名为 " + chefName + " 的厨师")
+		return
 	}
 	if len(chefs) > 1 {
 		chefsName := ""
