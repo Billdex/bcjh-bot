@@ -26,6 +26,7 @@ password =
 image = ./resource/image/
 font = ./resource/font/
 shortcut = ./resource/shortcut/
+userdata = ./resource/userdata/
 
 # 日志相关配置
 [log]
