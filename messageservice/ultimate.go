@@ -91,15 +91,6 @@ func Ultimate(c *scheduler.Context) {
 		}
 	}
 
-	// 分析这个厨师的修炼技能
-	//chef.SkillDesc
-
-	//skillMap, err := dao.GetSkillsMap()
-	//if err != nil {
-	//	logger.Error("获取所有技能失败")
-	//	return
-	//}
-
 	// 给厨师叠 buff
 	addBuff(&chef, userData)
 
@@ -114,92 +105,70 @@ func Ultimate(c *scheduler.Context) {
 
 	for _, quest := range quests {
 		logger.Debugf("\t%-2d. %s\n", quest.QuestId, quest.Goal)
-		if len(quest.Conditions) > 0 {
-			for i := 0; i < len(quest.Conditions); i++ {
-				c := quest.Conditions[i]
-				if !(len(c.Skill) > 0 && c.Rarity > 0 && c.Rank > 0 && c.Num > 0) {
+		if len(quest.Conditions) == 0 {
+			continue
+		}
+		c := quest.Conditions[0]
+		if !(len(c.Skill) > 0 && c.Rarity > 0 && c.Rank > 0 && c.Num > 0) {
+			continue
+		}
+
+		// 找菜
+		var bucket = make(map[int][]database.Recipe) // 神差值
+		var cando []database.Recipe
+		for _, recipe := range gotRecipes {
+			if recipe.Rarity != c.Rarity {
+				continue
+			}
+			switch {
+			case c.Skill == "stirfry" && recipe.Stirfry == 0,
+				c.Skill == "boil" && recipe.Boil == 0,
+				c.Skill == "knife" && recipe.Cut == 0,
+				c.Skill == "fry" && recipe.Fry == 0,
+				c.Skill == "bake" && recipe.Bake == 0,
+				c.Skill == "steam" && recipe.Steam == 0:
+				continue
+			}
+
+			if chef.Stirfry >= c.Rank*recipe.Stirfry &&
+				chef.Boil >= c.Rank*recipe.Boil &&
+				chef.Cut >= c.Rank*recipe.Cut &&
+				chef.Fry >= c.Rank*recipe.Fry &&
+				chef.Bake >= c.Rank*recipe.Bake &&
+				chef.Steam >= c.Rank*recipe.Steam {
+				cando = append(cando, recipe)
+			} else {
+				diffVal := 0
+				r := recipe
+				r.Stirfry = ((chef.Stirfry - c.Rank*recipe.Stirfry) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Stirfry - chef.Stirfry)
+				r.Boil = ((chef.Boil - c.Rank*recipe.Boil) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Boil - chef.Boil)
+				r.Cut = ((chef.Cut - c.Rank*recipe.Cut) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Cut - chef.Cut)
+				r.Fry = ((chef.Fry - c.Rank*recipe.Fry) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Fry - chef.Fry)
+				r.Bake = ((chef.Bake - c.Rank*recipe.Bake) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Bake - chef.Bake)
+				r.Steam = ((chef.Steam - c.Rank*recipe.Steam) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Steam - chef.Steam)
+
+				diffVal = r.Stirfry + r.Boil + r.Cut + r.Fry + r.Bake + r.Steam
+				if diffVal > 250 {
 					continue
 				}
-
-				// 找菜
-				var bucket = make(map[int][]database.Recipe) // 神差值
-				var cando []database.Recipe
-				for _, recipe := range gotRecipes {
-					if recipe.Rarity != c.Rarity {
-						continue
-					}
-					switch {
-					case c.Skill == "stirfry" && recipe.Stirfry == 0,
-						c.Skill == "boil" && recipe.Boil == 0,
-						c.Skill == "knife" && recipe.Cut == 0,
-						c.Skill == "fry" && recipe.Fry == 0,
-						c.Skill == "bake" && recipe.Bake == 0,
-						c.Skill == "steam" && recipe.Steam == 0:
-						continue
-					}
-
-					if chef.Stirfry >= c.Rank*recipe.Stirfry &&
-						chef.Boil >= c.Rank*recipe.Boil &&
-						chef.Cut >= c.Rank*recipe.Cut &&
-						chef.Fry >= c.Rank*recipe.Fry &&
-						chef.Bake >= c.Rank*recipe.Bake &&
-						chef.Steam >= c.Rank*recipe.Steam {
-						cando = append(cando, recipe)
-					} else {
-						diffVal := 0
-						r := recipe
-						r.Stirfry = ((chef.Stirfry - c.Rank*recipe.Stirfry) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Stirfry - chef.Stirfry)
-						r.Boil = ((chef.Boil - c.Rank*recipe.Boil) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Boil - chef.Boil)
-						r.Cut = ((chef.Cut - c.Rank*recipe.Cut) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Cut - chef.Cut)
-						r.Fry = ((chef.Fry - c.Rank*recipe.Fry) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Fry - chef.Fry)
-						r.Bake = ((chef.Bake - c.Rank*recipe.Bake) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Bake - chef.Bake)
-						r.Steam = ((chef.Steam - c.Rank*recipe.Steam) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Steam - chef.Steam)
-
-						diffVal = r.Stirfry + r.Boil + r.Cut + r.Fry + r.Bake + r.Steam
-						if diffVal > 250 {
-							continue
-						}
-						if arr, ok := bucket[diffVal]; !ok {
-							bucket[diffVal] = []database.Recipe{r}
-						} else {
-							arr = append(arr, r)
-						}
-					}
+				if arr, ok := bucket[diffVal]; !ok {
+					bucket[diffVal] = []database.Recipe{r}
+				} else {
+					arr = append(arr, r)
 				}
-				//log.Printf("炒:%d  煮:%d  切:%d  炸:%d  烤:%d  蒸:%d", chef.Stirfry, chef.Boil, chef.Cut, chef.Fry, chef.Bake, chef.Steam)
-				response.CanDo = sortRecipeByTime(cando)
+			}
+		}
+		response.CanDo = sortRecipeByTime(cando)
 
-				keys := make([]int, 0, len(bucket))
-				for k := range bucket {
-					keys = append(keys, k)
-				}
-				sort.Ints(keys)
+		keys := make([]int, 0, len(bucket))
+		for k := range bucket {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
 
-				for _, k := range keys {
-					for _, recipe := range bucket[k] {
-						response.CanNotDo = append(response.CanNotDo, recipe)
-						//msg := fmt.Sprintf("%s 神差值：", recipe.Name)
-						//if recipe.Stirfry > 0 {
-						//	msg += fmt.Sprintf("炒:%d  ", recipe.Stirfry)
-						//}
-						//if recipe.Boil > 0 {
-						//	msg += fmt.Sprintf("煮:%d  ", recipe.Boil)
-						//}
-						//if recipe.Cut > 0 {
-						//	msg += fmt.Sprintf("切:%d  ", recipe.Cut)
-						//}
-						//if recipe.Fry > 0 {
-						//	msg += fmt.Sprintf("炸:%d  ", recipe.Fry)
-						//}
-						//if recipe.Bake > 0 {
-						//	msg += fmt.Sprintf("烤:%d  ", recipe.Bake)
-						//}
-						//if recipe.Steam > 0 {
-						//	msg += fmt.Sprintf("蒸:%d  ", recipe.Steam)
-						//}
-						//log.Printf(msg)
-					}
-				}
+		for _, k := range keys {
+			for _, recipe := range bucket[k] {
+				response.CanNotDo = append(response.CanNotDo, recipe)
 			}
 		}
 	}
@@ -214,6 +183,10 @@ func Ultimate(c *scheduler.Context) {
 	for i, quest := range quests {
 		msg += fmt.Sprintf("\n[%d] %s", i+1, quest.Goal)
 		if len(quest.Conditions) > 0 {
+			c := quest.Conditions[0]
+			if !(len(c.Skill) > 0 && c.Rarity > 0 && c.Rank > 0 && c.Num > 0) {
+				continue
+			}
 			msg += fmt.Sprintf("\n菜谱推荐：")
 			for i, recipe := range response.CanDo {
 				if i >= 5 {
@@ -221,7 +194,11 @@ func Ultimate(c *scheduler.Context) {
 				}
 				msg += fmt.Sprintf("\n%s（%s） ✔️", recipe.Name, (time.Duration(recipe.TotalTime) * time.Second).String())
 			}
-			for _, recipe := range response.CanNotDo {
+			for i, recipe := range response.CanNotDo {
+				if i >= 10 {
+					msg += "\n......"
+					break
+				}
 				var items []string
 				if recipe.Stirfry > 0 {
 					items = append(items, fmt.Sprintf("炒:%d", recipe.Stirfry))
