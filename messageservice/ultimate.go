@@ -32,6 +32,7 @@ func Ultimate(c *scheduler.Context) {
 	bcjhId, err := strconv.Atoi(args[0])
 	if err != nil {
 		_, _ = c.Reply("白菜菊花 id 错误")
+		return
 	}
 
 	chefName := args[1]
@@ -40,6 +41,7 @@ func Ultimate(c *scheduler.Context) {
 	if err != nil {
 		logger.Error(err)
 		_, _ = c.Reply("获取用户数据错误，可能是因为 id 已失效，请检查白菜菊花 id 是否正确")
+		return
 	}
 
 	allChefs, err := dao.FindAllChefs()
@@ -55,6 +57,9 @@ func Ultimate(c *scheduler.Context) {
 		return
 	}
 	logger.Debugw("识别到厨师", "chefs", chefs)
+	if len(chefs) == 0 {
+		_, _ = c.Reply("没有找到名为 " + chefName + " 的厨师")
+	}
 	if len(chefs) > 1 {
 		chefsName := ""
 		for _, chef := range chefs {
@@ -80,14 +85,14 @@ func Ultimate(c *scheduler.Context) {
 
 	allRecipes, err := dao.FindAllRecipes()
 	if err != nil {
-		logger.Error("获取所有菜谱失败")
+		logger.Error("获取所有菜谱失败", err)
 		return
 	}
 
 	var gotRecipes []database.Recipe
-	for _, recipt := range allRecipes {
-		if reciptGotMap[recipt.RecipeId] {
-			gotRecipes = append(gotRecipes, recipt)
+	for _, recipe := range allRecipes {
+		if reciptGotMap[recipe.RecipeId] {
+			gotRecipes = append(gotRecipes, recipe)
 		}
 	}
 
