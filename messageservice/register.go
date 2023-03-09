@@ -42,9 +42,8 @@ func Register(s *scheduler.Scheduler) {
 	g.Bind("后厨", CheckPluginState(true), Helper(comboHelp), ComboQuery).Alias("合成")
 	g.Bind("兑换码", CheckPluginState(true), PretreatedImage, ExchangeQuery).Alias("玉璧", "兑奖码")
 	g.Bind("实验室", CheckPluginState(true), Helper(LaboratoryHelp), LaboratoryQuery).Alias("研究")
-	g.Bind("修炼", CheckPluginState(false), Helper(func() string {
-		return "#修炼 <白菜菊花ID> <厨师名>"
-	}), Ultimate)
+	g.Bind("修炼", CheckPluginState(false), Helper(ultimateHelp), UltimateQuery)
+	g.Bind("导入", CheckPluginState(true), ImportUserData).Alias("导入数据")
 
 	// 快捷查询
 	g.Bind("图鉴网", GalleryWebsite).Alias("图鉴")

@@ -8,255 +8,276 @@ import (
 	"bcjh-bot/util/logger"
 	"encoding/json"
 	"fmt"
-	"sort"
+	"modernc.org/mathutil"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func Ultimate(c *scheduler.Context) {
+// 指定厨师修炼结果
+type userUltimateResult struct {
+	HasBoundID bool          // 是否绑定「白菜菊花 ID」
+	Chef       database.Chef // 指定厨师
+	ChefGot    bool          // 是否已有（未绑定「白菜菊花 ID」则默认未 false）
+	Recipes    []resultRecipe
 
-	var response = struct {
-		Chef     database.Chef
-		ChefGot  bool
-		CanDo    []database.Recipe
-		CanNotDo []database.Recipe
-	}{}
+	UtlimateQuests   []database.Quest // 厨师多个修炼
+	UtlimateMessages []string         // 厨师多个修炼任务对应的回复文本
+	Page             int
+}
 
+func (ur userUltimateResult) String() string {
+	gotchef := map[bool]string{true: "[已有]", false: map[bool]string{true: "[未拥有]", false: "[公开]"}[ur.HasBoundID]}
+	gotreci := map[bool]string{true: "✅ ", false: ""}
+	ranks := []string{"难", "可", "优", "特", "神", "传"}
+
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("%s【%s】%s", gotchef[ur.ChefGot], ur.Chef.Name, strings.Repeat("🔥", ur.Chef.Rarity)))
+	sb.WriteString(fmt.Sprintf("\n修炼技能：%s", ur.Chef.UltimateSkillDesc))
+	sb.WriteString("\n修炼任务：")
+	for i, quest := range ur.UtlimateQuests {
+		sb.WriteString(fmt.Sprintf("\n[%d] %s", i+1, quest.Goal))
+		if len(quest.Conditions) > 0 {
+			c := quest.Conditions[0]
+			if !(len(c.Skill) > 0 && c.Rarity > 0 && c.Rank > 0 && c.Num > 0) {
+				continue
+			}
+			sb.WriteString("\n菜谱推荐（未拥有显示来源）：")
+			for ii := (ur.Page - 1) * 10; ii < len(ur.Recipes) && ii < ur.Page*10; ii++ {
+				rr := ur.Recipes[ii]
+				// 已有显示时间，未拥有显示池子
+				sb.WriteString(fmt.Sprintf("\n[%s] %s%s", ranks[rr.Rank], gotreci[rr.RecipeGot], rr.Recipe.Name))
+				t := (time.Duration(rr.Recipe.TotalTime) * time.Second).String()
+
+				if rr.CanDo {
+					sb.WriteString(fmt.Sprintf(" %s", t))
+				} else {
+					var items []string
+					if rr.Recipe.Stirfry > 0 {
+						items = append(items, fmt.Sprintf("炒:%d", rr.Recipe.Stirfry))
+					}
+					if rr.Recipe.Boil > 0 {
+						items = append(items, fmt.Sprintf("煮:%d", rr.Recipe.Boil))
+					}
+					if rr.Recipe.Cut > 0 {
+						items = append(items, fmt.Sprintf("切:%d", rr.Recipe.Cut))
+					}
+					if rr.Recipe.Fry > 0 {
+						items = append(items, fmt.Sprintf("炸:%d", rr.Recipe.Fry))
+					}
+					if rr.Recipe.Bake > 0 {
+						items = append(items, fmt.Sprintf("烤:%d", rr.Recipe.Bake))
+					}
+					if rr.Recipe.Steam > 0 {
+						items = append(items, fmt.Sprintf("蒸:%d", rr.Recipe.Steam))
+					}
+					sb.WriteString(fmt.Sprintf(" %s", strings.Join(items, " ")))
+				}
+				if !rr.RecipeGot {
+					sb.WriteString(fmt.Sprintf("（%s）", rr.Recipe.Origin))
+				}
+			}
+			if ur.Page*10 < len(ur.Recipes) {
+				sb.WriteString("\n......")
+			}
+		}
+	}
+	sb.WriteString(fmt.Sprintf("\n每页 10 条，共 %d 条（p%d/p%d）", len(ur.Recipes), ur.Page, len(ur.Recipes)/10+1-map[bool]int{true: 1, false: 0}[len(ur.Recipes)%10 == 0]))
+	return sb.String()
+}
+
+type resultRecipe struct {
+	Recipe    database.Recipe // 若未达到修炼条件（CanDo == false），其中的技法数值会修改为神差值
+	RecipeGot bool            // 是否已有
+	CanDo     bool            // 是否满足条件
+	Rank      int             // 做到的等级
+	RankDiff  int             // 目标等级差值
+}
+
+func getUserData(userId int64) (userdata.UserData, bool) {
+	var userData userdata.UserData
+	ud, err := dao.FindUserDataWithUserId(userId)
+	if err != nil {
+		//_, _ = c.Reply("用户未导入数据，请使用「导入数据 <白菜菊花个人数据ID>」来导入数据，导入后长期有效")
+		return userData, false
+	}
+	if ud.Data == "" {
+		logger.Warnf("用户数据为空")
+		return userData, false
+	}
+	if err = json.Unmarshal([]byte(ud.Data), &userData); err != nil {
+		logger.Errorf("读取用户数据错误：%s", err)
+		return userData, false
+	}
+	return userData, true
+}
+
+func UltimateQuery(c *scheduler.Context) {
+	// 默认参数：厨师名，页码，已有
+	chefName, page, onlyHave := "", 1, false
+
+	// 处理参数
 	args := strings.Split(c.PretreatedMessage, " ")
-	if len(args) < 2 {
+	for _, arg := range args {
+		if arg == "已有" {
+			onlyHave = true
+		} else if r := regexp.MustCompile("[pP]-?([0-9]+)"); r.MatchString(arg) {
+			match := r.FindAllStringSubmatch(arg, -1)
+			if len(match) < 1 || len(match[0]) < 2 {
+				continue
+			}
+			if p, err := strconv.Atoi(match[0][1]); err == nil && p > 1 {
+				page = p
+			}
+		} else if chefName == "" {
+			chefName = arg
+		}
+	}
+	if chefName == "" {
 		_, _ = c.Reply("参数不足")
 		return
 	}
 
-	bcjhId, err := strconv.Atoi(args[0])
-	if err != nil {
-		_, _ = c.Reply("白菜菊花 id 错误")
+	ultResult := userUltimateResult{Page: page}
+
+	var userData userdata.UserData
+	userData, ultResult.HasBoundID = getUserData(c.GetSenderId()) // 获取用户个人数据
+
+	if onlyHave && !ultResult.HasBoundID {
+		_, _ = c.Reply(fmt.Sprintf("查看已有菜谱信息需要先绑定白菜菊花ID，请使用「%s导入 <ID>」绑定", prefixCharacters[0]))
 		return
 	}
 
-	chefName := args[1]
-
-	userData, err := userdata.LoadUserData(bcjhId)
-	if err != nil {
-		logger.Error(err)
-		_, _ = c.Reply("获取用户数据错误，可能是因为 id 已失效，请检查白菜菊花 id 是否正确")
-		return
-	}
-
+	// 获取数据库中所有厨师数据
 	allChefs, err := dao.FindAllChefs()
 	if err != nil {
 		logger.Errorw("获取所有厨师信息失败", "err", err.Error())
 		_, _ = c.Reply("获取所有厨师信息失败")
 		return
 	}
+
+	// 查找用户指定的厨师
 	chefs, note := filterChefsByName(allChefs, chefName)
 	if note != "" {
-		logger.Info("厨师查询失败:", note)
+		logger.Error("厨师查询失败:", note)
 		_, _ = c.Reply(note)
 		return
 	}
-	logger.Debugw("识别到厨师", "chefs", chefs)
+
 	if len(chefs) == 0 {
 		_, _ = c.Reply("没有找到名为 " + chefName + " 的厨师")
 		return
-	}
-	if len(chefs) > 1 {
-		chefsName := ""
+	} else if len(chefs) > 1 {
+		chefsName := make([]string, 0, len(chefs))
 		for _, chef := range chefs {
-			chefsName += " " + chef.Name
+			chefsName = append(chefsName, chef.Name)
 		}
-		_, _ = c.Reply("识别到多位厨师：" + chefsName)
+		_, _ = c.Reply("识别到多位厨师：" + strings.Join(chefsName, " "))
 		return
 	}
 
-	chef := chefs[0]
-	chefGotMap, err := userGotChefData(userData)
-	if err != nil {
-		logger.Errorw("解析用户获取厨师数据失败：" + err.Error())
-		return
-	}
-	response.ChefGot = chefGotMap[chef.ChefId]
+	ultResult.Chef = chefs[0] // 确定厨师
 
-	reciptGotMap, err := userGotReciptData(userData)
-	if err != nil {
-		logger.Errorw("解析用户获取菜谱数据失败：" + err.Error())
-		return
+	if ultResult.HasBoundID {
+		var gotMap = make(map[int]bool, len(allChefs))
+		bs, _ := userData.ChefGot.MarshalJSON()
+		if err = json.Unmarshal(bs, &gotMap); err != nil {
+			logger.Errorf("解析用户获取厨师数据失败：%s", err)
+			_, _ = c.Reply("用户厨师数据异常")
+			return
+		}
+		ultResult.ChefGot = gotMap[ultResult.Chef.ChefId] // 确定厨师是否已拥有
 	}
 
-	allRecipes, err := dao.FindAllRecipes()
+	// 解析菜谱
+	// 如果绑定 ID 且有“已有”参数，则使用已有菜谱
+	recipes, err := dao.FindAllRecipes()
 	if err != nil {
 		logger.Error("获取所有菜谱失败", err)
+		_, _ = c.Reply("糟糕，菜…菜谱消失了！")
 		return
 	}
-
-	var gotRecipes []database.Recipe
-	for _, recipe := range allRecipes {
-		if reciptGotMap[recipe.RecipeId] {
-			gotRecipes = append(gotRecipes, recipe)
+	gotRecipesMap := make(map[int]bool, len(recipes))
+	if ultResult.HasBoundID {
+		bs, _ := userData.RepGot.MarshalJSON()
+		if err = json.Unmarshal(bs, &gotRecipesMap); err != nil {
+			logger.Errorf("解析用户获取菜谱数据失败：%s", err)
+			_, _ = c.Reply("用户菜谱数据异常")
+			return
 		}
+		if onlyHave {
+			for i := 0; i < len(recipes); i++ {
+				if got, ok := gotRecipesMap[recipes[i].RecipeId]; !ok || !got {
+					recipes = append(recipes[:i], recipes[i+1:]...)
+					i--
+				}
+			}
+		}
+	}
+
+	if len(recipes) == 0 {
+		_, _ = c.Reply("找不到菜谱了，呜呜呜~")
+		return
 	}
 
 	// 给厨师叠 buff
-	addBuff(&chef, userData)
-
-	// 分析修炼条件
+	addBuff(&ultResult.Chef, userData)
 
 	// 获取厨师修炼任务
-	quests, err := dao.FindQuestsWithIds(chef.UltimateGoals)
+	ultResult.UtlimateQuests, err = dao.FindQuestsWithIds(ultResult.Chef.UltimateGoals)
 	if err != nil {
-		logger.Error("获取厨师修炼任务失败")
+		logger.Error("获取厨师修炼任务失败", err)
+		_, _ = c.Reply("获取厨师修炼任务失败了")
+		return
+	}
+	if len(ultResult.UtlimateQuests) == 0 {
+		_, _ = c.Reply(fmt.Sprintf("天呐！莫非 %s 就是传说中无需修炼的绝世奇才！", ultResult.Chef.Name))
 		return
 	}
 
-	for _, quest := range quests {
-		logger.Debugf("\t%-2d. %s\n", quest.QuestId, quest.Goal)
+	// 分析修炼任务的条件，遍历查找满足条件的菜谱
+	for _, quest := range ultResult.UtlimateQuests {
+
+		// 分析任务条件，不同条件不同处理方案
 		if len(quest.Conditions) == 0 {
-			continue
-		}
-		c := quest.Conditions[0]
-		if !(len(c.Skill) > 0 && c.Rarity > 0 && c.Rank > 0 && c.Num > 0) {
+			// 无条件：收集符文
 			continue
 		}
 
-		// 找菜
-		var bucket = make(map[int][]database.Recipe) // 神差值
-		var cando []database.Recipe
-		for _, recipe := range gotRecipes {
-			if recipe.Rarity != c.Rarity {
-				continue
-			}
-			switch {
-			case c.Skill == "stirfry" && recipe.Stirfry == 0,
-				c.Skill == "boil" && recipe.Boil == 0,
-				c.Skill == "knife" && recipe.Cut == 0,
-				c.Skill == "fry" && recipe.Fry == 0,
-				c.Skill == "bake" && recipe.Bake == 0,
-				c.Skill == "steam" && recipe.Steam == 0:
-				continue
-			}
+		cond := quest.Conditions[0]
+		if len(cond.Skill)*cond.Rarity*cond.Rank*cond.Num != 0 {
+			// 都不为零：技法挑战
+			_recipes := recipes
+			_recipes, _ = filterRecipesByRarity(_recipes, cond.Rarity, false)
+			_recipes, _ = filterRecipesBySkill(_recipes, cond.Skill)
 
-			if chef.Stirfry >= c.Rank*recipe.Stirfry &&
-				chef.Boil >= c.Rank*recipe.Boil &&
-				chef.Cut >= c.Rank*recipe.Cut &&
-				chef.Fry >= c.Rank*recipe.Fry &&
-				chef.Bake >= c.Rank*recipe.Bake &&
-				chef.Steam >= c.Rank*recipe.Steam {
-				cando = append(cando, recipe)
-			} else {
-				diffVal := 0
-				r := recipe
-				r.Stirfry = ((chef.Stirfry - c.Rank*recipe.Stirfry) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Stirfry - chef.Stirfry)
-				r.Boil = ((chef.Boil - c.Rank*recipe.Boil) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Boil - chef.Boil)
-				r.Cut = ((chef.Cut - c.Rank*recipe.Cut) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Cut - chef.Cut)
-				r.Fry = ((chef.Fry - c.Rank*recipe.Fry) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Fry - chef.Fry)
-				r.Bake = ((chef.Bake - c.Rank*recipe.Bake) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Bake - chef.Bake)
-				r.Steam = ((chef.Steam - c.Rank*recipe.Steam) >> (strconv.IntSize - 1)) & 1 * (c.Rank*recipe.Steam - chef.Steam)
-
-				diffVal = r.Stirfry + r.Boil + r.Cut + r.Fry + r.Bake + r.Steam
-				if diffVal > 250 {
-					continue
+			ultResult.Recipes = make([]resultRecipe, 0, len(_recipes))
+			for _, recipe := range _recipes {
+				rank := chefDoLevel(ultResult.Chef, recipe)
+				got, ok := gotRecipesMap[recipe.RecipeId]
+				if !ok {
+					got = false
 				}
-				if arr, ok := bucket[diffVal]; !ok {
-					bucket[diffVal] = []database.Recipe{r}
-				} else {
-					arr = append(arr, r)
+				rr := resultRecipe{Recipe: recipe, RecipeGot: got, CanDo: rank >= cond.Rank, Rank: rank, RankDiff: 0}
+				if !rr.CanDo {
+					rr.Recipe, rr.RankDiff = chefDoDiff(ultResult.Chef, recipe, cond.Rank)
 				}
+				ultResult.Recipes = append(ultResult.Recipes, rr)
 			}
-		}
-		response.CanDo = sortRecipeByTime(cando)
-
-		keys := make([]int, 0, len(bucket))
-		for k := range bucket {
-			keys = append(keys, k)
-		}
-		sort.Ints(keys)
-
-		for _, k := range keys {
-			for _, recipe := range bucket[k] {
-				response.CanNotDo = append(response.CanNotDo, recipe)
-			}
+			ultResult.Recipes = sortRecipe(ultResult.Recipes)
+			continue
 		}
 	}
-
-	got := "未拥有"
-	if response.ChefGot {
-		got = "已有"
-	}
-	msg := fmt.Sprintf("【%s】%s", chef.Name, got)
-	msg += fmt.Sprintf("\n修炼技能：%s", chef.UltimateSkillDesc)
-	msg += fmt.Sprintf("\n修炼任务：")
-	for i, quest := range quests {
-		msg += fmt.Sprintf("\n[%d] %s", i+1, quest.Goal)
-		if len(quest.Conditions) > 0 {
-			c := quest.Conditions[0]
-			if !(len(c.Skill) > 0 && c.Rarity > 0 && c.Rank > 0 && c.Num > 0) {
-				continue
-			}
-			msg += fmt.Sprintf("\n菜谱推荐：")
-			for i, recipe := range response.CanDo {
-				if i >= 5 {
-					break
-				}
-				msg += fmt.Sprintf("\n%s（%s） ✔️", recipe.Name, (time.Duration(recipe.TotalTime) * time.Second).String())
-			}
-			for i, recipe := range response.CanNotDo {
-				if i >= 10 {
-					msg += "\n......"
-					break
-				}
-				var items []string
-				if recipe.Stirfry > 0 {
-					items = append(items, fmt.Sprintf("炒:%d", recipe.Stirfry))
-				}
-				if recipe.Boil > 0 {
-					items = append(items, fmt.Sprintf("煮:%d", recipe.Boil))
-				}
-				if recipe.Cut > 0 {
-					items = append(items, fmt.Sprintf("切:%d", recipe.Cut))
-				}
-				if recipe.Fry > 0 {
-					items = append(items, fmt.Sprintf("炸:%d", recipe.Fry))
-				}
-				if recipe.Bake > 0 {
-					items = append(items, fmt.Sprintf("烤:%d", recipe.Bake))
-				}
-				if recipe.Steam > 0 {
-					items = append(items, fmt.Sprintf("蒸:%d", recipe.Steam))
-				}
-				msg += fmt.Sprintf("\n%s 神差值：%s", recipe.Name, strings.Join(items, " "))
-			}
-		}
-	}
-	c.Reply(msg)
+	_, _ = c.Reply(ultResult.String())
 }
 
-func userGotChefData(userData userdata.UserData) (map[int]bool, error) {
-	var gotMap = make(map[int]bool, 0)
-	bs, err := userData.ChefGot.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(bs, &gotMap)
-	return gotMap, err
-}
-
-func userGotReciptData(userData userdata.UserData) (map[int]bool, error) {
-	var gotMap = make(map[int]bool, 0)
-	bs, err := userData.RepGot.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(bs, &gotMap)
-	return gotMap, err
-}
-
-func StringMustInt(s string) int {
-	i, _ := strconv.Atoi(s)
-	return i
-}
-
+// addBuff 计算添加后的 buff
 func addBuff(chef *database.Chef, data userdata.UserData) {
+	StringMustInt := func(s string) int {
+		i, _ := strconv.Atoi(s)
+		return i
+	}
 	male := StringMustInt(data.UserUltimate.Male)
 	if chef.Gender == 0 || chef.Gender == 1 {
 		// 男
@@ -286,10 +307,69 @@ func addBuff(chef *database.Chef, data userdata.UserData) {
 	chef.Steam += StringMustInt(data.UserUltimate.Steam) + all
 }
 
-func sortRecipeByTime(recipes []database.Recipe) []database.Recipe {
+// chefDoLevel 厨师做这道菜的等级是多少
+// 0: 做不了
+// 1: 可
+// 2: 优
+// 3: 特
+// 4: 神
+// 5: 传
+func chefDoLevel(chef database.Chef, recipe database.Recipe) int {
+	ranks := make([]int, 0, 6)
+	if recipe.Stirfry > 0 {
+		ranks = append(ranks, chef.Stirfry/recipe.Stirfry)
+	}
+	if recipe.Boil > 0 {
+		ranks = append(ranks, chef.Boil/recipe.Boil)
+	}
+	if recipe.Cut > 0 {
+		ranks = append(ranks, chef.Cut/recipe.Cut)
+	}
+	if recipe.Fry > 0 {
+		ranks = append(ranks, chef.Fry/recipe.Fry)
+	}
+	if recipe.Bake > 0 {
+		ranks = append(ranks, chef.Bake/recipe.Bake)
+	}
+	if recipe.Steam > 0 {
+		ranks = append(ranks, chef.Steam/recipe.Steam)
+	}
+	return mathutil.MinVal(5, ranks...)
+}
+
+// chefDoDiff 计算厨师做菜的神查值
+func chefDoDiff(chef database.Chef, recipe database.Recipe, rank int) (database.Recipe, int) {
+	recipe.Stirfry = ((chef.Stirfry - rank*recipe.Stirfry) >> (strconv.IntSize - 1)) & 1 * (rank*recipe.Stirfry - chef.Stirfry)
+	recipe.Boil = ((chef.Boil - rank*recipe.Boil) >> (strconv.IntSize - 1)) & 1 * (rank*recipe.Boil - chef.Boil)
+	recipe.Cut = ((chef.Cut - rank*recipe.Cut) >> (strconv.IntSize - 1)) & 1 * (rank*recipe.Cut - chef.Cut)
+	recipe.Fry = ((chef.Fry - rank*recipe.Fry) >> (strconv.IntSize - 1)) & 1 * (rank*recipe.Fry - chef.Fry)
+	recipe.Bake = ((chef.Bake - rank*recipe.Bake) >> (strconv.IntSize - 1)) & 1 * (rank*recipe.Bake - chef.Bake)
+	recipe.Steam = ((chef.Steam - rank*recipe.Steam) >> (strconv.IntSize - 1)) & 1 * (rank*recipe.Steam - chef.Steam)
+	return recipe, recipe.Stirfry + recipe.Boil + recipe.Cut + recipe.Fry + recipe.Bake + recipe.Steam
+}
+
+// sortRecipe 菜谱结果排序
+func sortRecipe(recipes []resultRecipe) []resultRecipe {
+	// 单时间
 	for i := 0; i < len(recipes); i++ {
 		for j := 0; j < len(recipes)-i-1; j++ {
-			if recipes[j].Time > recipes[j+1].Time {
+			if recipes[j].Recipe.Time > recipes[j+1].Recipe.Time {
+				recipes[j], recipes[j+1] = recipes[j+1], recipes[j]
+			}
+		}
+	}
+	// 是否可做
+	for i := 0; i < len(recipes); i++ {
+		for j := 0; j < len(recipes)-i-1; j++ {
+			if recipes[j].CanDo == false && recipes[j+1].CanDo == true {
+				recipes[j], recipes[j+1] = recipes[j+1], recipes[j]
+			}
+		}
+	}
+	// 神差值
+	for i := 0; i < len(recipes); i++ {
+		for j := 0; j < len(recipes)-i-1; j++ {
+			if recipes[j].RankDiff > recipes[j+1].RankDiff {
 				recipes[j], recipes[j+1] = recipes[j+1], recipes[j]
 			}
 		}
