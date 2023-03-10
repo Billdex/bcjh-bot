@@ -35,7 +35,6 @@ type resourceConfig struct {
 	Image    string `ini:"image"`    // 各项图片资源存放和生成用的路径
 	Font     string `ini:"font"`     // 字体路径
 	Shortcut string `ini:"shortcut"` // 部分快捷用于所需图片的存放路径
-	UserData string `ini:"userdata"` // 白菜菊花用户数据的存放路径
 }
 
 // logConfig 日志配置
@@ -77,7 +76,6 @@ func InitConfig(path string) error {
 			Image:    "./resource/image/",
 			Font:     "./resource/font/",
 			Shortcut: "./resource/shortcut/",
-			UserData: "./resource/userdata/",
 		},
 		Log: logConfig{
 			Level:   "INFO",

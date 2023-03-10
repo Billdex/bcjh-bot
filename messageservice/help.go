@@ -190,8 +190,8 @@ func importDataHelp() string {
 	prefix := prefixCharacters[0]
 	sb := strings.Builder{}
 	sb.WriteString("【导入数据】\n")
-	sb.WriteString(fmt.Sprintf("通过「%s导入 <白菜菊花ID>」导入白菜菊花个人数据，可用来查询厨师满足修炼条件的已有菜谱等功能，导入数据长期有效\n", prefix))
-	sb.WriteString(fmt.Sprintf("示例:『%s导入 123456』", prefix))
+	sb.WriteString(fmt.Sprintf("通过「%s个人数据导入 <白菜菊花ID>」导入白菜菊花个人数据，可用来查询厨师满足修炼条件的已有菜谱等功能，导入数据长期有效\n", prefix))
+	sb.WriteString(fmt.Sprintf("示例:『%s个人数据导入 123456』", prefix))
 	return sb.String()
 }
 
@@ -204,7 +204,7 @@ func ultimateHelp() string {
 	sb.WriteString(fmt.Sprintf("示例:『%s修炼 罗小黑』\n", prefix))
 	sb.WriteString(fmt.Sprintf("结果过多可使用「p」参数分页\n"))
 	sb.WriteString(fmt.Sprintf("示例:『%s修炼 罗小黑 p2』\n", prefix))
-	sb.WriteString(fmt.Sprintf("可使用“已有”参数查询已有菜谱（前提是需要绑定白菜菊花个人数据ID，可通过「%s导入 <ID>」绑定）\n", prefix))
+	sb.WriteString(fmt.Sprintf("可使用“已有”参数查询已有菜谱（前提是需要绑定白菜菊花个人数据ID，可通过「%s个人数据导入 <ID>」绑定）\n", prefix))
 	sb.WriteString(fmt.Sprintf("示例:『%s修炼 罗小黑 已有』", prefix))
 	return sb.String()
 }
