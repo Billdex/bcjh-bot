@@ -14,6 +14,7 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
 	gopkg.in/ini.v1 v1.62.0
+	modernc.org/mathutil v1.4.1
 	modernc.org/sqlite v1.17.3
 	xorm.io/xorm v1.3.1
 )
@@ -48,7 +49,6 @@ require (
 	modernc.org/cc/v3 v3.36.0 // indirect
 	modernc.org/ccgo/v3 v3.16.6 // indirect
 	modernc.org/libc v1.16.8 // indirect
-	modernc.org/mathutil v1.4.1 // indirect
 	modernc.org/memory v1.1.1 // indirect
 	modernc.org/opt v0.1.1 // indirect
 	modernc.org/strutil v1.1.1 // indirect

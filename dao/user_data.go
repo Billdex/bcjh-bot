@@ -10,15 +10,16 @@ const CacheKeyUserData = "user_data"
 
 // FindUserDataWithUserId 根据 userId 查询用户数据
 func FindUserDataWithUserId(userId int64) (database.UserData, error) {
-	var data []database.UserData
+	var data database.UserData
 	cacheKey := fmt.Sprintf("%s:%d", CacheKeyUserData, userId)
 	err := SimpleFindDataWithCache(cacheKey, &data, func(dest interface{}) error {
-		return DB.Where("qq = ?", userId).Find(dest)
+		_, err := DB.Where("qq = ?", userId).Get(dest)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
-	if len(data) > 0 {
-		return data[0], err
-	}
-	return database.UserData{}, err
+	return data, err
 }
 
 // SetUserData 设置或更新用户数据

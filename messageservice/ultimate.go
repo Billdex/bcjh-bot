@@ -274,37 +274,33 @@ func UltimateQuery(c *scheduler.Context) {
 
 // addBuff 计算添加后的 buff
 func addBuff(chef *database.Chef, data userdata.UserData) {
-	StringMustInt := func(s string) int {
-		i, _ := strconv.Atoi(s)
-		return i
-	}
-	male := StringMustInt(data.UserUltimate.Male)
+	male := data.UserUltimate.Male
 	if chef.Gender == 0 || chef.Gender == 1 {
 		// 男
-		chef.Stirfry += male
-		chef.Boil += male
-		chef.Cut += male
-		chef.Fry += male
-		chef.Bake += male
-		chef.Steam += male
+		chef.Stirfry += int(male)
+		chef.Boil += int(male)
+		chef.Cut += int(male)
+		chef.Fry += int(male)
+		chef.Bake += int(male)
+		chef.Steam += int(male)
 	}
-	female := StringMustInt(data.UserUltimate.Female)
+	female := data.UserUltimate.Female
 	if chef.Gender == 0 || chef.Gender == 2 {
 		// 女
-		chef.Stirfry += female
-		chef.Boil += female
-		chef.Cut += female
-		chef.Fry += female
-		chef.Bake += female
-		chef.Steam += female
+		chef.Stirfry += int(female)
+		chef.Boil += int(female)
+		chef.Cut += int(female)
+		chef.Fry += int(female)
+		chef.Bake += int(female)
+		chef.Steam += int(female)
 	}
-	all := StringMustInt(data.UserUltimate.All)
-	chef.Stirfry += StringMustInt(data.UserUltimate.Stirfry) + all
-	chef.Boil += StringMustInt(data.UserUltimate.Boil) + all
-	chef.Cut += StringMustInt(data.UserUltimate.Knife) + all
-	chef.Fry += StringMustInt(data.UserUltimate.Fry) + all
-	chef.Bake += StringMustInt(data.UserUltimate.Bake) + all
-	chef.Steam += StringMustInt(data.UserUltimate.Steam) + all
+	all := data.UserUltimate.All
+	chef.Stirfry += int(data.UserUltimate.Stirfry) + int(all)
+	chef.Boil += int(data.UserUltimate.Boil) + int(all)
+	chef.Cut += int(data.UserUltimate.Knife) + int(all)
+	chef.Fry += int(data.UserUltimate.Fry) + int(all)
+	chef.Bake += int(data.UserUltimate.Bake) + int(all)
+	chef.Steam += int(data.UserUltimate.Steam) + int(all)
 }
 
 // chefDoLevel 厨师做这道菜的等级是多少
