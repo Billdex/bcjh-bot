@@ -62,21 +62,17 @@ func GetQuestsMap() (map[int]database.Quest, error) {
 
 // FindQuestsWithIds 根据 id 列表查询任务列表
 func FindQuestsWithIds(ids []int) ([]database.Quest, error) {
-	mIds := make(map[int]struct{}, len(ids))
-	for _, id := range ids {
-		mIds[id] = struct{}{}
-	}
-	quests, err := FindAllQuests()
+	quests := make([]database.Quest, 0, len(ids))
+	questMap, err := GetQuestsMap()
 	if err != nil {
-		return nil, err
+		return quests, err
 	}
-	result := make([]database.Quest, 0, len(ids))
-	for _, quest := range quests {
-		if _, ok := mIds[quest.QuestId]; ok {
-			result = append(result, quest)
+	for _, qid := range ids {
+		if quest, ok := questMap[qid]; ok {
+			quests = append(quests, quest)
 		}
 	}
-	return result, nil
+	return quests, nil
 }
 
 // GetMaxMainQuestId 查询最大主线任务id

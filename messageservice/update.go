@@ -789,6 +789,28 @@ func updateQuests(questsData []gamedata.QuestData) error {
 			})
 		}
 		quest.Rewards = rewards
+		conditions := make([]database.QuestCondition, 0)
+		for _, conditionData := range questData.Conditions {
+			conditions = append(conditions, database.QuestCondition{
+				RecipeId:     conditionData.RecipeId,
+				Rank:         conditionData.Rank,
+				Num:          conditionData.Num,
+				GoldEff:      conditionData.GoldEff,
+				MaterialId:   conditionData.MaterialId,
+				Guest:        conditionData.Guest,
+				AnyGuest:     conditionData.AnyGuest,
+				Skill:        conditionData.Skill,
+				MaterialEff:  conditionData.MaterialEff,
+				NewGuest:     conditionData.NewGuest,
+				Rarity:       conditionData.Rarity,
+				Price:        conditionData.Price,
+				Category:     conditionData.Category,
+				Condiment:    conditionData.Condiment,
+				CondimentEff: conditionData.CondimentEff,
+			})
+		}
+		quest.Rewards = rewards
+		quest.Conditions = conditions
 		quests = append(quests, quest)
 	}
 	_, err = session.Insert(&quests)

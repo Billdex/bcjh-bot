@@ -59,18 +59,18 @@ func (recipe Recipe) FormatRarity() string {
 
 // NeedSkill 判断菜谱是否需要某个技法
 func (recipe Recipe) NeedSkill(skill string) (bool, error) {
-	switch skill {
-	case "炒":
+	switch strings.ToLower(skill) {
+	case "炒", "stirfry":
 		return recipe.Stirfry > 0, nil
-	case "烤":
+	case "烤", "bake":
 		return recipe.Bake > 0, nil
-	case "煮":
+	case "煮", "boil":
 		return recipe.Boil > 0, nil
-	case "蒸":
+	case "蒸", "steam":
 		return recipe.Steam > 0, nil
-	case "炸":
+	case "炸", "fry":
 		return recipe.Fry > 0, nil
-	case "切":
+	case "切", "cut":
 		return recipe.Cut > 0, nil
 	default:
 		return false, fmt.Errorf("%s是什么技法呀", skill)
