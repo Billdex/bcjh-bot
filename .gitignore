@@ -7,3 +7,5 @@ config.ini
 bcjh-bot
 bcjh-bot.exe
 bot_data.db
+database/*
+resource/image/*
