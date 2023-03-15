@@ -70,7 +70,7 @@ func (recipe Recipe) NeedSkill(skill string) (bool, error) {
 		return recipe.Steam > 0, nil
 	case "炸", "fry":
 		return recipe.Fry > 0, nil
-	case "切", "cut":
+	case "切", "cut", "knife":
 		return recipe.Cut > 0, nil
 	default:
 		return false, fmt.Errorf("%s是什么技法呀", skill)
